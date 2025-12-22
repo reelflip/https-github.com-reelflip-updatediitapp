@@ -25,7 +25,46 @@ export const INITIAL_STUDENT_DATA: StudentData = {
     { id: '3', title: "Redox Reactions", description: "Oxidation vs Reduction", hack: "OIL RIG", category: "Mnemonics", subject: "Chemistry" }
   ],
   blogs: [
-    { id: 'b1', title: "10 Tips for JEE Advanced", content: "<p>Start early and focus on concepts...</p>", author: "Admin", date: "2024-12-20", status: "PUBLISHED" }
+    { 
+      id: 'b1', 
+      title: "Mastering the Forgetting Curve for JEE 2025", 
+      content: `
+        <p>Start early and focus on concepts. The biggest challenge for JEE aspirants is not learning, but <strong>retaining</strong>. Every time you learn a formula, your brain begins to lose it within 24 hours.</p>
+        <h2>The Science of Recall</h2>
+        <p>Active recall and spaced repetition are your best friends. JEE-PRO's automated flashcard system uses these principles to ensure you review exactly when your memory trace is weakest.</p>
+        <img src="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&q=80&w=1000" alt="Study focus" />
+        <p>Allocate 15 minutes of your 'Prime Hour' in the morning purely for formula flushes. Don't solve problems during this time—just recall definitions and derivations.</p>
+      `, 
+      author: "Admin", 
+      date: "2024-12-20", 
+      status: "PUBLISHED" 
+    },
+    { 
+      id: 'b2', 
+      title: "Organic Chemistry: From Fear to Mastery", 
+      content: `
+        <p>Organic chemistry is often viewed as a subject of rote memorization. This is the first mistake. Organic chemistry is about <strong>mechanisms</strong>.</p>
+        <h2>Visualization over Memorization</h2>
+        <p>Instead of memorizing reagents, try to visualize the movement of electrons. Use our Memory Hacks vault to find mnemonics for the reactivity series, but spend 80% of your time on reaction pathways.</p>
+        <p>The "Mole-Tunnel" method we provide in the hacks module is specifically designed to help you navigate stoichiometric conversions without getting lost in the math.</p>
+      `, 
+      author: "Dr. Chemistry", 
+      date: "2024-12-22", 
+      status: "PUBLISHED" 
+    },
+    { 
+      id: 'b3', 
+      title: "The Silent AIR Killer: Performance Anxiety", 
+      content: `
+        <p>Many students score 280+ in home practice but drop to 180 in the exam hall. Why? Psychometric stability.</p>
+        <h2>Building a Mental Shield</h2>
+        <p>Your brain is a biological machine. High cortisol (stress) shut downs the prefrontal cortex—the part of the brain responsible for complex solving. Use the Wellness Module to track your sleep integrity.</p>
+        <p>Taking a diagnostic assessment every 14 days helps desensitize the 'Fear Response' your brain has to exam patterns.</p>
+      `, 
+      author: "Psych Lead", 
+      date: "2024-12-25", 
+      status: "PUBLISHED" 
+    }
   ],
   messages: [
     { id: 'm1', name: "Rahul Gupta", email: "rahul@test.com", subject: "Access Issue", message: "Hi, I cannot access the Physics notes.", date: "2024-12-21", isRead: false }
@@ -69,6 +108,11 @@ export const INITIAL_STUDENT_DATA: StudentData = {
     { id: 'c-basic', subject: 'Chemistry', unit: 'Physical Chemistry', name: 'Some Basic Concepts', progress: 100, accuracy: 92, timeSpent: 300, status: 'COMPLETED' },
     { id: 'm-sets', subject: 'Mathematics', unit: 'Sets & Relations', name: 'Sets, Relations & Functions', progress: 90, accuracy: 85, timeSpent: 600, status: 'LEARNING' },
   ],
+  connectedParent: {
+    name: "Mr. Ramesh Sharma",
+    id: "P-4402",
+    linkedSince: "2025-11-15"
+  },
   oauthClientId: '',
   analyticsId: ''
 };

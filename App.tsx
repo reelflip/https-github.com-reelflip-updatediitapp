@@ -1,54 +1,41 @@
 
 import React, { useState, useEffect } from 'react';
-import { UserRole, StudentData } from './types';
+import { UserRole, StudentData, UserAccount } from './types';
 import { INITIAL_STUDENT_DATA } from './mockData';
+import { api } from './services/apiService';
+import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
+import AboutModule from './views/AboutModule';
+import FeaturesModule from './views/FeaturesModule';
+import ExamGuideModule from './views/ExamGuideModule';
+import BlogModule from './views/BlogModule';
+import ContactModule from './views/ContactModule';
+import LoginModule from './views/LoginModule';
 import StudentDashboard from './views/StudentDashboard';
 import ParentDashboard from './views/ParentDashboard';
 import AdminCMS from './views/AdminCMS';
-import FlashcardsModule from './views/FlashcardsModule';
 import LearnModule from './views/LearnModule';
 import AITutor from './views/AITutor';
-import FocusTimer from './views/FocusTimer';
-import MistakesLog from './views/MistakesLog';
-import WellnessModule from './views/WellnessModule';
+import TestsView from './views/TestsView';
 import AnalyticsView from './views/AnalyticsView';
+import WellnessModule from './views/WellnessModule';
+import PsychometricTest from './views/PsychometricTest';
+import FlashcardsModule from './views/FlashcardsModule';
+import HacksModule from './views/HacksModule';
 import TimetableModule from './views/TimetableModule';
 import RevisionModule from './views/RevisionModule';
-import HacksModule from './views/HacksModule';
-import TestsView from './views/TestsView';
-import PsychometricTest from './views/PsychometricTest';
-import ProfileModule from './views/ProfileModule';
+import MistakesLog from './views/MistakesLog';
 import BacklogModule from './views/BacklogModule';
-import LandingPage from './views/LandingPage';
-import { Brain, Sparkles, Lock, Mail, User as UserIcon, ArrowLeft, ShieldCheck, UserCheck } from 'lucide-react';
+import FocusTimer from './views/FocusTimer';
+import ProfileModule from './views/ProfileModule';
+import { TrendingUp } from 'lucide-react';
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserAccount | null>(null);
   const [role, setRole] = useState<UserRole>(UserRole.STUDENT);
-  
-  // Initialize student data and check for persisted data source mode
-  const [studentData, setStudentData] = useState<StudentData>(() => {
-    const savedMode = localStorage.getItem('jeepro_data_source');
-    return {
-      ...INITIAL_STUDENT_DATA,
-      dataSourceMode: (savedMode as 'MOCK' | 'LIVE') || 'MOCK'
-    };
-  });
-  
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
-  const [isAuthMode, setIsAuthMode] = useState<'login' | 'register' | 'forgot' | 'landing'>('landing');
-
-  const showDemoLogins = (window as any).SHOW_DEMO_LOGINS !== false;
-
-  useEffect(() => {
-    // Synchronize window global and localStorage for apiService and persistence
-    (window as any).DATA_SOURCE_MODE = studentData.dataSourceMode;
-    if (studentData.dataSourceMode) {
-      localStorage.setItem('jeepro_data_source', studentData.dataSourceMode);
-    }
-  }, [studentData.dataSourceMode]);
+  const [studentData, setStudentData] = useState<StudentData>(INITIAL_STUDENT_DATA);
+  const [activeTab, setActiveTab] = useState<string>('about');
 
   useEffect(() => {
     const savedUser = localStorage.getItem('jeepro_user');
@@ -56,123 +43,135 @@ const App: React.FC = () => {
       const parsedUser = JSON.parse(savedUser);
       setUser(parsedUser);
       setRole(parsedUser.role);
-      if (parsedUser.role === UserRole.PARENT && activeTab === 'dashboard') {
-        setActiveTab('parent-status');
-      }
+      loadUserData(parsedUser);
     }
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    const mockUser = { id: 1, name: 'Aryan Sharma', email: 'aryan@example.com', role: role };
-    setUser(mockUser);
-    localStorage.setItem('jeepro_user', JSON.stringify(mockUser));
-    
-    if (role === UserRole.ADMIN) {
-      setActiveTab('admin-overview');
-    } else if (role === UserRole.PARENT) {
-      setActiveTab('parent-status');
-    } else {
+  const loadUserData = async (currentUser: UserAccount) => {
+    if (currentUser.role === UserRole.STUDENT) {
+      const data = await api.getStudentData(currentUser.id);
+      setStudentData(data);
       setActiveTab('dashboard');
+    } else if (currentUser.role === UserRole.PARENT) {
+      setActiveTab('parent-status');
+    } else if (currentUser.role === UserRole.ADMIN) {
+      setActiveTab('admin-overview');
     }
   };
 
-  const handleDemoLogin = (demoRole: UserRole) => {
-    const mockUser = { id: Date.now(), name: 'Demo User', email: `demo@jeepro.in`, role: demoRole };
-    setRole(demoRole);
-    setUser(mockUser);
-    localStorage.setItem('jeepro_user', JSON.stringify(mockUser));
-    
-    if (demoRole === UserRole.ADMIN) {
-      setActiveTab('admin-overview');
-    } else if (demoRole === UserRole.PARENT) {
-      setActiveTab('parent-status');
-    } else {
-      setActiveTab('dashboard');
+  const onLoginSuccess = (authenticatedUser: UserAccount) => {
+    setUser(authenticatedUser);
+    setRole(authenticatedUser.role);
+    localStorage.setItem('jeepro_user', JSON.stringify(authenticatedUser));
+    loadUserData(authenticatedUser);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('jeepro_user');
+    setUser(null);
+    setActiveTab('about');
+  };
+
+  const syncStudentData = async (newData: StudentData) => {
+    setStudentData(newData);
+    if (user && user.role === UserRole.STUDENT) {
+      await api.updateStudentData(user.id, newData);
     }
   };
 
-  if (!user && isAuthMode === 'landing') {
-    return <LandingPage onLogin={() => setIsAuthMode('login')} studentData={studentData} setStudentData={setStudentData} />;
-  }
+  // Authenticated State Layout
+  if (user) {
+    const renderPrivateContent = () => {
+      if (role === UserRole.PARENT || activeTab.startsWith('parent-')) {
+        return <ParentDashboard data={studentData} externalActiveTab={activeTab} />;
+      }
+      if (role === UserRole.ADMIN || activeTab.startsWith('admin-')) {
+        return <AdminCMS activeTab={activeTab} data={studentData} setData={syncStudentData} />;
+      }
+      switch (activeTab) {
+        case 'dashboard': return <StudentDashboard data={studentData} />;
+        case 'learn': return <LearnModule data={studentData} setData={syncStudentData} />;
+        case 'aitutor': return <AITutor data={studentData} />;
+        case 'tests': return <TestsView data={studentData} />;
+        case 'analytics': return <AnalyticsView data={studentData} />;
+        case 'wellness': return <WellnessModule data={studentData} />;
+        case 'psychometric': return <PsychometricTest data={studentData} setData={syncStudentData} />;
+        case 'flashcards': return <FlashcardsModule data={studentData} />;
+        case 'hacks': return <HacksModule data={studentData} />;
+        case 'timetable': return <TimetableModule data={studentData} />;
+        case 'revision': return <RevisionModule data={studentData} />;
+        case 'mistakes': return <MistakesLog data={studentData} />;
+        case 'backlogs': return <BacklogModule data={studentData} />;
+        case 'focus': return <FocusTimer />;
+        case 'profile': return <ProfileModule data={studentData} setData={syncStudentData} />;
+        case 'blog': return <BlogModule data={studentData} />;
+        case 'about': return <AboutModule />;
+        case 'features': return <FeaturesModule />;
+        case 'examguide': return <ExamGuideModule />;
+        case 'contact': return <ContactModule data={studentData} />;
+        default: return <StudentDashboard data={studentData} />;
+      }
+    };
 
-  if (!user) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 font-sans">
-        <div className="max-w-md w-full space-y-8 animate-in fade-in zoom-in-95 duration-500">
-           <div className="text-center">
-              <button onClick={() => setIsAuthMode('landing')} className="w-20 h-20 bg-indigo-600 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-2xl">
-                <Brain className="text-white w-10 h-10" />
-              </button>
-              <h1 className="text-4xl font-black text-white tracking-tighter italic">JEE-PRO</h1>
-           </div>
-
-           <div className="bg-slate-900 p-10 rounded-[2.5rem] border border-slate-800 shadow-2xl">
-              <div className="flex bg-slate-800 p-1 rounded-2xl mb-8">
-                <button onClick={() => setIsAuthMode('login')} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${isAuthMode === 'login' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}>Login</button>
-                <button onClick={() => setIsAuthMode('register')} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${isAuthMode === 'register' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}>Sign Up</button>
-              </div>
-
-              <form onSubmit={handleLogin} className="space-y-6">
-                <input type="email" required className="w-full bg-slate-800 border-none rounded-2xl py-4 px-6 text-white" placeholder="Email" />
-                <input type="password" required className="w-full bg-slate-800 border-none rounded-2xl py-4 px-6 text-white" placeholder="Password" />
-                <div className="grid grid-cols-2 gap-3">
-                    {Object.values(UserRole).filter(r => r !== UserRole.ADMIN).map(r => (
-                      <button key={r} type="button" onClick={() => setRole(r)} className={`py-3 rounded-2xl text-xs font-black uppercase border-2 ${role === r ? 'border-indigo-600 text-indigo-400' : 'border-slate-800 text-slate-500'}`}>{r}</button>
-                    ))}
-                </div>
-                <button type="submit" className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl">Launch</button>
-              </form>
-
-              {showDemoLogins && (
-                <div className="mt-8 pt-6 border-t border-slate-800 grid grid-cols-3 gap-2">
-                   <button onClick={() => handleDemoLogin(UserRole.STUDENT)} className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-slate-800"><UserIcon className="w-4 h-4 text-indigo-400" /><span className="text-[9px] text-slate-500">Student</span></button>
-                   <button onClick={() => handleDemoLogin(UserRole.PARENT)} className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-slate-800"><UserCheck className="w-4 h-4 text-rose-400" /><span className="text-[9px] text-slate-500">Parent</span></button>
-                   <button onClick={() => handleDemoLogin(UserRole.ADMIN)} className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-slate-800"><ShieldCheck className="w-4 h-4 text-emerald-400" /><span className="text-[9px] text-slate-500">Admin</span></button>
-                </div>
-              )}
-           </div>
+      <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
+        <Sidebar role={role} activeTab={activeTab} setActiveTab={setActiveTab} setRole={setRole} handleLogout={handleLogout} />
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <Header role={role} studentName={user.name} />
+          <main className="flex-1 overflow-y-auto p-4 lg:p-10 bg-slate-50/50">
+            {renderPrivateContent()}
+          </main>
         </div>
       </div>
     );
   }
 
-  const renderContent = () => {
-    if (role === UserRole.PARENT || activeTab.startsWith('parent-')) {
-      return <ParentDashboard data={studentData} externalActiveTab={activeTab} />;
-    }
-    if (role === UserRole.ADMIN || activeTab.startsWith('admin-')) {
-      return <AdminCMS activeTab={activeTab} data={studentData} setData={setStudentData} />;
-    }
+  // Public/Logged-out State Layout
+  const renderPublicContent = () => {
     switch (activeTab) {
-      case 'dashboard': return <StudentDashboard data={studentData} />;
-      case 'learn': return <LearnModule data={studentData} setData={setStudentData} />;
-      case 'aitutor': return <AITutor data={studentData} />;
-      case 'tests': return <TestsView data={studentData} />;
-      case 'analytics': return <AnalyticsView data={studentData} />;
-      case 'wellness': return <WellnessModule data={studentData} />;
-      case 'psychometric': return <PsychometricTest data={studentData} setData={setStudentData} />;
-      case 'flashcards': return <FlashcardsModule data={studentData} />;
-      case 'hacks': return <HacksModule data={studentData} />;
-      case 'timetable': return <TimetableModule data={studentData} />;
-      case 'revision': return <RevisionModule data={studentData} />;
-      case 'mistakes': return <MistakesLog data={studentData} />;
-      case 'backlogs': return <BacklogModule data={studentData} />;
-      case 'focus': return <FocusTimer />;
-      case 'profile': return <ProfileModule data={studentData} setData={setStudentData} />;
-      default: return <div className="text-center p-20">Module Loading...</div>;
+      case 'about': return <AboutModule />;
+      case 'features': return <FeaturesModule />;
+      case 'examguide': return <ExamGuideModule />;
+      case 'blog': return <BlogModule data={studentData} />;
+      case 'contact': return <ContactModule data={studentData} />;
+      case 'login': return <LoginModule onLoginSuccess={onLoginSuccess} onCancel={() => setActiveTab('about')} />;
+      default: return <AboutModule />;
     }
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
-      <Sidebar role={role} activeTab={activeTab} setActiveTab={setActiveTab} setRole={setRole} />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <Header role={role} studentName={studentData.name} />
-        <main className="flex-1 overflow-y-auto p-4 lg:p-10 bg-slate-50/50">
-          {renderContent()}
-        </main>
-      </div>
+    <div className="min-h-screen bg-white font-sans flex flex-col">
+      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+      
+      <main className="flex-1">
+        {activeTab !== 'login' && (
+          <div className="py-16 flex flex-col items-center justify-center space-y-4 animate-in fade-in duration-700">
+            <div className="flex items-center gap-3">
+                <TrendingUp className="w-10 h-10 text-blue-600 stroke-[3]" />
+                <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase">IIT<span className="text-blue-600">GEE</span>PREP</h1>
+            </div>
+            <div className="text-[10px] font-black tracking-[0.4em] text-slate-400 uppercase">
+                V17.0 Ultimate Sync Core
+            </div>
+          </div>
+        )}
+
+        <div className="max-w-7xl mx-auto px-6">
+          {renderPublicContent()}
+        </div>
+      </main>
+
+      <footer className="py-20 border-t border-slate-100 mt-20">
+         <div className="max-w-7xl mx-auto px-6 text-center space-y-6">
+            <div className="flex items-center justify-center gap-2 opacity-50">
+               <TrendingUp className="w-5 h-5 text-blue-600" />
+               <span className="font-black tracking-tighter text-xl uppercase">IITGEEPREP</span>
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
+               &copy; 2025 IITGEEPREP Intelligence Hub. All Rights Reserved.
+            </p>
+         </div>
+      </footer>
     </div>
   );
 };

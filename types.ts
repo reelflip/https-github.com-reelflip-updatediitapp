@@ -151,6 +151,32 @@ export interface StudentData {
   targetExams?: string[];
   aiTutorModel?: string;
   dataSourceMode?: 'MOCK' | 'LIVE';
+  // Fixed: Added smartPlan to StudentData interface to resolve type errors in apiService
+  smartPlan?: any;
   oauthClientId?: string;
   analyticsId?: string;
+  connectedParent?: {
+    name: string;
+    id: string;
+    linkedSince: string;
+  };
+}
+
+export interface UserAccount {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  password?: string;
+  createdAt: string;
+  connectedId?: string; // For Parent -> Student link
+}
+
+export interface SystemEvent {
+  id: string;
+  timestamp: string;
+  type: 'AUTH' | 'ACADEMIC' | 'WELLNESS' | 'ADMIN';
+  description: string;
+  user: string;
+  status: 'SUCCESS' | 'FAILURE';
 }

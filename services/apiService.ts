@@ -1,60 +1,158 @@
 
-import { StudentData, UserRole } from '../types';
+import { StudentData, UserRole, UserAccount, SystemEvent } from '../types';
 import { INITIAL_STUDENT_DATA } from '../mockData';
 
-const API_BASE = '/api'; // Adjust this to your Hostinger subfolder path
+const API_CONFIG = {
+  VERSION: 'v5.1.1-PROD',
+  BASE_URL: '/api', 
+  MODE_KEY: 'jeepro_datasource_mode'
+};
 
-// Helper to determine if we should use mock data based on local app state
-const isMockMode = () => {
-  // In a real app, this would check a global state or a value in localStorage
-  // For this implementation, we'll try to check a window variable set by AdminCMS
-  return (window as any).DATA_SOURCE_MODE !== 'LIVE';
+const DB_KEYS = {
+  ACCOUNTS: 'jeepro_db_accounts',
+  EVENTS: 'jeepro_db_events',
+  STUDENT_DATA: 'jeepro_db_student_data',
+  SMART_PLAN: 'jeepro_db_smart_plan'
+};
+
+// Hardcoded Demo Accounts for one-click access
+const DEMO_ACCOUNTS: UserAccount[] = [
+  { 
+    id: '163110', 
+    name: 'Aryan Sharma', 
+    email: 'ishu@gmail.com', 
+    role: UserRole.STUDENT, 
+    createdAt: '2024-01-01T00:00:00Z' 
+  },
+  { 
+    id: 'P-4402', 
+    name: 'Mr. Ramesh Sharma', 
+    email: 'parent@family.com', 
+    role: UserRole.PARENT, 
+    createdAt: '2024-01-01T00:00:00Z',
+    connectedId: '163110'
+  },
+  { 
+    id: 'ADMIN-001', 
+    name: 'System Admin', 
+    email: 'admin@jeepro.in', 
+    role: UserRole.ADMIN, 
+    createdAt: '2024-01-01T00:00:00Z' 
+  }
+];
+
+const getDB = <T>(key: string, defaultValue: T): T => {
+  const data = localStorage.getItem(key);
+  return data ? JSON.parse(data) : defaultValue;
+};
+
+const saveDB = (key: string, data: any) => {
+  localStorage.setItem(key, JSON.stringify(data));
 };
 
 export const api = {
-  async login(credentials: any) {
-    if (isMockMode()) {
-       return { success: true, user: { id: '163110', name: 'Aryan Sharma', role: 'STUDENT' } };
+  getMode: (): 'MOCK' | 'LIVE' => {
+    return (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'MOCK';
+  },
+
+  setMode: (mode: 'MOCK' | 'LIVE') => {
+    localStorage.setItem(API_CONFIG.MODE_KEY, mode);
+    window.location.reload();
+  },
+
+  // --- AUTHENTICATION ---
+  async login(credentials: { email: string; role: UserRole }) {
+    const demoUser = DEMO_ACCOUNTS.find(a => a.email === credentials.email && a.role === credentials.role);
+    if (demoUser) return { success: true, user: demoUser };
+
+    if (this.getMode() === 'LIVE') {
+      try {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/auth.php?action=login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(credentials)
+        });
+        const data = await response.json();
+        if (data.success) return data;
+      } catch (e) {
+        console.error("Live login failure", e);
+      }
     }
-    const res = await fetch(`${API_BASE}/auth_login.php`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(credentials)
-    });
-    return res.json();
+
+    const accounts = getDB<UserAccount[]>(DB_KEYS.ACCOUNTS, []);
+    const user = accounts.find(a => a.email === credentials.email && a.role === credentials.role);
+    return user ? { success: true, user } : { success: false, error: 'Identity not found.' };
   },
 
-  async register(userData: any) {
-    if (isMockMode()) return { success: true };
-    const res = await fetch(`${API_BASE}/auth_register.php`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userData)
-    });
-    return res.json();
+  async register(userData: { name: string; email: string; role: UserRole }) {
+    if (this.getMode() === 'LIVE') {
+      try {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/auth.php?action=register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(userData)
+        });
+        return await response.json();
+      } catch (e) {
+        return { success: false, error: 'Server unreachable.' };
+      }
+    }
+    const accounts = getDB<UserAccount[]>(DB_KEYS.ACCOUNTS, []);
+    const newAccount = { ...userData, id: userData.role === 'STUDENT' ? `S-${Date.now()}` : `P-${Date.now()}`, createdAt: new Date().toISOString() };
+    saveDB(DB_KEYS.ACCOUNTS, [...accounts, newAccount]);
+    return { success: true, user: newAccount };
   },
 
-  async getStudentData(userId: string) {
-    if (isMockMode()) return INITIAL_STUDENT_DATA;
-    const res = await fetch(`${API_BASE}/get_student_data.php?userId=${userId}`);
-    return res.json();
+  // --- ADMINISTRATIVE LIVE UPLINK ---
+  async adminAction(action: string, payload: any) {
+    if (this.getMode() === 'LIVE') {
+      try {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/admin_api.php?action=${action}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        return await response.json();
+      } catch (e) {
+        console.error("Admin Live Action Failed", e);
+        return { success: false, error: "Uplink Failure" };
+      }
+    }
+    return { success: true, mock: true };
   },
 
-  async updateChapterProgress(userId: string, chapterId: string, progress: number, accuracy: number) {
-    if (isMockMode()) return Promise.resolve({ ok: true });
-    return fetch(`${API_BASE}/update_progress.php`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, chapterId, progress, accuracy })
-    });
+  // --- CORE ACADEMIC SYNC ---
+  async getStudentData(studentId: string): Promise<StudentData> {
+    if (this.getMode() === 'LIVE') {
+      try {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/sync_engine.php?action=get_full&id=${studentId}`);
+        const data = await response.json();
+        if (data.payload) {
+          return { ...INITIAL_STUDENT_DATA, ...data.payload, id: studentId };
+        }
+      } catch (e) { console.warn("Live fetch failed"); }
+    }
+    const allData = getDB<Record<string, StudentData>>(DB_KEYS.STUDENT_DATA, {});
+    return allData[studentId] || INITIAL_STUDENT_DATA;
   },
 
-  async saveRoutine(userId: string, routine: any) {
-    if (isMockMode()) return Promise.resolve({ ok: true });
-    return fetch(`${API_BASE}/save_routine.php`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, ...routine })
-    });
-  }
+  async updateStudentData(studentId: string, updatedData: StudentData) {
+    if (this.getMode() === 'LIVE') {
+      try {
+        await fetch(`${API_CONFIG.BASE_URL}/sync_engine.php?action=sync`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ student_id: studentId, data: updatedData })
+        });
+      } catch (e) { console.error("Sync Failed"); }
+    }
+    const allData = getDB<Record<string, StudentData>>(DB_KEYS.STUDENT_DATA, {});
+    allData[studentId] = updatedData;
+    saveDB(DB_KEYS.STUDENT_DATA, allData);
+    return { success: true };
+  },
+
+  getAccounts() { return getDB<UserAccount[]>(DB_KEYS.ACCOUNTS, []); },
+  getEvents() { return getDB<SystemEvent[]>(DB_KEYS.EVENTS, []); },
+  clearLogs() { saveDB(DB_KEYS.EVENTS, []); }
 };
