@@ -1,0 +1,5 @@
+{
+  "name": "JEE-Prep Tracker: Intelligence & Wellbeing Platform",
+  "description": "A comprehensive full-stack IIT-JEE preparation tracker featuring academic progress tracking, spaced repetition, psychometric wellbeing monitoring, and a Smart Study Coach powered by Gemini API.",
+  "requestFramePermissions": []
+}
