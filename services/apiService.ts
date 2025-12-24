@@ -1,8 +1,9 @@
+
 import { StudentData, UserRole, UserAccount, SystemEvent } from '../types';
 import { INITIAL_STUDENT_DATA } from '../mockData';
 
 const API_CONFIG = {
-  VERSION: 'v5.6.0-PRO-SECURITY',
+  VERSION: 'v17.0-GRANULAR-CORE',
   BASE_URL: '/api', 
   MODE_KEY: 'jeepro_datasource_mode',
   DEMO_DISABLED_KEY: 'jeepro_demo_identities_disabled'
@@ -10,33 +11,13 @@ const API_CONFIG = {
 
 const DB_KEYS = {
   ACCOUNTS: 'jeepro_db_accounts',
-  EVENTS: 'jeepro_db_events',
   STUDENT_DATA: 'jeepro_db_student_data'
 };
 
 const DEMO_ACCOUNTS: UserAccount[] = [
-  { 
-    id: '163110', 
-    name: 'Aryan Sharma', 
-    email: 'ishu@gmail.com', 
-    role: UserRole.STUDENT, 
-    createdAt: '2024-01-01T00:00:00Z' 
-  },
-  { 
-    id: 'P-4402', 
-    name: 'Mr. Ramesh Sharma', 
-    email: 'parent@family.com', 
-    role: UserRole.PARENT, 
-    createdAt: '2024-01-01T00:00:00Z',
-    connectedId: '163110'
-  },
-  { 
-    id: 'ADMIN-001', 
-    name: 'System Admin', 
-    email: 'admin@jeepro.in', 
-    role: UserRole.ADMIN, 
-    createdAt: '2024-01-01T00:00:00Z' 
-  }
+  { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2024-01-01' },
+  { id: 'P-4402', name: 'Mr. Ramesh Sharma', email: 'parent@family.com', role: UserRole.PARENT, createdAt: '2024-01-01', connectedId: '163110' },
+  { id: 'ADMIN-001', name: 'System Admin', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '2024-01-01' }
 ];
 
 const getDB = <T>(key: string, defaultValue: T): T => {
@@ -49,107 +30,81 @@ const saveDB = (key: string, data: any) => {
 };
 
 export const api = {
-  getMode: (): 'MOCK' | 'LIVE' => {
-    return (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'MOCK';
-  },
+  getMode: (): 'MOCK' | 'LIVE' => (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'MOCK',
+  setMode: (mode: 'MOCK' | 'LIVE') => { localStorage.setItem(API_CONFIG.MODE_KEY, mode); window.location.reload(); },
+  isDemoDisabled: (): boolean => localStorage.getItem(API_CONFIG.DEMO_DISABLED_KEY) === 'true',
+  setDemoDisabled: (disabled: boolean) => localStorage.setItem(API_CONFIG.DEMO_DISABLED_KEY, disabled.toString()),
 
-  setMode: (mode: 'MOCK' | 'LIVE') => {
-    localStorage.setItem(API_CONFIG.MODE_KEY, mode);
-    window.location.reload();
-  },
-
-  isDemoDisabled: (): boolean => {
-    return localStorage.getItem(API_CONFIG.DEMO_DISABLED_KEY) === 'true';
-  },
-
-  setDemoDisabled: (disabled: boolean) => {
-    localStorage.setItem(API_CONFIG.DEMO_DISABLED_KEY, disabled.toString());
-  },
-
-  // --- AUTHENTICATION ---
   async login(credentials: { email: string; role: UserRole }) {
-    // Check if demo identities are allowed
     if (!this.isDemoDisabled()) {
       const demoUser = DEMO_ACCOUNTS.find(a => a.email === credentials.email && a.role === credentials.role);
       if (demoUser) return { success: true, user: demoUser };
     }
-
     if (this.getMode() === 'LIVE') {
-      try {
-        const response = await fetch(`${API_CONFIG.BASE_URL}/auth.php?action=login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(credentials)
-        });
-        const data = await response.json();
-        if (data.success) return data;
-        throw new Error(data.error || "Access Denied: Check local MySQL records.");
-      } catch (e: any) {
-        alert("LIVE SERVER ERROR: " + (e.message || "Uplink Failure. Check XAMPP/PHP."));
-        return { success: false, error: e.message };
-      }
+      const res = await fetch(`${API_CONFIG.BASE_URL}/auth.php?action=login`, {
+        method: 'POST', body: JSON.stringify(credentials)
+      });
+      return await res.json();
     }
-
     const accounts = getDB<UserAccount[]>(DB_KEYS.ACCOUNTS, []);
     const user = accounts.find(a => a.email === credentials.email && a.role === credentials.role);
-    return user ? { success: true, user } : { success: false, error: 'Identity not found in database.' };
+    return user ? { success: true, user } : { success: false, error: 'Identity not found.' };
   },
 
-  async register(userData: { name: string; email: string; role: UserRole }) {
+  // Fixed: Added register method to resolve Property 'register' does not exist error in LoginModule.
+  async register(data: { name: string; email: string; role: UserRole; password?: string }) {
     if (this.getMode() === 'LIVE') {
       try {
-        const response = await fetch(`${API_CONFIG.BASE_URL}/auth.php?action=register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(userData)
+        const res = await fetch(`${API_CONFIG.BASE_URL}/auth.php?action=register`, {
+          method: 'POST', body: JSON.stringify(data)
         });
-        const data = await response.json();
-        if (data.success) return data;
-        throw new Error(data.error);
-      } catch (e: any) {
-        alert("LIVE SERVER ERROR: " + e.message);
-        return { success: false, error: e.message };
+        return await res.json();
+      } catch (e) {
+        return { success: false, error: 'Registration service unavailable' };
       }
     }
     const accounts = getDB<UserAccount[]>(DB_KEYS.ACCOUNTS, []);
-    const newAccount = { ...userData, id: userData.role === 'STUDENT' ? `S-${Date.now()}` : `P-${Date.now()}`, createdAt: new Date().toISOString() };
-    saveDB(DB_KEYS.ACCOUNTS, [...accounts, newAccount]);
-    return { success: true, user: newAccount };
+    const newUser: UserAccount = {
+      id: `U-${Date.now()}`,
+      name: data.name,
+      email: data.email,
+      role: data.role,
+      password: data.password,
+      createdAt: new Date().toISOString()
+    };
+    saveDB(DB_KEYS.ACCOUNTS, [...accounts, newUser]);
+    return { success: true, user: newUser };
   },
 
   async getAccounts(): Promise<UserAccount[]> {
-    let baseAccounts: UserAccount[] = [];
     if (this.getMode() === 'LIVE') {
       try {
-        const response = await fetch(`${API_CONFIG.BASE_URL}/auth.php?action=get_accounts`);
-        if (response.ok) baseAccounts = await response.json();
-      } catch (e) {
-        console.error("Live fetch failed");
-      }
-    } else {
-      baseAccounts = getDB<UserAccount[]>(DB_KEYS.ACCOUNTS, []);
+        const res = await fetch(`${API_CONFIG.BASE_URL}/auth.php?action=get_accounts`);
+        const live = await res.json();
+        return this.isDemoDisabled() ? live : [...DEMO_ACCOUNTS, ...live];
+      } catch (e) { return DEMO_ACCOUNTS; }
     }
-
-    // Mix in demos only if not disabled
-    if (!this.isDemoDisabled()) {
-      return [...DEMO_ACCOUNTS, ...baseAccounts];
-    }
-    return baseAccounts;
+    return getDB<UserAccount[]>(DB_KEYS.ACCOUNTS, DEMO_ACCOUNTS);
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
     if (this.getMode() === 'LIVE') {
-      try {
-        const response = await fetch(`${API_CONFIG.BASE_URL}/sync_engine.php?action=get_full&id=${studentId}`);
-        const data = await response.json();
-        if (data.success && data.payload) {
-          return { ...INITIAL_STUDENT_DATA, ...data.payload, id: studentId };
-        }
-        throw new Error(data.error || "Node payload missing.");
-      } catch (e: any) {
-        alert("LIVE DATA ERROR: " + e.message);
-        throw e;
-      }
+      // For Production, we fetch and reconstruct the full object from granular tables
+      const [syllabus, backlogs, wellness, results] = await Promise.all([
+        fetch(`${API_CONFIG.BASE_URL}/syllabus.php?action=get&student_id=${studentId}`).then(r => r.json()),
+        fetch(`${API_CONFIG.BASE_URL}/academic.php?module=backlogs&action=get&student_id=${studentId}`).then(r => r.json()),
+        fetch(`${API_CONFIG.BASE_URL}/wellness.php?student_id=${studentId}`).then(r => r.json()),
+        fetch(`${API_CONFIG.BASE_URL}/results.php?student_id=${studentId}`).then(r => r.json())
+      ]);
+      
+      return {
+        ...INITIAL_STUDENT_DATA,
+        id: studentId,
+        chapters: syllabus.chapters?.length ? syllabus.chapters : INITIAL_STUDENT_DATA.chapters,
+        backlogs: Array.isArray(backlogs) ? backlogs : INITIAL_STUDENT_DATA.backlogs,
+        psychometricHistory: Array.isArray(wellness) ? wellness : INITIAL_STUDENT_DATA.psychometricHistory,
+        testHistory: Array.isArray(results) ? results : INITIAL_STUDENT_DATA.testHistory
+      };
     }
     const allData = getDB<Record<string, StudentData>>(DB_KEYS.STUDENT_DATA, {});
     return allData[studentId] || INITIAL_STUDENT_DATA;
@@ -157,26 +112,20 @@ export const api = {
 
   async updateStudentData(studentId: string, updatedData: StudentData) {
     if (this.getMode() === 'LIVE') {
-      try {
-        const response = await fetch(`${API_CONFIG.BASE_URL}/sync_engine.php?action=sync`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ student_id: studentId, data: updatedData })
-        });
-        const data = await response.json();
-        if (!data.success) throw new Error(data.error);
-        return { success: true };
-      } catch (e: any) {
-        alert("CRITICAL SYNC FAILURE: Changes were not saved to MySQL.");
-        return { success: false };
-      }
+      // Parallel granular sync
+      await Promise.all([
+        fetch(`${API_CONFIG.BASE_URL}/syllabus.php?action=batch_sync`, {
+          method: 'POST', body: JSON.stringify({ student_id: studentId, chapters: updatedData.chapters })
+        }),
+        fetch(`${API_CONFIG.BASE_URL}/academic.php?module=backlogs&action=sync`, {
+            method: 'POST', body: JSON.stringify({ student_id: studentId, backlogs: updatedData.backlogs })
+        })
+      ]);
+      return { success: true };
     }
     const allData = getDB<Record<string, StudentData>>(DB_KEYS.STUDENT_DATA, {});
     allData[studentId] = updatedData;
     saveDB(DB_KEYS.STUDENT_DATA, allData);
     return { success: true };
-  },
-
-  getEvents() { return getDB<SystemEvent[]>(DB_KEYS.EVENTS, []); },
-  clearLogs() { saveDB(DB_KEYS.EVENTS, []); }
+  }
 };

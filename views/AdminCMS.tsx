@@ -1,26 +1,32 @@
+
 import React, { useState, useEffect } from 'react';
 import { StudentData, Question, MockTest, Chapter, Blog, Flashcard, MemoryHack, Subject, ChapterStatus, UserAccount, SystemEvent, UserRole } from '../types';
 import { api } from '../services/apiService';
 import { 
-  ShieldCheck, Settings, Database, Activity,
+  ShieldCheck, Database, Activity,
   CheckCircle, AlertCircle, Users, BookOpen,
-  FileText, Layers, RefreshCw, Brain,
-  UserPlus, FileCode, CheckCircle2,
-  CloudUpload, Terminal, Code, Copy, Download,
-  Trash2, ArrowLeft,
-  Cpu, Zap, Power,
-  Shield, Server as ServerIcon, Globe as GlobeIcon, FileJson, Laptop, Info, FileCode as FileCodeIcon,
-  HardDrive as StorageIcon, Share2, Key, Plus, Trash, Search, Edit3,
+  FileCode,
+  CloudUpload, Code,
+  Cpu, Zap,
+  Globe as GlobeIcon, Laptop,
   Database as DbIcon,
-  Loader2, ChevronRight,
+  Loader2,
   Target,
-  Video,
-  Type,
-  Link,
+  Plus, Trash, Edit3,
   Filter,
-  Monitor,
   Lock,
-  Unlock
+  Unlock,
+  ChevronRight,
+  Monitor,
+  Copy,
+  FileJson,
+  FileText,
+  Package,
+  Brain,
+  Download,
+  // Added RotateCw and Mail to fix missing icon errors
+  RotateCw,
+  Mail
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -31,8 +37,7 @@ interface AdminCMSProps {
 
 const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
   const [contentSubTab, setContentSubTab] = useState<'flashcards' | 'hacks'>('flashcards');
-  const [systemSubTab, setSystemSubTab] = useState<'ai' | 'deploy' | 'db-util'>('ai');
-  const [diagTab, setDiagTab] = useState<'integrity' | 'db-checker' | 'functional-verify'>('integrity');
+  const [systemSubTab, setSystemSubTab] = useState<'ai' | 'db-util' | 'deploy'>('ai');
   const [isCreating, setIsCreating] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [creationType, setCreationType] = useState<'questions' | 'flashcards' | 'hacks' | 'chapter' | 'tests' | 'blog'>('questions');
@@ -55,8 +60,6 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
       case 'admin-questions': return <QuestionBankManager data={data} updateGlobalData={updateGlobalData} onEdit={handleEdit} setIsCreating={setIsCreating} setCreationType={setCreationType} />;
       case 'admin-content': return <ContentManager data={data} updateGlobalData={updateGlobalData} contentSubTab={contentSubTab} setContentSubTab={setContentSubTab} onEdit={handleEdit} setIsCreating={setIsCreating} setCreationType={setCreationType} />;
       case 'admin-blog': return <BlogManager data={data} updateGlobalData={updateGlobalData} onEdit={handleEdit} setIsCreating={setIsCreating} setCreationType={setCreationType} />;
-      case 'admin-inbox': return <InboxView data={data} />;
-      case 'admin-diagnostics': return <DiagnosticsModule diagTab={diagTab} setDiagTab={setDiagTab} />;
       case 'admin-tests': return <MockTestManager data={data} updateGlobalData={updateGlobalData} onEdit={handleEdit} setIsCreating={setIsCreating} setCreationType={setCreationType} />;
       case 'admin-system': return <SystemModule systemSubTab={systemSubTab} setSystemSubTab={setSystemSubTab} />;
       default: return <Overview data={data} />;
@@ -76,7 +79,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
            {api.getMode() === 'LIVE' && (
              <div className="bg-emerald-50 text-emerald-600 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 border border-emerald-100 shadow-sm animate-pulse">
                 <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                Production MySQL Active
+                Production Backend Active
              </div>
            )}
         </div>
@@ -136,7 +139,7 @@ const Overview = ({ data }: { data: StudentData }) => {
             <h3 className="text-3xl font-black italic tracking-tight">System Environment: {api.getMode()}</h3>
             <p className="text-slate-400 text-sm mt-1">
               {api.getMode() === 'LIVE' 
-                ? "Connected to Local XAMPP MySQL cluster." 
+                ? "Connected to Local XAMPP MySQL Micro-services." 
                 : "Sandbox active. Data is stored in browser LocalStorage."}
               {api.isDemoDisabled() && " • Demo identities are currently DISABLED."}
             </p>
@@ -322,7 +325,7 @@ const QuestionBankManager = ({ data, updateGlobalData, onEdit, setIsCreating, se
                   <div key={q.id} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-indigo-400 hover:bg-white transition-all group">
                     <div className="flex-1 cursor-pointer" onClick={() => onEdit('questions', q)}>
                       <div className="flex items-center gap-3 mb-2">
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${q.subject === 'Physics' ? 'bg-blue-100 text-blue-600' : q.subject === 'Chemistry' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>{q.subject}</span>
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${q.subject === 'Physics' ? 'bg-blue-100 text-blue-600' : q.subject === 'Chemistry' ? 'bg-emerald-100 text-emerald-600' : q.subject === 'rose-100 text-rose-600'}`}>{q.subject}</span>
                         <span className="text-slate-300">/</span>
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{chapter?.name || 'Unlinked Topic'}</span>
                         <span className="text-slate-300">/</span>
@@ -458,92 +461,9 @@ const BlogManager = ({ data, updateGlobalData, onEdit, setIsCreating, setCreatio
   );
 };
 
-const InboxView = ({ data }: any) => (
-  <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm p-10 space-y-10">
-    <h3 className="text-2xl font-black italic tracking-tight">Platform Transmissions</h3>
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {data.messages.map((m: any) => (
-        <div key={m.id} className="p-10 bg-slate-50 rounded-[3rem] border-l-[12px] border-indigo-600 shadow-inner relative group hover:bg-white hover:border-indigo-400 transition-all">
-           <div className="flex justify-between mb-4">
-              <span className="font-black text-xl text-slate-900 tracking-tight">{m.name}</span>
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{m.date}</span>
-           </div>
-           <div className="text-[10px] font-black text-indigo-600 mb-4 uppercase tracking-[0.2em]">{m.subject}</div>
-           <p className="text-sm text-slate-600 font-medium leading-relaxed italic border-t border-slate-100 pt-4">"{m.message}"</p>
-           <button className="absolute top-10 right-10 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity"><ChevronRight className="w-6 h-6" /></button>
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-const DiagnosticsModule = ({ diagTab, setDiagTab }: any) => {
-  return (
-    <div className="space-y-10 animate-in fade-in duration-500">
-      <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit border border-slate-200 shadow-inner">
-        {[
-          { id: 'integrity', label: 'Data Integrity', icon: ShieldCheck },
-          { id: 'db-checker', label: 'DB Cluster Health', icon: Activity },
-          { id: 'functional-verify', label: 'Node Verification', icon: Terminal }
-        ].map((t) => (
-          <button key={t.id} onClick={() => setDiagTab(t.id as any)} className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${diagTab === t.id ? 'bg-white text-indigo-600 shadow-xl' : 'text-slate-500 hover:text-slate-900'}`}><t.icon className="w-3.5 h-3.5" />{t.label}</button>
-        ))}
-      </div>
-
-      <div className="bg-white p-12 rounded-[4rem] border border-slate-200 shadow-sm space-y-10">
-         <div className="flex items-center gap-5 border-b border-slate-100 pb-8">
-            <div className="w-16 h-16 bg-slate-900 text-white rounded-[1.5rem] flex items-center justify-center shadow-2xl">
-               <Cpu className="w-8 h-8" />
-            </div>
-            <div>
-               <h3 className="text-2xl font-black italic tracking-tight uppercase">Platform Diagnostics Core</h3>
-               <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] mt-1">Status: Sector {diagTab.toUpperCase()} ACTIVE</p>
-            </div>
-         </div>
-         
-         <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-               <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 space-y-3">
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Shards Processed</div>
-                  <div className="text-4xl font-black text-slate-900">4,120</div>
-                  <div className="text-xs text-emerald-500 font-bold flex items-center gap-1"><CheckCircle className="w-3 h-3" /> VERIFIED</div>
-               </div>
-               <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 space-y-3">
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Latency Node</div>
-                  <div className="text-4xl font-black text-slate-900">24ms</div>
-                  <div className="text-xs text-indigo-500 font-bold flex items-center gap-1"><Zap className="w-3 h-3" /> OPTIMAL</div>
-               </div>
-               <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 space-y-3">
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sync Drifts</div>
-                  <div className="text-4xl font-black text-slate-900">0.00%</div>
-                  <div className="text-xs text-slate-400 font-bold flex items-center gap-1"><Target className="w-3 h-3" /> STABLE</div>
-               </div>
-            </div>
-
-            <div className="p-10 bg-slate-900 rounded-[3rem] text-indigo-400 font-mono text-xs space-y-3 shadow-2xl relative overflow-hidden border border-slate-800">
-               <div className="absolute top-0 right-0 p-4 opacity-10"><Code className="w-24 h-24" /></div>
-               <div className="flex items-center gap-2 mb-4">
-                  <div className="w-3 h-3 bg-rose-500 rounded-full"></div>
-                  <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
-                  <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
-                  <span className="ml-4 text-[10px] font-black uppercase text-slate-500 tracking-widest">Platform Kernel v17.0.1</span>
-               </div>
-               <div className="text-slate-500">// [INIT] Subsystem Sector Diagnostics...</div>
-               <div className="text-indigo-300">>> Authenticating Root Certificate... [DONE]</div>
-               <div className="text-indigo-300">>> Parsing SQL Schema Integrity... [DONE]</div>
-               <div className="text-indigo-300">>> Synchronizing Gemini AI Reasoning Nodes... [DONE]</div>
-               <div className="text-indigo-300">>> Cross-verifying 94 Syllabus Units... [DONE]</div>
-               <div className="text-emerald-400 font-bold mt-4">>> [SUCCESS] Platform sector {diagTab} is fully operational. No anomalies detected.</div>
-            </div>
-         </div>
-      </div>
-    </div>
-  );
-};
-
 const SystemModule = ({ systemSubTab, setSystemSubTab }: any) => {
-  const [deployActiveSub, setDeployActiveSub] = useState<'sql' | 'php' | 'guide'>('guide');
   const [demoDisabled, setDemoDisabled] = useState(api.isDemoDisabled());
+  const [deployActiveSub, setDeployActiveSub] = useState<'sql' | 'handlers' | 'guide'>('guide');
   const dataSource = api.getMode();
 
   const handleDemoToggle = () => {
@@ -552,146 +472,123 @@ const SystemModule = ({ systemSubTab, setSystemSubTab }: any) => {
     setDemoDisabled(newState);
   };
 
+  const fileTree = [
+    { name: 'setup.sql', icon: Database, desc: 'Master Normalized Schema' },
+    { name: 'db_config.php', icon: Code, desc: 'Central PDO Configuration' },
+    { name: 'auth.php', icon: Lock, desc: 'Multi-Role Identity Handlers' },
+    { name: 'syllabus_manager.php', icon: BookOpen, desc: '94-Unit Tracking Service' },
+    { name: 'backlog_manager.php', icon: Target, desc: 'Operational Debt Logic' },
+    { name: 'flashcard_manager.php', icon: RotateCw, desc: 'Active Recall Logic' },
+    { name: 'hack_vault.php', icon: Zap, desc: 'Mnemonic Repository' },
+    { name: 'question_bank.php', icon: FileCode, desc: 'Intelligence Bank Service' },
+    { name: 'test_engine.php', icon: FileText, desc: 'JEE Assessment Simulator' },
+    { name: 'result_analytics.php', icon: Activity, desc: 'Mastery Trend Service' },
+    { name: 'psychometric_engine.php', icon: Brain, desc: 'Mental Profile Service' },
+    { name: 'cms_blog.php', icon: Monitor, desc: 'Intelligence Feed CMS' },
+    { name: 'message_hub.php', icon: Mail, desc: 'Transmission Gateway' }
+  ];
+
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit border border-slate-200 shadow-inner">
         {[
-          { id: 'ai', label: 'AI Strategy', icon: Brain },
-          { id: 'deploy', label: 'Deployment Pack', icon: CloudUpload },
-          { id: 'db-util', label: 'Data Utility Bridge', icon: Database }
+          { id: 'ai', label: 'AI Strategy', icon: Zap },
+          { id: 'db-util', label: 'Data Utility Bridge', icon: Database },
+          { id: 'deploy', label: 'Deployment Suite', icon: Package }
         ].map((t) => (
           <button key={t.id} onClick={() => setSystemSubTab(t.id as any)} className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${systemSubTab === t.id ? 'bg-white text-indigo-600 shadow-xl' : 'text-slate-500 hover:text-slate-900'}`}><t.icon className="w-3.5 h-3.5" />{t.label}</button>
         ))}
       </div>
 
-      {systemSubTab === 'ai' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-           <div className="bg-white p-12 rounded-[4rem] border border-slate-200 shadow-sm space-y-10">
-              <div className="flex items-center gap-4">
-                 <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-[1.5rem] flex items-center justify-center">
-                    <Brain className="w-7 h-7" />
-                 </div>
-                 <h3 className="text-2xl font-black italic tracking-tight uppercase">AI Strategy Node Configuration</h3>
-              </div>
-              <div className="space-y-6">
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-4">Primary Reasoning Node</label>
-                    <select className="w-full p-5 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-800 outline-none">
-                       <option>Gemini 3 Flash (Performance)</option>
-                       <option>Gemini 3 Pro (Precision)</option>
-                       <option>IITGEEPREP Custom Tuned v2</option>
-                    </select>
-                 </div>
-                 <div className="p-8 bg-indigo-50 rounded-[2.5rem] border border-indigo-100">
-                    <h4 className="text-xs font-black text-indigo-900 uppercase tracking-widest mb-3 flex items-center gap-2">
-                       <ShieldCheck className="w-4 h-4" /> Reasoning Ethics Protocol
-                    </h4>
-                    <p className="text-xs text-indigo-700 leading-relaxed font-medium">The AI is currently configured to prioritize <b>Conceptual Guidance</b> over <b>Direct Answers</b>. This ensures students build first-principles understanding.</p>
-                 </div>
-                 <button className="w-full py-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-2xl hover:bg-indigo-700 transition-all">Synchronize Strategy</button>
-              </div>
-           </div>
-
-           <div className="bg-slate-900 p-12 rounded-[4rem] text-white shadow-2xl flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-8 opacity-10"><Cpu className="w-48 h-48" /></div>
-              <div className="space-y-6 relative z-10">
-                 <h3 className="text-2xl font-black italic tracking-tight uppercase text-indigo-400">Tactical Insights Core</h3>
-                 <p className="text-slate-400 text-lg leading-relaxed font-medium italic border-l-4 border-indigo-600 pl-8">"Analyzing 14,000+ student trajectories to predict the 2025 JEE pattern weightage. Real-time adjustment active."</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4 mt-12 relative z-10">
-                 <div className="p-6 bg-white/5 border border-white/10 rounded-[2rem]">
-                    <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Knowledge Sync</div>
-                    <div className="text-3xl font-black">94.2%</div>
-                 </div>
-                 <div className="p-6 bg-white/5 border border-white/10 rounded-[2rem]">
-                    <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Model Uptime</div>
-                    <div className="text-3xl font-black">99.9h</div>
-                 </div>
-              </div>
-           </div>
-        </div>
-      )}
-
       {systemSubTab === 'deploy' && (
-        <div className="space-y-8 animate-in slide-in-from-bottom-4">
-          <div className="flex bg-slate-100 p-1 rounded-xl w-fit border border-slate-200">
-            <button onClick={() => setDeployActiveSub('guide')} className={`px-8 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${deployActiveSub === 'guide' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Deployment Guide</button>
-            <button onClick={() => setDeployActiveSub('sql')} className={`px-8 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${deployActiveSub === 'sql' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>SQL Schema</button>
-            <button onClick={() => setDeployActiveSub('php')} className={`px-8 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${deployActiveSub === 'php' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>PHP Backend</button>
-          </div>
-
-          <div className="bg-white p-12 rounded-[4rem] border border-slate-200 shadow-sm">
-             {deployActiveSub === 'guide' ? (
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                  <div className="space-y-8">
-                     <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center">
-                           <Monitor className="w-7 h-7" />
+        <div className="space-y-10 animate-in slide-in-from-bottom-4">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                <div className="lg:col-span-4 space-y-6">
+                    <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-8">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
+                                <Package className="w-6 h-6" />
+                            </div>
+                            <h4 className="font-black text-xl italic">Uplink Files</h4>
                         </div>
-                        <h3 className="text-2xl font-black italic tracking-tight">XAMPP Local Deployment</h3>
-                     </div>
-                     <div className="space-y-6">
-                        {[
-                          { step: 1, title: 'Install XAMPP', text: 'Download and install XAMPP from apachefriends.org. Start Apache and MySQL modules.' },
-                          { step: 2, title: 'Database Setup', text: 'Go to localhost/phpmyadmin, create a database named `jeepro_db`. Import the setup.sql file.' },
-                          { step: 3, title: 'File Architecture', text: 'Create an `api` folder in `htdocs`. Place all PHP files inside it.' },
-                          { step: 4, title: 'Enable Live Node', text: 'Go to Admin -> System -> Data Utility and switch to "Production Server Mode".' }
-                        ].map(s => (
-                          <div key={s.step} className="flex gap-5">
-                             <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black text-xs shrink-0">{s.step}</div>
-                             <div>
-                                <h4 className="font-bold text-slate-900">{s.title}</h4>
-                                <p className="text-sm text-slate-500 font-medium leading-relaxed">{s.text}</p>
+                        <div className="space-y-2 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
+                           {fileTree.map(f => (
+                             <div key={f.name} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-400 transition-all cursor-help">
+                                <f.icon className="w-5 h-5 text-slate-400 group-hover:text-indigo-600" />
+                                <div>
+                                    <div className="text-[10px] font-black text-slate-900">{f.name}</div>
+                                    <div className="text-[8px] font-bold text-slate-400 uppercase">{f.desc}</div>
+                                </div>
                              </div>
-                          </div>
-                        ))}
-                     </div>
-                  </div>
-                  <div className="bg-indigo-900 p-10 rounded-[3rem] text-white space-y-6 shadow-2xl relative overflow-hidden">
-                     <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12"><Zap className="w-48 h-48" /></div>
-                     <h3 className="text-2xl font-black italic tracking-tight">Uplink Requirements</h3>
-                     <p className="text-indigo-200 text-sm font-medium">To maintain strict data integrity, the app disables all Mock/Stub fallbacks when in LIVE mode. Your local server must be running for the app to function.</p>
-                     <div className="p-6 bg-white/10 rounded-[2rem] border border-white/10">
-                        <div className="text-[10px] font-black uppercase text-indigo-300 mb-2">Default Config</div>
-                        <code className="text-xs font-mono text-emerald-400">Host: localhost<br/>Port: 3306<br/>User: root<br/>Pass: ""</code>
-                     </div>
-                  </div>
-               </div>
-             ) : (
-               <div className="bg-slate-900 rounded-[3rem] p-10 overflow-hidden relative group shadow-2xl border border-slate-800">
-                  <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center"><Code className="w-5 h-5 text-white" /></div>
-                        <div className="text-xs font-black uppercase text-indigo-400 tracking-widest">{deployActiveSub === 'sql' ? 'setup.sql' : 'api_handlers.php'}</div>
-                      </div>
-                      <button className="flex items-center gap-2 bg-white/10 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/20 transition-all border border-white/10 shadow-xl"><Copy className="w-4 h-4" /> Copy Source</button>
-                  </div>
-                  <pre className="text-[11px] font-mono text-emerald-400 overflow-x-auto whitespace-pre leading-relaxed custom-scrollbar max-h-96">
-                    {deployActiveSub === 'sql' ? `CREATE DATABASE IF NOT EXISTS jeepro_db;
+                           ))}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="lg:col-span-8 space-y-8">
+                    <div className="flex bg-slate-100 p-1 rounded-xl w-fit border border-slate-200">
+                        <button onClick={() => setDeployActiveSub('guide')} className={`px-8 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${deployActiveSub === 'guide' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>System Guide</button>
+                        <button onClick={() => setDeployActiveSub('sql')} className={`px-8 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${deployActiveSub === 'sql' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Master SQL</button>
+                        <button onClick={() => setDeployActiveSub('handlers')} className={`px-8 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${deployActiveSub === 'handlers' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Micro-Services</button>
+                    </div>
+
+                    <div className="bg-slate-900 rounded-[3.5rem] p-12 overflow-hidden relative shadow-2xl">
+                        <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12"><FileCode className="w-64 h-64 text-emerald-400" /></div>
+                        <div className="flex justify-between items-center mb-8 pb-6 border-b border-white/10">
+                            <div className="text-indigo-400 font-black uppercase text-xs tracking-widest flex items-center gap-3">
+                                <Activity className="w-4 h-4 animate-pulse" /> Production Backend Suite v1.0
+                            </div>
+                            <button className="flex items-center gap-2 bg-white/10 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/10 hover:bg-white/20">
+                                <Download className="w-4 h-4" /> Export All
+                            </button>
+                        </div>
+                        <pre className="text-[11px] font-mono text-emerald-400 leading-relaxed max-h-[500px] overflow-y-auto custom-scrollbar">
+                           {deployActiveSub === 'guide' ? `
+DEPLOYMENT PROTOCOL:
+====================
+1. START XAMPP: Ensure Apache and MySQL are running.
+2. DATABASE: Create 'jeepro_db' and import the 'Master SQL' provided.
+3. FOLDER: Create htdocs/api/
+4. FILES: Move all 12 micro-service PHP files from the 'deployment' folder into your api/ folder.
+5. UPLINK: Navigate to System -> Data Utility and enable "Production Server Mode".
+6. VERIFY: Try logging in with a new user to confirm MySQL connection.
+                           ` : deployActiveSub === 'sql' ? `
+-- MASTER DATABASE INITIALIZATION
+-- Reference: deployment/setup.sql
+CREATE DATABASE jeepro_db;
 USE jeepro_db;
 
-CREATE TABLE IF NOT EXISTS users (
-    id VARCHAR(50) PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) NOT NULL,
-    role ENUM('STUDENT', 'PARENT', 'ADMIN') NOT NULL,
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY (email, role)
-);
+CREATE TABLE users (...);
+CREATE TABLE syllabus_units (...);
+CREATE TABLE backlogs (...);
+CREATE TABLE questions (...);
+CREATE TABLE mock_tests (...);
+CREATE TABLE test_results (...);
+CREATE TABLE flashcards (...);
+CREATE TABLE psychometric_logs (...);
+... and more.
+                           ` : `
+/* GRANULAR HANDLER ARCHITECTURE */
+Total Services: 12 Specialized Endpoints
+- auth.php
+- syllabus_manager.php
+- backlog_manager.php
+- flashcard_manager.php
+- hack_vault.php
+- question_bank.php
+- test_engine.php
+- result_analytics.php
+- psychometric_engine.php
+- cms_blog.php
+- message_hub.php
+- db_config.php
 
-CREATE TABLE IF NOT EXISTS student_sync (
-    student_id VARCHAR(50) PRIMARY KEY,
-    payload LONGTEXT NOT NULL,
-    last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
-);` : `<?php
-require_once 'db_config.php';
-// Implementation logic for handlers...
-?>`}
-                  </pre>
-               </div>
-             )}
-          </div>
+All files are located in the /deployment project root.
+                           `}
+                        </pre>
+                    </div>
+                </div>
+            </div>
         </div>
       )}
 
@@ -705,7 +602,7 @@ require_once 'db_config.php';
                         </div>
                         <div>
                         <h3 className="text-3xl font-black italic tracking-tight uppercase">Database Utility Bridge</h3>
-                        <p className="text-slate-500 text-lg font-medium">Switch between Local Sandbox and Production MySQL Cluster.</p>
+                        <p className="text-slate-500 text-lg font-medium">Switch between Local Sandbox and Production Micro-services.</p>
                         </div>
                     </div>
                     <div className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.3em] ${dataSource === 'LIVE' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
@@ -722,7 +619,7 @@ require_once 'db_config.php';
                         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${dataSource === 'MOCK' ? 'bg-white/20' : 'bg-white'}`}><Laptop className="w-7 h-7" /></div>
                         <div>
                         <div className="text-2xl font-black italic tracking-tight">Local Sandbox Mode</div>
-                        <div className={`text-[10px] font-black uppercase tracking-[0.2em] mt-2 ${dataSource === 'MOCK' ? 'text-indigo-200' : 'text-slate-400'}`}>Synchronize to Browser LocalStorage</div>
+                        <div className={`text-[10px] font-black uppercase tracking-[0.2em] mt-2 ${dataSource === 'MOCK' ? 'text-indigo-200' : 'text-slate-400'}`}>Local Browser Storage</div>
                         </div>
                     </button>
                     
@@ -734,49 +631,58 @@ require_once 'db_config.php';
                         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${dataSource === 'LIVE' ? 'bg-white/20' : 'bg-white'}`}><GlobeIcon className="w-7 h-7" /></div>
                         <div>
                         <div className="text-2xl font-black italic tracking-tight">Production Server Mode</div>
-                        <div className={`text-[10px] font-black uppercase tracking-[0.2em] mt-2 ${dataSource === 'LIVE' ? 'text-emerald-200' : 'text-slate-400'}`}>Establish Secure Uplink to MySQL/PHP</div>
+                        <div className={`text-[10px] font-black uppercase tracking-[0.2em] mt-2 ${dataSource === 'LIVE' ? 'text-emerald-200' : 'text-slate-400'}`}>Secure Uplink to XAMPP/MySQL</div>
                         </div>
                     </button>
                 </div>
             </div>
+        </div>
+      )}
 
-            {/* NEW: Identity Governance Toggle */}
-            <div className="p-12 bg-white rounded-[4rem] border border-slate-200 shadow-sm space-y-10">
-                <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 bg-slate-50 text-slate-900 rounded-3xl flex items-center justify-center border border-slate-100">
-                        {demoDisabled ? <Lock className="w-8 h-8" /> : <Unlock className="w-8 h-8" />}
-                    </div>
-                    <div>
-                        <h3 className="text-2xl font-black italic tracking-tight uppercase">Master Identity Protocol</h3>
-                        <p className="text-slate-500 text-sm font-medium">Control the availability of hardcoded Demo Accounts.</p>
-                    </div>
-                </div>
+      {systemSubTab === 'ai' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+           <div className="bg-white p-12 rounded-[4rem] border border-slate-200 shadow-sm space-y-10">
+              <div className="flex items-center gap-4">
+                 <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-[1.5rem] flex items-center justify-center">
+                    <Zap className="w-7 h-7" />
+                 </div>
+                 <h3 className="text-2xl font-black italic tracking-tight uppercase">AI Strategy Node</h3>
+              </div>
+              <div className="space-y-6">
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-4">Primary Reasoning Node</label>
+                    <select className="w-full p-5 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-800 outline-none">
+                       <option>Gemini 3 Flash (Performance)</option>
+                       <option>Gemini 3 Pro (Precision)</option>
+                    </select>
+                 </div>
+                 <div className="p-8 bg-indigo-50 rounded-[2.5rem] border border-indigo-100">
+                    <h4 className="text-xs font-black text-indigo-900 uppercase tracking-widest mb-3 flex items-center gap-2">
+                       <ShieldCheck className="w-4 h-4" /> Reasoning Protocol
+                    </h4>
+                    <p className="text-xs text-indigo-700 leading-relaxed font-medium">AI prioritizes <b>Conceptual Guidance</b>. Strategy ensures students build first-principles understanding.</p>
+                 </div>
+                 <button className="w-full py-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-2xl hover:bg-indigo-700 transition-all">Synchronize Strategy</button>
+              </div>
+           </div>
 
-                <div className="bg-slate-50 p-8 rounded-[3rem] border border-slate-100 flex items-center justify-between group">
-                    <div className="space-y-2">
-                        <h4 className="font-black text-slate-900">Identity Lockdown (Production Mode)</h4>
-                        <p className="text-xs text-slate-500 leading-relaxed max-w-lg font-medium">
-                            Disabling this will permanently deactivate the Aryan, Ramesh, and Admin demo credentials. 
-                            Use this only when your local MySQL table is fully populated with actual user data.
-                        </p>
-                    </div>
-                    <button 
-                        onClick={handleDemoToggle}
-                        className={`relative w-20 h-10 rounded-full transition-all flex items-center px-1.5 ${demoDisabled ? 'bg-rose-500' : 'bg-emerald-500'}`}
-                    >
-                        <div className={`w-7 h-7 bg-white rounded-full shadow-lg transition-transform ${demoDisabled ? 'translate-x-10' : 'translate-x-0'}`}></div>
-                    </button>
-                </div>
-
-                {demoDisabled && (
-                    <div className="p-6 bg-rose-50 rounded-2xl border border-rose-100 flex gap-4 items-start animate-in slide-in-from-top-2">
-                        <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-1" />
-                        <p className="text-xs text-rose-700 font-bold leading-relaxed">
-                            WARNING: Sandbox Quick Access is now OFFLINE. All users must exist in the <code className="bg-rose-100 px-1 rounded">users</code> table to authenticate. Ensure your XAMPP server is active.
-                        </p>
-                    </div>
-                )}
-            </div>
+           <div className="bg-slate-900 p-12 rounded-[4rem] text-white shadow-2xl flex flex-col justify-between relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-8 opacity-10"><Cpu className="w-48 h-48" /></div>
+              <div className="space-y-6 relative z-10">
+                 <h3 className="text-2xl font-black italic tracking-tight uppercase text-indigo-400">Tactical Insights</h3>
+                 <p className="text-slate-400 text-lg leading-relaxed font-medium italic border-l-4 border-indigo-600 pl-8">"Analyzing 14,000+ student trajectories to predict patterns. Real-time adjustment active."</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mt-12 relative z-10">
+                 <div className="p-6 bg-white/5 border border-white/10 rounded-[2rem]">
+                    <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Knowledge Sync</div>
+                    <div className="text-3xl font-black">94.2%</div>
+                 </div>
+                 <div className="p-6 bg-white/5 border border-white/10 rounded-[2rem]">
+                    <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Model Uptime</div>
+                    <div className="text-3xl font-black">99.9h</div>
+                 </div>
+              </div>
+           </div>
         </div>
       )}
     </div>

@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { UserRole } from '../types';
 import { 
@@ -23,16 +22,12 @@ import {
   PenTool,
   Activity,
   Settings,
-  CloudUpload,
-  UserCheck,
-  BarChart,
-  UserPlus,
-  FileCode,
   LogOut,
   Info,
   Sparkles,
   Mail,
-  Target
+  Target,
+  FileCode
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -80,17 +75,16 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, setRol
     { id: 'admin-content', label: 'Learning Assets', icon: Layers },
     { id: 'admin-blog', label: 'Blog', icon: PenTool },
     { id: 'admin-analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'admin-diagnostics', label: 'Diagnostics', icon: Activity },
     { id: 'admin-system', label: 'System', icon: Settings },
     { id: 'admin-profile', label: 'Profile', icon: User },
   ];
 
   const parentLinks = [
     { id: 'parent-status', label: 'Current Status', icon: Activity },
-    { id: 'parent-analytics', label: 'Student Analytics', icon: BarChart },
+    { id: 'parent-analytics', label: 'Student Analytics', icon: BarChart3 },
     { id: 'parent-syllabus', label: 'Syllabus Progress', icon: BookOpen },
     { id: 'parent-psychometric', label: 'Mental Wellbeing', icon: Brain },
-    { id: 'parent-connection', label: 'Family Connection', icon: UserPlus },
+    { id: 'parent-connection', label: 'Family Connection', icon: Target },
     { id: 'parent-profile', label: 'My Profile', icon: User },
   ];
 
