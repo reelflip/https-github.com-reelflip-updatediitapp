@@ -1,5 +1,5 @@
 
-import { StudentData, UserRole } from './types';
+import { StudentData, UserRole, Chapter } from './types';
 
 export const INITIAL_STUDENT_DATA: StudentData = {
   id: '163110',
@@ -28,47 +28,13 @@ export const INITIAL_STUDENT_DATA: StudentData = {
     { 
       id: 'b1', 
       title: "Mastering the Forgetting Curve for JEE 2025", 
-      content: `
-        <p>Start early and focus on concepts. The biggest challenge for JEE aspirants is not learning, but <strong>retaining</strong>. Every time you learn a formula, your brain begins to lose it within 24 hours.</p>
-        <h2>The Science of Recall</h2>
-        <p>Active recall and spaced repetition are your best friends. JEE-PRO's automated flashcard system uses these principles to ensure you review exactly when your memory trace is weakest.</p>
-        <img src="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&q=80&w=1000" alt="Study focus" />
-        <p>Allocate 15 minutes of your 'Prime Hour' in the morning purely for formula flushes. Don't solve problems during this time—just recall definitions and derivations.</p>
-      `, 
+      content: "<h1>Spaced Repetition</h1><p>Master the curve.</p>", 
       author: "Admin", 
       date: "2024-12-20", 
       status: "PUBLISHED" 
-    },
-    { 
-      id: 'b2', 
-      title: "Organic Chemistry: From Fear to Mastery", 
-      content: `
-        <p>Organic chemistry is often viewed as a subject of rote memorization. This is the first mistake. Organic chemistry is about <strong>mechanisms</strong>.</p>
-        <h2>Visualization over Memorization</h2>
-        <p>Instead of memorizing reagents, try to visualize the movement of electrons. Use our Memory Hacks vault to find mnemonics for the reactivity series, but spend 80% of your time on reaction pathways.</p>
-        <p>The "Mole-Tunnel" method we provide in the hacks module is specifically designed to help you navigate stoichiometric conversions without getting lost in the math.</p>
-      `, 
-      author: "Dr. Chemistry", 
-      date: "2024-12-22", 
-      status: "PUBLISHED" 
-    },
-    { 
-      id: 'b3', 
-      title: "The Silent AIR Killer: Performance Anxiety", 
-      content: `
-        <p>Many students score 280+ in home practice but drop to 180 in the exam hall. Why? Psychometric stability.</p>
-        <h2>Building a Mental Shield</h2>
-        <p>Your brain is a biological machine. High cortisol (stress) shut downs the prefrontal cortex—the part of the brain responsible for complex solving. Use the Wellness Module to track your sleep integrity.</p>
-        <p>Taking a diagnostic assessment every 14 days helps desensitize the 'Fear Response' your brain has to exam patterns.</p>
-      `, 
-      author: "Psych Lead", 
-      date: "2024-12-25", 
-      status: "PUBLISHED" 
     }
   ],
-  messages: [
-    { id: 'm1', name: "Rahul Gupta", email: "rahul@test.com", subject: "Access Issue", message: "Hi, I cannot access the Physics notes.", date: "2024-12-21", isRead: false }
-  ],
+  messages: [],
   mockTests: [
     { 
       id: 'test_jee_main_1', 
@@ -77,7 +43,7 @@ export const INITIAL_STUDENT_DATA: StudentData = {
       totalMarks: 300, 
       category: 'ADMIN', 
       difficulty: 'MAINS', 
-      questionIds: ['q_p_units_1', 'q_p_units_2', 'q_p_units_3'],
+      questionIds: ['q_p_units_1', 'q_p_units_2'],
       chapterIds: ['p-units'] 
     }
   ],
@@ -89,7 +55,7 @@ export const INITIAL_STUDENT_DATA: StudentData = {
       text: "Dimensional formula of Planck's Constant is:", 
       options: ["[ML²T⁻¹]", "[ML²T⁻²]", "[MLT⁻¹]", "[MLT⁻²]"], 
       correctAnswer: 0, 
-      explanation: "Planck's constant (h) = Energy / Frequency. [ML²T⁻²] / [T⁻¹] = [ML²T⁻¹].",
+      explanation: "h = E/f = [ML²T⁻²]/[T⁻¹] = [ML²T⁻¹]",
       difficulty: 'EASY' 
     },
     { 
@@ -99,14 +65,70 @@ export const INITIAL_STUDENT_DATA: StudentData = {
       text: "Which of the following is not a fundamental SI unit?", 
       options: ["Meter", "Candela", "Newton", "Kelvin"], 
       correctAnswer: 2, 
-      explanation: "Newton is a derived unit (kg⋅m/s²). The 7 fundamental units are m, kg, s, A, K, mol, cd.",
+      explanation: "Newton is a derived unit.",
       difficulty: 'EASY' 
     }
   ],
   chapters: [
-    { id: 'p-units', subject: 'Physics', unit: 'Units and Measurements', name: 'Units & Dimensions', progress: 100, accuracy: 95, timeSpent: 200, status: 'COMPLETED', notes: ["<h1>1. Fundamental & Derived Quantities</h1><p>Physics explains nature through measurement.</p>"] },
-    { id: 'c-basic', subject: 'Chemistry', unit: 'Physical Chemistry', name: 'Some Basic Concepts', progress: 100, accuracy: 92, timeSpent: 300, status: 'COMPLETED' },
-    { id: 'm-sets', subject: 'Mathematics', unit: 'Sets & Relations', name: 'Sets, Relations & Functions', progress: 90, accuracy: 85, timeSpent: 600, status: 'LEARNING' },
+    // MATHEMATICS (14 Units)
+    { id: 'm-sets', subject: 'Mathematics', unit: 'UNIT 1', name: 'Sets, Relations and Functions', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'm-complex', subject: 'Mathematics', unit: 'UNIT 2', name: 'Complex Numbers & Quadratic Equations', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'm-matrices', subject: 'Mathematics', unit: 'UNIT 3', name: 'Matrices and Determinants', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'm-permutations', subject: 'Mathematics', unit: 'UNIT 4', name: 'Permutations and Combinations', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'm-binomial', subject: 'Mathematics', unit: 'UNIT 5', name: 'Binomial Theorem & Simple Applications', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'm-sequence', subject: 'Mathematics', unit: 'UNIT 6', name: 'Sequence and Series', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'm-limit', subject: 'Mathematics', unit: 'UNIT 7', name: 'Limit, Continuity & Differentiability', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'm-integral', subject: 'Mathematics', unit: 'UNIT 8', name: 'Integral Calculus', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'm-diff', subject: 'Mathematics', unit: 'UNIT 9', name: 'Differential Equations', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'm-coords', subject: 'Mathematics', unit: 'UNIT 10', name: 'Co-ordinate Geometry', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'm-3d', subject: 'Mathematics', unit: 'UNIT 11', name: 'Three Dimensional Geometry', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'm-vectors', subject: 'Mathematics', unit: 'UNIT 12', name: 'Vector Algebra', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'm-stats', subject: 'Mathematics', unit: 'UNIT 13', name: 'Statistics and Probability', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'm-trig', subject: 'Mathematics', unit: 'UNIT 14', name: 'Trigonometry', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+
+    // PHYSICS (20 Units)
+    { id: 'p-units', subject: 'Physics', unit: 'UNIT 1', name: 'Units and Measurements', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-kinematics', subject: 'Physics', unit: 'UNIT 2', name: 'Kinematics', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-laws', subject: 'Physics', unit: 'UNIT 3', name: 'Laws of Motion', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-work', subject: 'Physics', unit: 'UNIT 4', name: 'Work, Energy and Power', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-rotation', subject: 'Physics', unit: 'UNIT 5', name: 'Rotational Motion', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-gravitation', subject: 'Physics', unit: 'UNIT 6', name: 'Gravitation', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-solids', subject: 'Physics', unit: 'UNIT 7', name: 'Properties of Solids and Liquids', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-thermo', subject: 'Physics', unit: 'UNIT 8', name: 'Thermodynamics', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-ktg', subject: 'Physics', unit: 'UNIT 9', name: 'Kinetic Theory of Gases', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-oscillations', subject: 'Physics', unit: 'UNIT 10', name: 'Oscillations and Waves', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-electrostatics', subject: 'Physics', unit: 'UNIT 11', name: 'Electrostatics', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-current', subject: 'Physics', unit: 'UNIT 12', name: 'Current Electricity', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-magnetic', subject: 'Physics', unit: 'UNIT 13', name: 'Magnetic Effects of Current & Magnetism', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-induction', subject: 'Physics', unit: 'UNIT 14', name: 'Electromagnetic Induction & AC', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-waves', subject: 'Physics', unit: 'UNIT 15', name: 'Electromagnetic Waves', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-optics', subject: 'Physics', unit: 'UNIT 16', name: 'Optics', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-dual', subject: 'Physics', unit: 'UNIT 17', name: 'Dual Nature of Matter & Radiation', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-atoms', subject: 'Physics', unit: 'UNIT 18', name: 'Atoms and Nuclei', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-devices', subject: 'Physics', unit: 'UNIT 19', name: 'Electronic Devices', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-skills', subject: 'Physics', unit: 'UNIT 20', name: 'Experimental Skills', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+
+    // CHEMISTRY (20 Units)
+    { id: 'c-basic', subject: 'Chemistry', unit: 'UNIT 1', name: 'Some Basic Concepts in Chemistry', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-atomic', subject: 'Chemistry', unit: 'UNIT 2', name: 'Atomic Structure', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-bonding', subject: 'Chemistry', unit: 'UNIT 3', name: 'Chemical Bonding & Molecular Structure', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-thermo', subject: 'Chemistry', unit: 'UNIT 4', name: 'Chemical Thermodynamics', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-solutions', subject: 'Chemistry', unit: 'UNIT 5', name: 'Solutions', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-equilibrium', subject: 'Chemistry', unit: 'UNIT 6', name: 'Equilibrium', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-redox', subject: 'Chemistry', unit: 'UNIT 7', name: 'Redox Reactions & Electrochemistry', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-kinetics', subject: 'Chemistry', unit: 'UNIT 8', name: 'Chemical Kinetics', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-classification', subject: 'Chemistry', unit: 'UNIT 9', name: 'Classification of Elements', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-pblock', subject: 'Chemistry', unit: 'UNIT 10', name: 'p-Block Elements', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-dblock', subject: 'Chemistry', unit: 'UNIT 11', name: 'd- and f-Block Elements', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-coordination', subject: 'Chemistry', unit: 'UNIT 12', name: 'Coordination Compounds', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-purification', subject: 'Chemistry', unit: 'UNIT 13', name: 'Purification & Characterisation', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-organic-basic', subject: 'Chemistry', unit: 'UNIT 14', name: 'Basic Principles of Organic Chemistry', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-hydrocarbons', subject: 'Chemistry', unit: 'UNIT 15', name: 'Hydrocarbons', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-halogens', subject: 'Chemistry', unit: 'UNIT 16', name: 'Organic Compounds with Halogens', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-oxygen', subject: 'Chemistry', unit: 'UNIT 17', name: 'Organic Compounds with Oxygen', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-nitrogen', subject: 'Chemistry', unit: 'UNIT 18', name: 'Organic Compounds with Nitrogen', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-biomolecules', subject: 'Chemistry', unit: 'UNIT 19', name: 'Biomolecules', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-practical', subject: 'Chemistry', unit: 'UNIT 20', name: 'Principles Related to Practical Chemistry', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
   ],
   connectedParent: {
     name: "Mr. Ramesh Sharma",

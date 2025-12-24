@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { UserRole, UserAccount } from '../types';
 import { api } from '../services/apiService';
@@ -15,6 +14,9 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
   const [isProcessing, setIsProcessing] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+
+  // Hide demo logins if manually disabled or if the global flag is false
+  const showDemoLogins = (window as any).SHOW_DEMO_LOGINS && !api.isDemoDisabled();
 
   const executeAuth = async (email: string, targetRole: UserRole) => {
     setIsProcessing(true);
@@ -121,8 +123,7 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
             </button>
           </form>
 
-          {/* Fix: Cast window to any to access custom global property SHOW_DEMO_LOGINS and avoid TypeScript error */}
-          {(window as any).SHOW_DEMO_LOGINS && (
+          {showDemoLogins && (
             <div className="pt-6 border-t border-slate-800 relative z-10">
               <div className="text-center mb-6">
                 <span className="text-[9px] font-black text-slate-600 uppercase tracking-[0.4em]">Sandbox Quick Access</span>

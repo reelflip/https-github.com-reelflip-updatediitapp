@@ -574,38 +574,48 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
                       {chapters.map(chapter => (
                         <div 
                           key={chapter.id}
-                          className="group flex items-center justify-between p-5 bg-white border border-slate-200 rounded-[1.5rem] hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer"
+                          className="group flex flex-col p-5 bg-white border border-slate-200 rounded-[1.5rem] hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer"
                         >
-                          <div className="flex-1 flex items-center gap-5" onClick={() => setActiveChapter(chapter)}>
-                            <div className={`w-3 h-3 rounded-full shadow-sm ${chapter.status === 'COMPLETED' ? 'bg-emerald-500' : chapter.status === 'REVISION' ? 'bg-amber-400 animate-pulse' : chapter.status === 'LEARNING' ? 'bg-indigo-400' : 'bg-slate-200'}`}></div>
-                            <div>
-                               <div className="flex items-center gap-3">
-                                  <span className="font-black text-slate-800 text-base">{chapter.name}</span>
-                                  <span className="text-[9px] font-black uppercase text-indigo-400 tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity">Click to Learn</span>
-                               </div>
-                               <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider flex gap-2 mt-1">
-                                  <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {formatTime(chapter.timeSpent)}</span>
-                                  <span className="flex items-center gap-1"><BarChart className="w-3 h-3" /> {chapter.accuracy}% Accuracy</span>
-                                  <span className="flex items-center gap-1"><Zap className="w-3 h-3" /> {chapter.status.replace('_', ' ')}</span>
-                               </div>
+                          <div className="flex items-center justify-between w-full">
+                            <div className="flex-1 flex items-center gap-5" onClick={() => setActiveChapter(chapter)}>
+                              <div className={`w-3 h-3 rounded-full shadow-sm ${chapter.status === 'COMPLETED' ? 'bg-emerald-500' : chapter.status === 'REVISION' ? 'bg-amber-400 animate-pulse' : chapter.status === 'LEARNING' ? 'bg-indigo-400' : 'bg-slate-200'}`}></div>
+                              <div>
+                                <div className="flex items-center gap-3">
+                                    <span className="font-black text-slate-800 text-base">{chapter.name}</span>
+                                    <span className="text-[9px] font-black uppercase text-indigo-400 tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity">Click to Learn</span>
+                                </div>
+                                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider flex gap-2 mt-1">
+                                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {formatTime(chapter.timeSpent)}</span>
+                                    <span className="flex items-center gap-1"><BarChart className="w-3 h-3" /> {chapter.accuracy}% Accuracy</span>
+                                    <span className="flex items-center gap-1"><Zap className="w-3 h-3" /> {chapter.status.replace('_', ' ')}</span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-4">
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleUpdateStatus(chapter); }}
+                                className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                                title="Update Progress"
+                              >
+                                  <Settings className="w-4 h-4" />
+                              </button>
+                              <div className="w-16 text-right" onClick={() => setActiveChapter(chapter)}>
+                                  <div className="text-[10px] font-black text-slate-400 uppercase">Progress</div>
+                                  <div className="text-sm font-black text-slate-800">{chapter.progress}%</div>
+                              </div>
+                              <div className="p-2 rounded-xl bg-slate-50 text-slate-300 group-hover:bg-indigo-600 group-hover:text-white transition-all" onClick={() => setActiveChapter(chapter)}>
+                                  <ChevronRight className="w-5 h-5" />
+                              </div>
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-4">
-                             <button 
-                               onClick={(e) => { e.stopPropagation(); handleUpdateStatus(chapter); }}
-                               className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
-                               title="Update Progress"
-                             >
-                                <Settings className="w-4 h-4" />
-                             </button>
-                             <div className="w-16 text-right" onClick={() => setActiveChapter(chapter)}>
-                                <div className="text-[10px] font-black text-slate-400 uppercase">Progress</div>
-                                <div className="text-sm font-black text-slate-800">{chapter.progress}%</div>
-                             </div>
-                             <div className="p-2 rounded-xl bg-slate-50 text-slate-300 group-hover:bg-indigo-600 group-hover:text-white transition-all" onClick={() => setActiveChapter(chapter)}>
-                                <ChevronRight className="w-5 h-5" />
-                             </div>
+                          {/* Inline Progress Bar */}
+                          <div className="w-full h-1 bg-slate-100 rounded-full mt-4 overflow-hidden" onClick={() => setActiveChapter(chapter)}>
+                            <div 
+                              className={`h-full transition-all duration-1000 ${chapter.status === 'COMPLETED' ? 'bg-emerald-500' : 'bg-indigo-500'}`} 
+                              style={{ width: `${chapter.progress}%` }}
+                            ></div>
                           </div>
                         </div>
                       ))}
