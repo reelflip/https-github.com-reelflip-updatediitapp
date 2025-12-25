@@ -12,6 +12,7 @@ import ExamGuideModule from './views/ExamGuideModule';
 import BlogModule from './views/BlogModule';
 import ContactModule from './views/ContactModule';
 import LoginModule from './views/LoginModule';
+import LandingPage from './views/LandingPage';
 import StudentDashboard from './views/StudentDashboard';
 import ParentDashboard from './views/ParentDashboard';
 import AdminCMS from './views/AdminCMS';
@@ -138,13 +139,13 @@ const App: React.FC = () => {
 
   const renderPublicContent = () => {
     switch (activeTab) {
-      case 'about': return <AboutModule />;
+      case 'about': return <LandingPage onLogin={() => setActiveTab('login')} studentData={studentData} setStudentData={syncStudentData} />;
       case 'features': return <FeaturesModule />;
       case 'examguide': return <ExamGuideModule />;
       case 'blog': return <BlogModule data={studentData} />;
       case 'contact': return <ContactModule data={studentData} />;
       case 'login': return <LoginModule onLoginSuccess={onLoginSuccess} onCancel={() => setActiveTab('about')} />;
-      default: return <AboutModule />;
+      default: return <LandingPage onLogin={() => setActiveTab('login')} studentData={studentData} setStudentData={syncStudentData} />;
     }
   };
 
@@ -152,20 +153,7 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-white font-sans flex flex-col">
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
       <main className="flex-1">
-        {activeTab !== 'login' && (
-          <div className="py-16 flex flex-col items-center justify-center space-y-4 animate-in fade-in duration-700">
-            <div className="flex items-center gap-3">
-                <TrendingUp className="w-10 h-10 text-blue-600 stroke-[3]" />
-                <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase">IIT<span className="text-blue-600">GEE</span>PREP</h1>
-            </div>
-            <div className="text-[10px] font-black tracking-[0.4em] text-slate-400 uppercase">
-                V19.5 Production Node
-            </div>
-          </div>
-        )}
-        <div className="max-w-7xl mx-auto px-6">
-          {renderPublicContent()}
-        </div>
+        {renderPublicContent()}
       </main>
       <footer className="py-20 border-t border-slate-100 mt-20">
          <div className="max-w-7xl mx-auto px-6 text-center space-y-6">
