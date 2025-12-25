@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { StudentData, Question, MockTest, Chapter, Blog, Flashcard, MemoryHack, Subject, ChapterStatus, UserAccount, SystemEvent, UserRole } from '../types';
 import { api } from '../services/apiService';
@@ -38,7 +37,7 @@ interface AdminCMSProps {
 
 const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
   const [contentSubTab, setContentSubTab] = useState<'flashcards' | 'hacks'>('flashcards');
-  const [systemSubTab, setSystemSubTab] = useState<'ai' | 'db-util' | 'deploy'>('ai');
+  const [systemSubTab, setSystemSubTab] = useState<'ai' | 'db-util' | 'deploy'>('deploy');
   const [isCreating, setIsCreating] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [creationType, setCreationType] = useState<'questions' | 'flashcards' | 'hacks' | 'chapter' | 'tests' | 'blog'>('questions');
@@ -225,7 +224,8 @@ const SyllabusManagement = ({ data, updateGlobalData, onEdit }: any) => {
             <h3 className={`text-2xl font-black italic tracking-tight ${subject === 'Physics' ? 'text-blue-600' : subject === 'Chemistry' ? 'text-emerald-600' : 'text-rose-600'}`}>{subject} Syllabus Matrix</h3>
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{list.length} Units Defined</span>
           </div>
-          <div className="divide-y divide-slate-50">
+          {/* Enhanced Scrollable Container for long lists */}
+          <div className="divide-y divide-slate-50 max-h-[600px] overflow-y-auto custom-scrollbar pr-4">
             {list.map((ch: Chapter) => (
               <div key={ch.id} className="py-6 flex justify-between items-center hover:bg-slate-50 transition-colors px-4 rounded-2xl group">
                 <div className="flex items-center gap-6">
@@ -317,14 +317,13 @@ const QuestionBankManager = ({ data, updateGlobalData, onEdit, setIsCreating, se
           </div>
         </div>
 
-        <div className="p-10">
+        <div className="p-10 max-h-[600px] overflow-y-auto custom-scrollbar pr-4">
           {filteredQuestions.length > 0 ? (
             <div className="grid grid-cols-1 gap-4">
               {filteredQuestions.map((q: Question) => {
                 const chapter = data.chapters.find((c: Chapter) => c.id === q.topicId);
                 return (
                   <div key={q.id} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-indigo-400 hover:bg-white transition-all group">
-                    {/* Fixed error: QuestionBankManager component should use the 'onEdit' prop instead of 'handleEdit' from parent scope */}
                     <div className="flex-1 cursor-pointer" onClick={() => onEdit('questions', q)}>
                       <div className="flex items-center gap-3 mb-2">
                         <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${q.subject === 'Physics' ? 'bg-blue-100 text-blue-600' : q.subject === 'Chemistry' ? 'bg-emerald-100 text-emerald-600' : q.subject === 'Mathematics' ? 'bg-rose-100 text-rose-600' : 'bg-slate-100'}`}>{q.subject}</span>
@@ -375,7 +374,7 @@ const ContentManager = ({ data, updateGlobalData, contentSubTab, setContentSubTa
         </div>
 
         {contentSubTab === 'flashcards' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
             {data.flashcards.map((f: Flashcard) => (
               <div key={f.id} onClick={() => onEdit('flashcards', f)} className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100 flex justify-between group hover:border-indigo-200 hover:bg-white transition-all cursor-pointer">
                 <div>
@@ -387,7 +386,7 @@ const ContentManager = ({ data, updateGlobalData, contentSubTab, setContentSubTa
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
             {data.memoryHacks.map((h: MemoryHack) => (
               <div key={h.id} onClick={() => onEdit('hacks', h)} className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100 flex justify-between group hover:border-emerald-200 hover:bg-white transition-all cursor-pointer">
                 <div>
@@ -444,7 +443,7 @@ const BlogManager = ({ data, updateGlobalData, onEdit, setIsCreating, setCreatio
           <Plus className="w-4 h-4" /> New Article
         </button>
       </div>
-      <div className="space-y-4">
+      <div className="space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
         {data.blogs.map((b: Blog) => ( b.id &&
           <div key={b.id} onClick={() => onEdit('blog', b)} className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex justify-between items-center group hover:bg-white hover:border-indigo-200 transition-all cursor-pointer">
              <div>
@@ -467,18 +466,6 @@ const SystemModule = ({ systemSubTab, setSystemSubTab }: any) => {
   const [deployActiveSub, setDeployActiveSub] = useState<'sql' | 'bundle'>('bundle');
   const dataSource = api.getMode();
 
-  // Mapping of real content for downloads
-  const fileContents: Record<string, string> = {
-    'deployment/setup.sql': `-- SQL Setup Script\nCREATE DATABASE jeepro_db;\nUSE jeepro_db;\n\nCREATE TABLE users (...);`,
-    'api/config.php': `<?php\ndefine('DB_HOST', 'localhost');\ndefine('DB_NAME', 'jeepro_db');\ndefine('DB_USER', 'root');\ndefine('DB_PASS', '');\n// ...`,
-    'api/router.php': `<?php\nrequire_once 'config.php';\n$module = $_GET['module'] ?? '';\n// ...`,
-    'api/auth.php': `<?php\nfunction handleAuth($action, $pdo) {\n// ...`,
-    'api/syllabus.php': `<?php\nfunction handleSyllabus($action, $pdo) {\n// ...`,
-    'api/academic.php': `<?php\nfunction handleAcademic($action, $pdo) {\n// ...`,
-    'api/wellness.php': `<?php\nfunction handleWellness($pdo) {\n// ...`,
-    'api/admin.php': `<?php\nfunction handleAdmin($pdo) {\n// ...`
-  };
-
   const fileTree = [
     { name: 'setup.sql', icon: Database, desc: 'Master Relational Schema', path: 'deployment/setup.sql' },
     { name: 'config.php', icon: Code, desc: 'DB Configuration', path: 'api/config.php' },
@@ -489,19 +476,6 @@ const SystemModule = ({ systemSubTab, setSystemSubTab }: any) => {
     { name: 'wellness.php', icon: Brain, desc: 'Psychometric Logic', path: 'api/wellness.php' },
     { name: 'admin.php', icon: ShieldCheck, desc: 'Identity Registry', path: 'api/admin.php' }
   ];
-
-  const triggerDownload = (fileName: string) => {
-    const text = fileContents[fileName] || "// Content missing. Refer to source XML.";
-    const blob = new Blob([text], { type: 'text/plain' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName.split('/').pop() || 'file';
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-  };
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
@@ -534,19 +508,15 @@ const SystemModule = ({ systemSubTab, setSystemSubTab }: any) => {
                                     <div className="text-xs font-black text-slate-900">{f.name}</div>
                                     <div className="text-[9px] font-bold text-slate-400 uppercase">{f.desc}</div>
                                 </div>
-                                <button 
-                                  onClick={() => triggerDownload(f.path)}
-                                  className="p-3 bg-white text-slate-300 hover:text-indigo-600 hover:shadow-md rounded-xl transition-all"
-                                  title="Download Module"
-                                >
-                                    <Download className="w-4 h-4" />
-                                </button>
+                                <div className="text-[9px] font-black text-emerald-500 flex items-center gap-1">
+                                   <CheckCircle className="w-3 h-3" /> Ready
+                                </div>
                              </div>
                            ))}
                         </div>
                         <div className="p-6 bg-indigo-50 rounded-2xl border border-indigo-100">
                            <p className="text-[10px] text-indigo-700 font-medium leading-relaxed">
-                              <b>Dev Note:</b> Create an <code>api/</code> folder in your server root and upload all PHP files there. The <code>router.php</code> acts as the single gateway for the frontend.
+                              <b>Note:</b> These files are now fully populated in the project root. Copy them into your <code>htdocs/api/</code> folder.
                            </p>
                         </div>
                     </div>
@@ -555,19 +525,14 @@ const SystemModule = ({ systemSubTab, setSystemSubTab }: any) => {
                 <div className="lg:col-span-7 space-y-8">
                     <div className="flex bg-slate-100 p-1 rounded-xl w-fit border border-slate-200">
                         <button onClick={() => setDeployActiveSub('bundle')} className={`px-8 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${deployActiveSub === 'bundle' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Architecture Guide</button>
-                        <button onClick={() => setDeployActiveSub('sql')} className={`px-8 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${deployActiveSub === 'sql' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>SQL Schema</button>
+                        <button onClick={() => setDeployActiveSub('sql')} className={`px-8 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${deployActiveSub === 'sql' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>SQL Schema Preview</button>
                     </div>
 
                     <div className="bg-slate-900 rounded-[3.5rem] p-12 overflow-hidden relative shadow-2xl">
                         <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12"><FileCode className="w-64 h-64 text-emerald-400" /></div>
                         <div className="flex justify-between items-center mb-8 pb-6 border-b border-white/10">
                             <div className="text-indigo-400 font-black uppercase text-xs tracking-widest flex items-center gap-3">
-                                <Activity className="w-4 h-4 animate-pulse" /> Production Ready v2.0
-                            </div>
-                            <div className="flex gap-3">
-                                <button className="flex items-center gap-2 bg-emerald-500/20 text-emerald-400 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
-                                    <CheckCircle className="w-4 h-4" /> Module Validated
-                                </button>
+                                <Activity className="w-4 h-4 animate-pulse" /> Production Ready v2.5
                             </div>
                         </div>
                         <pre className="text-[11px] font-mono text-emerald-400 leading-relaxed max-h-[500px] overflow-y-auto custom-scrollbar">
@@ -580,41 +545,32 @@ MODULAR BACKEND ARCHITECTURE:
 
 2. DATABASE INITIALIZATION:
    - Create 'jeepro_db' in phpMyAdmin.
-   - Import 'setup.sql'.
+   - Import 'deployment/setup.sql'.
 
 3. API STRUCTURE:
-   - Create Folder: htdocs/api/
-   - config.php: DB Connection strings.
-   - router.php: Gateway (module/action logic).
-   - auth.php: Login/Register micro-service.
-   - syllabus.php: Tracker micro-service.
-   - wellness.php: Psychometric storage.
-   - academic.php: Backlogs storage.
+   - Folder: htdocs/api/
+   - config.php: DB Uplink.
+   - router.php: Request Gateway.
+   - auth.php: Micro-service.
+   - syllabus.php: Tracker Data.
+   - wellness.php: Psychology.
+   - academic.php: Backlogs.
 
-4. UPLINK:
+4. SYSTEM UPLINK:
    - Dashboard -> System -> Data Bridge.
-   - Enable "Production Server Mode".
-
-Each component is isolated, secure, and ready for AIR-1 scaling.
+   - Toggle "Production Mode".
                            ` : `
--- MASTER DATABASE SCHEMA v2.0
-CREATE TABLE users (
-    id VARCHAR(50) PRIMARY KEY,
-    name VARCHAR(100),
-    email VARCHAR(100) UNIQUE,
-    role ENUM('STUDENT', 'PARENT', 'ADMIN'),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE syllabus_units (
-    id VARCHAR(50),
+-- Master Schema Snapshot
+CREATE TABLE student_progress (
+    id INT AUTO_INCREMENT PRIMARY KEY,
     student_id VARCHAR(50),
+    chapter_id VARCHAR(50),
     progress INT DEFAULT 0,
     accuracy INT DEFAULT 0,
     time_spent INT DEFAULT 0,
-    status VARCHAR(50),
-    PRIMARY KEY (id, student_id)
+    status VARCHAR(50)
 );
+-- See full code in setup.sql
                            `}
                         </pre>
                     </div>

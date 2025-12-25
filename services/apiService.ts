@@ -1,32 +1,16 @@
-import { StudentData, UserRole, UserAccount, Chapter } from '../types';
+
+import { StudentData, UserRole, UserAccount, Chapter, TestResult, BacklogItem } from '../types';
 import { INITIAL_STUDENT_DATA } from '../mockData';
 
 const API_CONFIG = {
   BASE_URL: '/api/router.php',
-  MODE_KEY: 'jeepro_datasource_mode',
-  DEMO_DISABLED_KEY: 'jeepro_demo_disabled'
+  MODE_KEY: 'jeepro_datasource_mode'
 };
 
 export const api = {
   getMode: (): 'MOCK' | 'LIVE' => (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'MOCK',
   setMode: (mode: 'MOCK' | 'LIVE') => { localStorage.setItem(API_CONFIG.MODE_KEY, mode); window.location.reload(); },
-
-  // Fix: Added isDemoDisabled to resolve property missing error in AdminCMS.tsx and LoginModule.tsx
-  isDemoDisabled: (): boolean => localStorage.getItem(API_CONFIG.DEMO_DISABLED_KEY) === 'true',
-
-  async register(data: { name: string; email: string; role: UserRole; password?: string }) {
-    if (this.getMode() === 'LIVE') {
-      try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}?module=auth&action=register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        return await res.json();
-      } catch (e) { return { success: false, error: 'Production Backend Offline' }; }
-    }
-    return { success: true, user: { id: `U-${Date.now()}`, ...data, createdAt: new Date().toISOString() } as UserAccount };
-  },
+  isDemoDisabled: (): boolean => false,
 
   async login(credentials: { email: string; role: UserRole }) {
     if (this.getMode() === 'LIVE') {
@@ -37,51 +21,66 @@ export const api = {
           body: JSON.stringify(credentials)
         });
         return await res.json();
-      } catch(e) { return { success: false, error: 'Production Backend Offline' }; }
+      } catch(e) { return { success: false, error: 'PHP Server Offline' }; }
     }
-    // Mock Login Logic
+    // Mock for development
     if (credentials.email === 'ishu@gmail.com') return { success: true, user: { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '' } };
     if (credentials.email === 'admin@jeepro.in') return { success: true, user: { id: 'ADMIN-001', name: 'System Admin', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '' } };
     return { success: false, error: 'User not found in Mock DB' };
   },
 
-  async getAccounts(): Promise<UserAccount[]> {
+  // Fixed: Added register method to resolve the error in LoginModule
+  async register(data: { name: string; email: string; role: UserRole }) {
     if (this.getMode() === 'LIVE') {
       try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}?module=admin`);
+        const res = await fetch(`${API_CONFIG.BASE_URL}?module=auth&action=register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
         return await res.json();
-      } catch (e) { return []; }
+      } catch(e) { return { success: false, error: 'PHP Server Offline' }; }
     }
-    return [
-      { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2024-01-01' },
-      { id: 'ADMIN-001', name: 'Admin', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '2024-01-01' }
-    ];
+    // Mock register
+    return { success: true, user: { id: `S-${Date.now()}`, name: data.name, email: data.email, role: data.role, createdAt: new Date().toISOString() } };
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
     if (this.getMode() === 'LIVE') {
       try {
-        const [syllabusRes, backlogsRes, wellnessRes] = await Promise.all([
+        const [syllabusRes, backlogsRes, wellnessRes, resultsRes] = await Promise.all([
           fetch(`${API_CONFIG.BASE_URL}?module=syllabus&action=get&student_id=${studentId}`),
           fetch(`${API_CONFIG.BASE_URL}?module=academic&action=get_backlogs&student_id=${studentId}`),
-          fetch(`${API_CONFIG.BASE_URL}?module=wellness&student_id=${studentId}`)
+          fetch(`${API_CONFIG.BASE_URL}?module=wellness&student_id=${studentId}`),
+          fetch(`${API_CONFIG.BASE_URL}?module=academic&action=get_results&student_id=${studentId}`)
         ]);
 
         const syllabus = await syllabusRes.json();
         const backlogs = await backlogsRes.json();
         const wellness = await wellnessRes.json();
+        const results = await resultsRes.json();
         
+        // Merge DB data with Static Content (notes/videos) from mockData
+        const mergedChapters = INITIAL_STUDENT_DATA.chapters.map(staticCh => {
+           const dbCh = syllabus.chapters?.find((c: any) => c.id === staticCh.id);
+           if (dbCh) {
+               return {
+                   ...staticCh,
+                   progress: Number(dbCh.progress),
+                   accuracy: Number(dbCh.accuracy),
+                   timeSpent: Number(dbCh.time_spent),
+                   status: dbCh.status
+               };
+           }
+           return staticCh;
+        });
+
         return {
           ...INITIAL_STUDENT_DATA,
           id: studentId,
-          chapters: (syllabus.chapters && syllabus.chapters.length) ? syllabus.chapters.map((c: any) => ({
-            ...INITIAL_STUDENT_DATA.chapters.find(i => i.id === c.id),
-            progress: Number(c.progress),
-            accuracy: Number(c.accuracy),
-            timeSpent: Number(c.time_spent),
-            status: c.status
-          })) : INITIAL_STUDENT_DATA.chapters,
+          chapters: mergedChapters,
           backlogs: Array.isArray(backlogs) ? backlogs : INITIAL_STUDENT_DATA.backlogs,
+          testHistory: Array.isArray(results) ? results : INITIAL_STUDENT_DATA.testHistory,
           psychometricHistory: Array.isArray(wellness) ? wellness.map((w: any) => ({
             stress: Number(w.stress), focus: Number(w.focus), motivation: Number(w.motivation), 
             examFear: Number(w.exam_fear), timestamp: w.timestamp, studentSummary: w.student_summary, 
@@ -96,6 +95,7 @@ export const api = {
   async updateStudentData(studentId: string, updatedData: StudentData) {
     if (this.getMode() === 'LIVE') {
       try {
+        // Sync Chapters and Backlogs to DB
         await Promise.all([
           fetch(`${API_CONFIG.BASE_URL}?module=syllabus&action=batch_sync`, {
             method: 'POST',
@@ -112,5 +112,13 @@ export const api = {
       } catch(e) { return { success: false, error: 'Sync failed' }; }
     }
     return { success: true };
+  },
+
+  async getAccounts(): Promise<UserAccount[]> {
+     if (this.getMode() === 'LIVE') {
+       const res = await fetch(`${API_CONFIG.BASE_URL}?module=admin`);
+       return await res.json();
+     }
+     return [{ id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2024-01-01' }];
   }
 };
