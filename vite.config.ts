@@ -6,22 +6,24 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist',
-    minify: false, // Keep output readable
+    minify: false, // Keep code readable
     cssCodeSplit: false,
     rollupOptions: {
+      // Required setting when preserveModules is true
+      preserveEntrySignatures: 'exports-only',
       output: {
-        // This is the key setting to create individual files
+        // Prevents bundling everything into one file
         preserveModules: true,
+        // Maintains your folder structure (views/, services/, etc.) in the dist folder
         preserveModulesRoot: '.',
+        // Output format as ES modules
+        format: 'es',
+        // Simplifies file naming so they match your source names
         entryFileNames: (chunkInfo) => {
           return '[name].js';
         },
+        // Places all assets (CSS/Images) in a clean directory
         assetFileNames: 'assets/[name].[ext]',
-        // Ensure React is handled correctly in non-bundled output
-        globals: {
-          react: 'React',
-          'react-dom': 'ReactDOM'
-        }
       }
     }
   },
