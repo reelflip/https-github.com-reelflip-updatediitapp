@@ -38,24 +38,35 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('about');
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('jeepro_user');
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-      setUser(parsedUser);
-      setRole(parsedUser.role);
-      loadUserData(parsedUser);
+    try {
+      const savedUser = localStorage.getItem('jeepro_user');
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        if (parsedUser && parsedUser.id) {
+          setUser(parsedUser);
+          setRole(parsedUser.role);
+          loadUserData(parsedUser);
+        }
+      }
+    } catch (e) {
+      console.error("Session corrupted, clearing...", e);
+      localStorage.removeItem('jeepro_user');
     }
   }, []);
 
   const loadUserData = async (currentUser: UserAccount) => {
-    if (currentUser.role === UserRole.STUDENT) {
-      const data = await api.getStudentData(currentUser.id);
-      setStudentData(data);
-      setActiveTab('dashboard');
-    } else if (currentUser.role === UserRole.PARENT) {
-      setActiveTab('parent-status');
-    } else if (currentUser.role === UserRole.ADMIN) {
-      setActiveTab('admin-overview');
+    try {
+      if (currentUser.role === UserRole.STUDENT) {
+        const data = await api.getStudentData(currentUser.id);
+        setStudentData(data);
+        setActiveTab('dashboard');
+      } else if (currentUser.role === UserRole.PARENT) {
+        setActiveTab('parent-status');
+      } else if (currentUser.role === UserRole.ADMIN) {
+        setActiveTab('admin-overview');
+      }
+    } catch (err) {
+      console.error("Failed to load user data context", err);
     }
   };
 
@@ -79,7 +90,6 @@ const App: React.FC = () => {
     }
   };
 
-  // Authenticated State Layout
   if (user) {
     const renderPrivateContent = () => {
       if (role === UserRole.PARENT || activeTab.startsWith('parent-')) {
@@ -126,7 +136,6 @@ const App: React.FC = () => {
     );
   }
 
-  // Public/Logged-out State Layout
   const renderPublicContent = () => {
     switch (activeTab) {
       case 'about': return <AboutModule />;
@@ -142,7 +151,6 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-white font-sans flex flex-col">
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
-      
       <main className="flex-1">
         {activeTab !== 'login' && (
           <div className="py-16 flex flex-col items-center justify-center space-y-4 animate-in fade-in duration-700">
@@ -151,16 +159,14 @@ const App: React.FC = () => {
                 <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase">IIT<span className="text-blue-600">GEE</span>PREP</h1>
             </div>
             <div className="text-[10px] font-black tracking-[0.4em] text-slate-400 uppercase">
-                V17.0 Ultimate Sync Core
+                V19.5 Production Node
             </div>
           </div>
         )}
-
         <div className="max-w-7xl mx-auto px-6">
           {renderPublicContent()}
         </div>
       </main>
-
       <footer className="py-20 border-t border-slate-100 mt-20">
          <div className="max-w-7xl mx-auto px-6 text-center space-y-6">
             <div className="flex items-center justify-center gap-2 opacity-50">
@@ -168,7 +174,7 @@ const App: React.FC = () => {
                <span className="font-black tracking-tighter text-xl uppercase">IITGEEPREP</span>
             </div>
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
-               &copy; 2025 IITGEEPREP Intelligence Hub. All Rights Reserved.
+               &copy; 2025 IITGEEPREP Intelligence Hub.
             </p>
          </div>
       </footer>

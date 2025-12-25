@@ -3,11 +3,11 @@ import { StudentData, UserRole, UserAccount, Chapter, TestResult, BacklogItem } 
 import { INITIAL_STUDENT_DATA } from '../mockData';
 
 const API_CONFIG = {
-  BASE_URL: '/api/', // Managed by .htaccess rewrite
+  // Use relative path for XAMPP compatibility
+  BASE_URL: './api/', 
   MODE_KEY: 'jeepro_datasource_mode'
 };
 
-// Clean state for production environment when disconnected
 const PRODUCTION_EMPTY_STATE: StudentData = {
   ...INITIAL_STUDENT_DATA,
   name: 'Sync Node Offline',
@@ -15,6 +15,17 @@ const PRODUCTION_EMPTY_STATE: StudentData = {
   backlogs: [],
   testHistory: [],
   psychometricHistory: [{ stress: 0, focus: 0, motivation: 0, examFear: 0, timestamp: new Date().toISOString() }]
+};
+
+// Robust JSON parser helper
+const safeJson = async (response: Response) => {
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    console.error("Server returned non-JSON response:", text);
+    throw new Error("Invalid Server Response (Check api/config/database.php)");
+  }
 };
 
 export const api = {
@@ -30,17 +41,19 @@ export const api = {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(credentials)
         });
-        if (!res.ok) throw new Error();
-        return await res.json();
-      } catch(e) { return { success: false, error: 'Production Node Unreachable. Ensure Build Bundle is deployed to /api/.' }; }
+        return await safeJson(res);
+      } catch(e) { 
+        return { success: false, error: e instanceof Error ? e.message : 'Database Node Unreachable' }; 
+      }
     }
-    // Sandbox Mock Identities
+    // Static demo logic
     if (credentials.email === 'ishu@gmail.com') return { success: true, user: { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '' } };
     if (credentials.email === 'admin@jeepro.in') return { success: true, user: { id: 'ADMIN-001', name: 'System Admin', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '' } };
     return { success: false, error: 'Identity not found in Sandbox DB' };
   },
 
-  async register(data: { name: string; email: string; role: UserRole }) {
+  // Fix: Added missing register method to support account creation in LoginModule
+  async register(data: { name: string; email: string; role: UserRole; password?: string }) {
     if (this.getMode() === 'LIVE') {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}auth/register`, {
@@ -48,10 +61,22 @@ export const api = {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
         });
-        return await res.json();
-      } catch(e) { return { success: false, error: 'Cloud Registration Node Offline' }; }
+        return await safeJson(res);
+      } catch (e) {
+        return { success: false, error: e instanceof Error ? e.message : 'Database Node Unreachable' };
+      }
     }
-    return { success: true, user: { id: `S-${Date.now()}`, name: data.name, email: data.email, role: data.role, createdAt: new Date().toISOString() } };
+    // Static demo logic for MOCK mode
+    return { 
+      success: true, 
+      user: { 
+        id: `REG-${Date.now()}`, 
+        name: data.name, 
+        email: data.email, 
+        role: data.role, 
+        createdAt: new Date().toISOString() 
+      } 
+    };
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
@@ -64,15 +89,16 @@ export const api = {
           fetch(`${API_CONFIG.BASE_URL}results/get?id=${studentId}`)
         ]);
 
-        if (!sRes.ok) return { ...PRODUCTION_EMPTY_STATE, id: studentId };
-
-        const [syllabus, backlogs, wellness, results] = await Promise.all([
-          sRes.json(), bRes.json(), wRes.json(), rRes.json()
-        ]);
+        const syllabus = await safeJson(sRes).catch(() => ({}));
+        const backlogs = await safeJson(bRes).catch(() => []);
+        const wellness = await safeJson(wRes).catch(() => []);
+        const results = await safeJson(rRes).catch(() => []);
         
-        // Map server data to frontend structure
         const mergedChapters = INITIAL_STUDENT_DATA.chapters.map(staticCh => {
-           const dbCh = syllabus.chapters?.find((c: any) => c.id === staticCh.id);
+           const dbCh = Array.isArray(syllabus.chapters) 
+            ? syllabus.chapters.find((c: any) => c.id === staticCh.id)
+            : null;
+
            return dbCh ? { 
              ...staticCh, 
              progress: Number(dbCh.progress) || 0, 
@@ -88,14 +114,13 @@ export const api = {
           chapters: mergedChapters,
           backlogs: Array.isArray(backlogs) ? backlogs : [],
           testHistory: Array.isArray(results) ? results : [],
-          psychometricHistory: Array.isArray(wellness) && wellness.length > 0 ? wellness : PRODUCTION_EMPTY_STATE.psychometricHistory
+          psychometricHistory: (Array.isArray(wellness) && wellness.length > 0) ? wellness : PRODUCTION_EMPTY_STATE.psychometricHistory
         };
       } catch(e) { 
         console.error("Cloud Sync Critical Failure", e);
         return { ...PRODUCTION_EMPTY_STATE, id: studentId }; 
       }
     }
-    // MOCK MODE: Strictly return local initial data
     return INITIAL_STUDENT_DATA;
   },
 
@@ -107,7 +132,7 @@ export const api = {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ student_id: studentId, chapters: updatedData.chapters })
         });
-        return await res.json();
+        return await safeJson(res);
       } catch(e) { return { success: false, error: 'Direct Sync Operation Failed' }; }
     }
     return { success: true };
@@ -117,8 +142,8 @@ export const api = {
      if (this.getMode() === 'LIVE') {
        try {
          const res = await fetch(`${API_CONFIG.BASE_URL}users/index`);
-         if (!res.ok) return [];
-         return await res.json();
+         const data = await safeJson(res);
+         return Array.isArray(data) ? data : [];
        } catch(e) { return []; }
      }
      return [{ id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2024-01-01' }];

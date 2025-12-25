@@ -10,10 +10,6 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
     </style>
-    <!-- 
-      CONFIGURATION: Set window.SHOW_DEMO_LOGINS to false to hide 
-      the quick access buttons on the login screen after deployment.
-    -->
     <script>
       window.SHOW_DEMO_LOGINS = true;
     </script>
@@ -36,7 +32,7 @@
 </head>
 <body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
-    <!-- The build process requires this script tag to discover your code -->
-    <script type="module" src="/index.tsx"></script>
+    <!-- Fixed: Use relative path for XAMPP compatibility -->
+    <script type="module" src="./index.tsx"></script>
 </body>
 </html>
