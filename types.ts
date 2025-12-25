@@ -25,7 +25,11 @@ export interface Chapter {
   name: string;
   progress: number; 
   accuracy: number;
-  timeSpent: number;
+  timeSpent: number; // Total cumulative
+  timeSpentNotes: number; // Time in seconds
+  timeSpentVideos: number; // Time in seconds
+  timeSpentPractice: number; // Time in seconds
+  timeSpentTests: number; // Time in seconds
   status: ChapterStatus;
   lastStudied?: string;
   notes?: string[];
@@ -151,7 +155,6 @@ export interface StudentData {
   targetExams?: string[];
   aiTutorModel?: string;
   dataSourceMode?: 'MOCK' | 'LIVE';
-  // Fixed: Added smartPlan to StudentData interface to resolve type errors in apiService
   smartPlan?: any;
   oauthClientId?: string;
   analyticsId?: string;
@@ -169,7 +172,7 @@ export interface UserAccount {
   role: UserRole;
   password?: string;
   createdAt: string;
-  connectedId?: string; // For Parent -> Student link
+  connectedId?: string; 
 }
 
 export interface SystemEvent {

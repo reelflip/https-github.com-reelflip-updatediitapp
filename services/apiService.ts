@@ -43,7 +43,6 @@ export const api = {
   },
 
   async login(credentials: { email: string; role: UserRole }) {
-    // Check global kill-switch for demo keys
     if (!this.isDemoDisabled()) {
       if (credentials.email === 'ishu@gmail.com') return { success: true, user: { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2024-01-01' } };
       if (credentials.email === 'admin@jeepro.in') return { success: true, user: { id: 'ADMIN-001', name: 'System Admin', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '2024-01-01' } };
@@ -62,7 +61,7 @@ export const api = {
     return { success: false, error: 'User ID not found in Sandbox Mode.' };
   },
 
-  async register(data: { name: string; email: string; role: UserRole; password?: string }) {
+  async register(data: { name: string; email: string; role: UserRole; password?: string; recoveryQuestion?: string; recoveryAnswer?: string }) {
     if (this.getMode() === 'LIVE') {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}auth/register`, {
@@ -73,6 +72,7 @@ export const api = {
         return await safeJson(res);
       } catch (e) { return { success: false, error: 'Database Node Unreachable' }; }
     }
+    // Simulation for Sandbox Mode
     return { success: true, user: { id: `REG-${Date.now()}`, name: data.name, email: data.email, role: data.role, createdAt: new Date().toISOString() } };
   },
 
