@@ -2,11 +2,23 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { StudentData } from "../types";
 
-// Always instantiate GoogleGenAI inside functions to ensure the latest API key is used
-export const getSmartStudyAdvice = async (data: StudentData) => {
-  if (!process.env.API_KEY) return null;
+// TypeScript Safety for Browser Environment
+declare var process: { env: { API_KEY: string } };
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Safely retrieve the API key to avoid runtime errors if missing
+const getApiKey = () => {
+  try {
+    return process.env.API_KEY || null;
+  } catch (e) {
+    return null;
+  }
+};
+
+export const getSmartStudyAdvice = async (data: StudentData) => {
+  const apiKey = getApiKey();
+  if (!apiKey) return null;
+
+  const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
     Act as a senior IIT-JEE coach. Analyze the following student progress data and provide exactly 3 priority tasks for today and a brief burnout warning if applicable.
@@ -14,12 +26,9 @@ export const getSmartStudyAdvice = async (data: StudentData) => {
     Student Name: ${data.name}
     Weak Areas (Low Accuracy): ${data.chapters.filter(c => c.accuracy < 60).map(c => c.name).join(', ')}
     Revision Needed: ${data.flashcards.length} cards due.
-    Current Stress Level (1-10): ${data.psychometricHistory[data.psychometricHistory.length - 1].stress}
+    Current Stress Level (1-10): ${data.psychometricHistory[data.psychometricHistory.length - 1]?.stress || 5}
     
-    Return the response as a JSON object with:
-    - priorities: string[] (3 items)
-    - burnoutAlert: string (short sentence or null)
-    - mindsetTip: string (motivational tip based on psychometric trends)
+    Return JSON: { "priorities": ["...", "...", "..."], "burnoutAlert": "...", "mindsetTip": "..." }
   `;
 
   try {
@@ -40,18 +49,18 @@ export const getSmartStudyAdvice = async (data: StudentData) => {
       }
     });
 
-    const jsonStr = response.text?.trim();
-    return jsonStr ? JSON.parse(jsonStr) : null;
+    return JSON.parse(response.text || '{}');
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("Gemini Failure:", error);
     return null;
   }
 };
 
 export const generateSmartTimetable = async (data: StudentData) => {
-  if (!process.env.API_KEY) return null;
+  const apiKey = getApiKey();
+  if (!apiKey) return null;
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
     Analyze this JEE student's routine and performance to generate a tactical study plan.
@@ -60,9 +69,9 @@ export const generateSmartTimetable = async (data: StudentData) => {
     Weakest Subject: ${data.chapters.sort((a,b) => a.accuracy - b.accuracy)[0]?.subject || 'N/A'}.
 
     Provide:
-    1. "strategy": A summary of how to distribute hours (e.g., 2:1:1 ratio).
-    2. "optimization": A specific change to their routine for better results.
-    3. "focusBlocks": 3 specific topics they should prioritize this week.
+    1. "strategy": Hourly distribution summary.
+    2. "optimization": Routine modification tip.
+    3. "focusBlocks": 3 prioritized topics.
 
     Return JSON: { "strategy": "...", "optimization": "...", "focusBlocks": ["...", "...", "..."] }
   `;
@@ -92,13 +101,14 @@ export const generateSmartTimetable = async (data: StudentData) => {
 };
 
 export const chatWithTutor = async (history: { role: string; content: string }[], userMessage: string, modelName: string = 'gemini-3-flash-preview') => {
-  if (!process.env.API_KEY) return "API Key not configured. Please contact admin.";
+  const apiKey = getApiKey();
+  if (!apiKey) return "API Key not configured. Please contact admin.";
 
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
   const chat = ai.chats.create({
     model: modelName,
     config: {
-      systemInstruction: "You are 'JEE-PRO AI Tutor', a brilliant IIT-JEE coach specializing in Physics, Chemistry, and Math. Answer student queries with clarity, use simple analogies for complex concepts, and always keep responses encouraging. If they ask a problem, guide them step-by-step rather than just giving the answer.",
+      systemInstruction: "You are 'JEE-PRO AI Tutor', a brilliant IIT-JEE coach. Guide students step-by-step through Physics, Chemistry, and Math problems using Socratic questioning where possible.",
     }
   });
 
@@ -106,7 +116,7 @@ export const chatWithTutor = async (history: { role: string; content: string }[]
     const response = await chat.sendMessage({ message: userMessage });
     return response.text;
   } catch (error) {
-    console.error("AI Tutor Error:", error);
-    return `Error from ${modelName}: I encountered a slight glitch. Ensure the API key and model selection are valid.`;
+    console.error("AI Tutor Node Error:", error);
+    return `Error from ${modelName}: The intelligence node is temporarily overloaded.`;
   }
 };

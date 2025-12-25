@@ -3,8 +3,18 @@ import { StudentData, UserRole, UserAccount, Chapter, TestResult, BacklogItem } 
 import { INITIAL_STUDENT_DATA } from '../mockData';
 
 const API_CONFIG = {
-  BASE_URL: '/api/', // Points to index.php via .htaccess
+  BASE_URL: '/api/', // Managed by .htaccess rewrite
   MODE_KEY: 'jeepro_datasource_mode'
+};
+
+// Clean state for production environment when disconnected
+const PRODUCTION_EMPTY_STATE: StudentData = {
+  ...INITIAL_STUDENT_DATA,
+  name: 'Sync Node Offline',
+  chapters: INITIAL_STUDENT_DATA.chapters.map(c => ({ ...c, progress: 0, accuracy: 0, status: 'NOT_STARTED' })),
+  backlogs: [],
+  testHistory: [],
+  psychometricHistory: [{ stress: 0, focus: 0, motivation: 0, examFear: 0, timestamp: new Date().toISOString() }]
 };
 
 export const api = {
@@ -20,10 +30,11 @@ export const api = {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(credentials)
         });
+        if (!res.ok) throw new Error();
         return await res.json();
-      } catch(e) { return { success: false, error: 'PHP API Node Offline' }; }
+      } catch(e) { return { success: false, error: 'Production Node Unreachable. Ensure Build Bundle is deployed to /api/.' }; }
     }
-    // Mock identities
+    // Sandbox Mock Identities
     if (credentials.email === 'ishu@gmail.com') return { success: true, user: { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '' } };
     if (credentials.email === 'admin@jeepro.in') return { success: true, user: { id: 'ADMIN-001', name: 'System Admin', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '' } };
     return { success: false, error: 'Identity not found in Sandbox DB' };
@@ -38,7 +49,7 @@ export const api = {
           body: JSON.stringify(data)
         });
         return await res.json();
-      } catch(e) { return { success: false, error: 'Registration Node Offline' }; }
+      } catch(e) { return { success: false, error: 'Cloud Registration Node Offline' }; }
     }
     return { success: true, user: { id: `S-${Date.now()}`, name: data.name, email: data.email, role: data.role, createdAt: new Date().toISOString() } };
   },
@@ -53,42 +64,51 @@ export const api = {
           fetch(`${API_CONFIG.BASE_URL}results/get?id=${studentId}`)
         ]);
 
+        if (!sRes.ok) return { ...PRODUCTION_EMPTY_STATE, id: studentId };
+
         const [syllabus, backlogs, wellness, results] = await Promise.all([
           sRes.json(), bRes.json(), wRes.json(), rRes.json()
         ]);
         
-        // Merge production data with content metadata from the app bundle
+        // Map server data to frontend structure
         const mergedChapters = INITIAL_STUDENT_DATA.chapters.map(staticCh => {
            const dbCh = syllabus.chapters?.find((c: any) => c.id === staticCh.id);
-           return dbCh ? { ...staticCh, progress: Number(dbCh.progress), accuracy: Number(dbCh.accuracy), status: dbCh.status } : staticCh;
+           return dbCh ? { 
+             ...staticCh, 
+             progress: Number(dbCh.progress) || 0, 
+             accuracy: Number(dbCh.accuracy) || 0, 
+             status: dbCh.status || 'NOT_STARTED' 
+           } : { ...staticCh, progress: 0, accuracy: 0, status: 'NOT_STARTED' };
         });
 
         return {
           ...INITIAL_STUDENT_DATA,
           id: studentId,
+          name: syllabus.name || 'Production User',
           chapters: mergedChapters,
           backlogs: Array.isArray(backlogs) ? backlogs : [],
           testHistory: Array.isArray(results) ? results : [],
-          psychometricHistory: Array.isArray(wellness) ? wellness : INITIAL_STUDENT_DATA.psychometricHistory
+          psychometricHistory: Array.isArray(wellness) && wellness.length > 0 ? wellness : PRODUCTION_EMPTY_STATE.psychometricHistory
         };
       } catch(e) { 
-        console.error("Critical Production Sync Error", e);
-        return INITIAL_STUDENT_DATA; 
+        console.error("Cloud Sync Critical Failure", e);
+        return { ...PRODUCTION_EMPTY_STATE, id: studentId }; 
       }
     }
+    // MOCK MODE: Strictly return local initial data
     return INITIAL_STUDENT_DATA;
   },
 
   async updateStudentData(studentId: string, updatedData: StudentData) {
     if (this.getMode() === 'LIVE') {
       try {
-        await fetch(`${API_CONFIG.BASE_URL}syllabus/save`, {
+        const res = await fetch(`${API_CONFIG.BASE_URL}syllabus/save`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ student_id: studentId, chapters: updatedData.chapters })
         });
-        return { success: true };
-      } catch(e) { return { success: false, error: 'Direct Sync Failed' }; }
+        return await res.json();
+      } catch(e) { return { success: false, error: 'Direct Sync Operation Failed' }; }
     }
     return { success: true };
   },
@@ -97,6 +117,7 @@ export const api = {
      if (this.getMode() === 'LIVE') {
        try {
          const res = await fetch(`${API_CONFIG.BASE_URL}users/index`);
+         if (!res.ok) return [];
          return await res.json();
        } catch(e) { return []; }
      }
