@@ -12,7 +12,7 @@ import {
   Lightbulb, PenTool, Eye, Calendar, UserPlus, Globe, Brain, Server, ShieldAlert, Cpu,
   History, Code2, HardDrive, Network, ToggleLeft, ToggleRight, Radio,
   Users, FolderTree, Map, Copy, Tag, CheckCircle2, Bold, Italic, List, Heading1, Heading2, Link as LinkIcon, Quote, Type, Eye as EyeIcon, Code as CodeIcon, Video, Layout,
-  Terminal, Shield, Check, ListChecks, FileJson, Globe2, Link2
+  Terminal, Shield, Check, ListChecks, FileJson, Globe2, Link2, Info
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -176,16 +176,23 @@ const SyllabusMaster = ({ data, onEdit, onDelete }: any) => (
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {data.chapters.filter((c: any) => c.subject === s).map((ch: any) => (
-            <div key={ch.id} className="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex justify-between items-center group hover:bg-white hover:border-indigo-200 transition-all hover:shadow-lg">
-              <div className="space-y-1 flex-1">
-                 <span className="font-black text-slate-800 text-sm">{ch.name}</span>
-                 <div className="flex items-center gap-2 text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">
-                    {ch.unit} • {ch.status.replace('_', ' ')}
+            <div key={ch.id} className="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex flex-col gap-4 group hover:bg-white hover:border-indigo-200 transition-all hover:shadow-lg">
+              <div className="flex justify-between items-start">
+                 <div className="space-y-1">
+                    <span className="font-black text-slate-800 text-sm">{ch.name}</span>
+                    <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">
+                       {ch.unit} • {ch.status.replace('_', ' ')}
+                    </div>
+                 </div>
+                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <button onClick={() => onEdit('Chapter', ch)} className="p-2.5 text-slate-400 hover:text-indigo-600 transition-all bg-white rounded-xl shadow-sm border border-slate-100"><Edit3 className="w-4 h-4" /></button>
+                   <button onClick={() => onDelete('Chapter', ch.id)} className="p-2.5 text-slate-400 hover:text-rose-600 transition-all bg-white rounded-xl shadow-sm border border-slate-100"><Trash2 className="w-4 h-4" /></button>
                  </div>
               </div>
-              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => onEdit('Chapter', ch)} className="p-2.5 text-slate-400 hover:text-indigo-600 transition-all bg-white rounded-xl shadow-sm border border-slate-100"><Edit3 className="w-4 h-4" /></button>
-                <button onClick={() => onDelete('Chapter', ch.id)} className="p-2.5 text-slate-400 hover:text-rose-600 transition-all bg-white rounded-xl shadow-sm border border-slate-100"><Trash2 className="w-4 h-4" /></button>
+              <div className="flex flex-wrap gap-2">
+                 {ch.notes?.length > 0 && <span className="flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[7px] font-black uppercase"><FileText className="w-2.5 h-2.5" /> Notes</span>}
+                 {ch.videoUrl && <span className="flex items-center gap-1 px-2 py-0.5 bg-rose-50 text-rose-600 rounded text-[7px] font-black uppercase"><Video className="w-2.5 h-2.5" /> Video</span>}
+                 <span className="flex items-center gap-1 px-2 py-0.5 bg-slate-200 text-slate-600 rounded text-[7px] font-black uppercase">{ch.progress}% Done</span>
               </div>
             </div>
           ))}
@@ -359,7 +366,7 @@ const SystemModule = () => {
   const [diagnosing, setDiagnosing] = useState(false);
   const [config, setConfig] = useState({ host: 'localhost', name: 'jeepro_db', user: 'root', pass: '' });
   const [logs, setLogs] = useState([
-    { id: 1, type: 'SYS', msg: 'Core Intelligence Kernel initialized v5.6.1.', time: '09:00' },
+    { id: 1, type: 'SYS', msg: 'Core Intelligence Kernel initialized v5.6.2.', time: '09:00' },
     { id: 2, type: 'NET', msg: 'Telemetry handshakes mapped to MySQL.', time: '09:01' },
     { id: 3, type: 'DB', msg: 'Environment check: Mode = ' + api.getMode(), time: '09:02' },
   ]);
@@ -392,8 +399,8 @@ const SystemModule = () => {
       });
 
       // SQL LAYER
-      const sqlContent = `-- IITGEEPREP Master Schema v5.6.1\nCREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100) UNIQUE, role ENUM('STUDENT','PARENT','ADMIN'), password VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);\nCREATE TABLE IF NOT EXISTS chapters (id VARCHAR(50) PRIMARY KEY, subject VARCHAR(50), unit VARCHAR(50), name VARCHAR(255), progress INT, accuracy INT, time_spent INT);\n-- Additional 38 table definitions for all modular nodes...`;
-      zip.folder("sql")?.file("master_schema_v5.6.1.sql", sqlContent);
+      const sqlContent = `-- IITGEEPREP Master Schema v5.6.2\nCREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100) UNIQUE, role ENUM('STUDENT','PARENT','ADMIN'), password VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);\nCREATE TABLE IF NOT EXISTS chapters (id VARCHAR(50) PRIMARY KEY, subject VARCHAR(50), unit VARCHAR(50), name VARCHAR(255), progress INT, accuracy INT, time_spent INT);\n-- Additional 38 table definitions for all modular nodes...`;
+      zip.folder("sql")?.file("master_schema_v5.6.2.sql", sqlContent);
 
       // ROOT GATEWAY
       zip.file("index.php", "<?php\nrequire_once 'config/database.php';\nrequire_once 'core/Router.php';\n// Gateway for all asynchronous academic transmissions\n$uri = $_GET['uri'] ?? '';\nRouter::handle($uri);\n?>");
@@ -401,8 +408,8 @@ const SystemModule = () => {
       zip.file("check.php", "<?php\nrequire_once 'config/database.php';\n$conn = getDBConnection();\necho 'Handshake Status: 200 OK - Node Active';\n?>");
 
       const content = await zip.generateAsync({type:"blob"});
-      saveAs(content, "iitgeeprep-production-mvc-v5.6.1.zip");
-      setLogs(prev => [...prev, { id: Date.now(), type: 'SYS', msg: 'Full 40+ File MVC Architecture generated for v5.6.1.', time: 'Now' }]);
+      saveAs(content, "iitgeeprep-production-mvc-v5.6.2.zip");
+      setLogs(prev => [...prev, { id: Date.now(), type: 'SYS', msg: 'Full 40+ File MVC Architecture generated for v5.6.2.', time: 'Now' }]);
     } catch (err: any) {
       alert("Encryption Error: " + err.message);
     } finally {
@@ -420,7 +427,7 @@ const SystemModule = () => {
                <div className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.4em] flex items-center gap-2 mb-2">
                   <Map className="w-4 h-4" /> IITGEEPREP Final Deployment Protocol
                </div>
-               <h3 className="text-4xl font-black italic tracking-tighter text-slate-900 leading-none">Deployment <br /> Blueprint v5.6.1</h3>
+               <h3 className="text-4xl font-black italic tracking-tighter text-slate-900 leading-none">Deployment <br /> Blueprint v5.6.2</h3>
             </div>
             <div className="flex gap-4">
                <div className="text-right">
@@ -471,7 +478,7 @@ const SystemModule = () => {
           disabled={zipping} 
           className="w-full py-8 bg-slate-900 text-white rounded-[3rem] font-black uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:bg-indigo-600 transition-all shadow-2xl disabled:opacity-50 mt-10 relative z-10"
          >
-            {zipping ? <Loader2 className="animate-spin w-8 h-8" /> : <><CloudUpload className="w-8 h-8" /> Compile & Download Build v5.6.1</>}
+            {zipping ? <Loader2 className="animate-spin w-8 h-8" /> : <><CloudUpload className="w-8 h-8" /> Compile & Download Build v5.6.2</>}
          </button>
       </div>
 
@@ -488,7 +495,7 @@ const SystemModule = () => {
                <div className="flex items-center gap-2 ml-4 text-slate-300"><ChevronRight className="w-3 h-3 text-slate-600" /> <Network className="w-3 h-3" /> /core <span className="text-slate-600 italic">// Router.php, BaseController.php</span></div>
                <div className="flex items-center gap-2 ml-4 text-slate-300"><ChevronRight className="w-3 h-3 text-slate-600" /> <TerminalSquare className="w-3 h-3" /> /controllers <span className="text-slate-600 italic">// 20+ Logic Controllers</span></div>
                <div className="flex items-center gap-2 ml-4 text-slate-300"><ChevronRight className="w-3 h-3 text-slate-600" /> <Server className="w-3 h-3" /> /models <span className="text-slate-600 italic">// 20+ SQL Models</span></div>
-               <div className="flex items-center gap-2 ml-4 text-slate-300"><ChevronRight className="w-3 h-3 text-slate-600" /> <TerminalSquare className="w-3 h-3" /> /sql <span className="text-slate-600 italic">// master_schema_v5.6.1.sql</span></div>
+               <div className="flex items-center gap-2 ml-4 text-slate-300"><ChevronRight className="w-3 h-3 text-slate-600" /> <TerminalSquare className="w-3 h-3" /> /sql <span className="text-slate-600 italic">// master_schema_v5.6.2.sql</span></div>
                <div className="flex items-center gap-2 ml-4 text-indigo-400 font-black"><FileCode className="w-3 h-3" /> index.php <span className="text-slate-600 font-normal italic">// Main API Gateway</span></div>
                <div className="flex items-center gap-2 ml-4 text-emerald-400 font-black"><CheckCircle2 className="w-3 h-3" /> check.php <span className="text-slate-600 font-normal italic">// Health Handshake</span></div>
                <div className="flex items-center gap-2 ml-4 text-amber-400 font-black"><Shield className="w-3 h-3" /> .htaccess <span className="text-slate-600 font-normal italic">// URL Rewriting</span></div>
@@ -692,56 +699,68 @@ const CreationHub = ({ type, item, onClose, data, onSave }: any) => {
                 <RichTextEditor value={form.content} onChange={(val) => setForm({...form, content: val})} />
               </div>
             ) : type === 'Question' ? (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 animate-in fade-in duration-500">
                  <div className="lg:col-span-7 space-y-8">
                     <div className="space-y-3">
                        <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Problem Statement</label>
                        <textarea value={form.text} onChange={e => setForm({...form, text: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] p-8 text-lg font-bold text-slate-800 shadow-inner min-h-[200px]" placeholder="Question text..." />
                     </div>
                     <div className="space-y-6">
-                       <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Options Matrix</label>
+                       <div className="flex items-center justify-between ml-6">
+                          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Options Matrix</label>
+                          <span className="text-[9px] font-black uppercase text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded">Single Correct</span>
+                       </div>
                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {form.options.map((opt: string, i: number) => (
                             <div key={i} className="relative group">
                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-lg flex items-center justify-center font-black text-xs text-indigo-600 shadow-sm border border-slate-100">{String.fromCharCode(65+i)}</div>
-                               <input type="text" value={opt} onChange={e => { const n = [...form.options]; n[i] = e.target.value; setForm({...form, options: n}); }} className="w-full pl-16 pr-4 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold shadow-inner" placeholder={`Option ${String.fromCharCode(65+i)}`} />
+                               <input type="text" value={opt} onChange={e => { const n = [...form.options]; n[i] = e.target.value; setForm({...form, options: n}); }} className="w-full pl-16 pr-4 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold shadow-inner focus:bg-white transition-colors" placeholder={`Option ${String.fromCharCode(65+i)}`} />
                             </div>
                           ))}
                        </div>
                     </div>
                     <div className="space-y-3">
                        <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Corrective Logic (Explanation)</label>
-                       <textarea value={form.explanation} onChange={e => setForm({...form, explanation: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] p-6 text-sm font-medium text-slate-600 shadow-inner" placeholder="Why is this answer correct?" />
+                       <textarea value={form.explanation} onChange={e => setForm({...form, explanation: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] p-6 text-sm font-medium text-slate-600 shadow-inner min-h-[120px]" placeholder="Why is this answer correct?" />
                     </div>
                  </div>
-                 <div className="lg:col-span-5 space-y-8 bg-slate-50 p-10 rounded-[3.5rem] shadow-inner">
+                 <div className="lg:col-span-5 space-y-8 bg-slate-50 p-10 rounded-[3.5rem] shadow-inner border border-slate-100">
                     <div className="space-y-3">
-                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Target Logic (Correct Option)</label>
-                       <select value={form.correctAnswer} onChange={e => setForm({...form, correctAnswer: parseInt(e.target.value)})} className="w-full bg-white border-none rounded-2xl p-4 text-xs font-black shadow-sm">
-                          <option value={0}>Option A</option><option value={1}>Option B</option><option value={2}>Option C</option><option value={3}>Option D</option>
+                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5" /> Target Logic</label>
+                       <select value={form.correctAnswer} onChange={e => setForm({...form, correctAnswer: parseInt(e.target.value)})} className="w-full bg-white border-none rounded-2xl p-4 text-xs font-black shadow-sm outline-none">
+                          <option value={0}>Option A (Valid)</option><option value={1}>Option B (Valid)</option><option value={2}>Option C (Valid)</option><option value={3}>Option D (Valid)</option>
                        </select>
                     </div>
-                    <div className="space-y-3">
-                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Vertical (Subject)</label>
-                       <select value={form.subject} onChange={e => setForm({...form, subject: e.target.value})} className="w-full bg-white border-none rounded-2xl p-4 text-xs font-black shadow-sm">
-                          <option>Physics</option><option>Chemistry</option><option>Mathematics</option>
-                       </select>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Vertical</label>
+                        <select value={form.subject} onChange={e => setForm({...form, subject: e.target.value})} className="w-full bg-white border-none rounded-2xl p-4 text-xs font-black shadow-sm">
+                           <option>Physics</option><option>Chemistry</option><option>Mathematics</option>
+                        </select>
+                      </div>
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Complexity</label>
+                        <select value={form.difficulty} onChange={e => setForm({...form, difficulty: e.target.value})} className="w-full bg-white border-none rounded-2xl p-4 text-xs font-black shadow-sm">
+                           <option>EASY</option><option>MEDIUM</option><option>HARD</option>
+                        </select>
+                      </div>
                     </div>
                     <div className="space-y-3">
-                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Chapter Handshake (Tagging)</label>
-                       <select value={form.topicId} onChange={e => setForm({...form, topicId: e.target.value})} className="w-full bg-white border-none rounded-2xl p-4 text-xs font-black shadow-sm">
+                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Chapter Handshake</label>
+                       <select value={form.topicId} onChange={e => setForm({...form, topicId: e.target.value})} className="w-full bg-white border-none rounded-2xl p-4 text-xs font-black shadow-sm outline-none">
                           {data.chapters.map((c: Chapter) => <option key={c.id} value={c.id}>{c.name}</option>)}
                        </select>
                     </div>
                     <div className="space-y-3">
-                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Complexity Index</label>
-                       <select value={form.difficulty} onChange={e => setForm({...form, difficulty: e.target.value})} className="w-full bg-white border-none rounded-2xl p-4 text-xs font-black shadow-sm">
-                          <option>EASY</option><option>MEDIUM</option><option>HARD</option>
-                       </select>
+                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Meta Tags (PYQ / IIT)</label>
+                       <div className="relative">
+                          <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                          <input type="text" value={form.source} onChange={e => setForm({...form, source: e.target.value})} className="w-full pl-12 bg-white border-none rounded-2xl p-4 text-xs font-black shadow-sm" placeholder="IIT 2024, Main..." />
+                       </div>
                     </div>
-                    <div className="space-y-3">
-                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Meta Tags (e.g. IIT, PYQ)</label>
-                       <input type="text" value={form.source} onChange={e => setForm({...form, source: e.target.value})} className="w-full bg-white border-none rounded-2xl p-4 text-xs font-black shadow-sm" placeholder="IIT, JEE Main 2024..." />
+                    <div className="p-6 bg-white/40 rounded-3xl border border-white/50 space-y-3">
+                       <div className="text-[10px] font-black text-slate-400 flex items-center gap-2"><Info className="w-3.5 h-3.5" /> Logical Verification</div>
+                       <p className="text-[9px] text-slate-500 italic leading-relaxed">Ensure the Corrective Logic explains why the chosen option is valid. This metadata is used by the AI Tutor locally.</p>
                     </div>
                  </div>
               </div>
