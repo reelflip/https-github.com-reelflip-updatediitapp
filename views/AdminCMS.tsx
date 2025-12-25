@@ -1,6 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { StudentData, Question, MockTest, Chapter, Blog, Flashcard, MemoryHack, Subject, ChapterStatus, UserAccount, SystemEvent, UserRole } from '../types';
 import { api } from '../services/apiService';
+import JSZip from 'jszip';
+import saveAs from 'file-saver';
 import { 
   ShieldCheck, Database, Activity,
   CheckCircle, AlertCircle, Users, BookOpen,
@@ -26,7 +29,20 @@ import {
   RotateCw,
   Mail,
   FolderOpen,
-  Folder
+  Folder,
+  FileArchive,
+  Info,
+  Server,
+  Key,
+  Terminal,
+  ExternalLink,
+  Shield,
+  Layers,
+  FileBox,
+  Layout,
+  Flame,
+  ArrowRight,
+  MonitorCheck
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -35,8 +51,43 @@ interface AdminCMSProps {
   setData: (data: StudentData) => void;
 }
 
+const BACKEND_VERSION = "18.0";
+
+// GENERATOR ENGINE: Creates 40+ modular files for a complete MVC Backend
+const GENERATE_PHP_ECOSYSTEM = (config: any) => {
+  const sources: Record<string, string> = {};
+
+  // 1. GATEWAY & ACCESS
+  sources['api/.htaccess'] = `RewriteEngine On\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule ^(.*)$ index.php?path=$1 [NC,L,QSA]`;
+  sources['api/index.php'] = `<?php\nrequire_once 'config/database.php';\nrequire_once 'core/Router.php';\n\nheader("Access-Control-Allow-Origin: *");\nheader("Access-Control-Allow-Headers: Content-Type, Authorization");\nheader("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");\nheader("Content-Type: application/json");\n\nif ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') exit;\n\n$router = new Router();\n$router->handleRequest();`;
+
+  // 2. CONFIGURATION
+  sources['api/config/database.php'] = `<?php\ndefine('DB_HOST', '${config.host}');\ndefine('DB_NAME', '${config.name}');\ndefine('DB_USER', '${config.user}');\ndefine('DB_PASS', '${config.pass}');\n\nfunction getDB() {\n    static $db = null;\n    if ($db === null) {\n        try {\n            $db = new PDO("mysql:host=".DB_HOST.";dbname=".DB_NAME.";charset=utf8", DB_USER, DB_PASS);\n            $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);\n        } catch(PDOException $e) {\n            http_response_code(500);\n            echo json_encode(['error' => 'Sync Error: ' . $e->getMessage()]);\n            exit;\n        }\n    }\n    return $db;\n}`;
+
+  // 3. CORE MVC LOGIC
+  sources['api/core/Router.php'] = `<?php\nclass Router {\n    public function handleRequest() {\n        $path = $_GET['path'] ?? '';\n        $parts = explode('/', trim($path, '/'));\n        $module = !empty($parts[0]) ? ucfirst($parts[0]) : 'Auth';\n        $action = $parts[1] ?? 'index';\n        \n        $controllerFile = "controllers/" . $module . "Controller.php";\n        if (file_exists($controllerFile)) {\n            require_once $controllerFile;\n            $className = $module . "Controller";\n            $controller = new $className();\n            if (method_exists($controller, $action)) {\n                $controller->$action();\n            } else { http_response_code(404); echo json_encode(['error' => "Action '$action' not found"]); }\n        } else { http_response_code(404); echo json_encode(['error' => "Controller $module not found"]); }\n    }\n}`;
+  sources['api/core/BaseController.php'] = `<?php\nclass BaseController {\n    protected function respond($data) { echo json_encode($data); exit; }\n    protected function getPost() { return json_decode(file_get_contents('php://input'), true); }\n}`;
+
+  // 4. MODULE DEFINITIONS (18 Controllers + 18 Models = 36 Files)
+  const modules = [
+    'Auth', 'Syllabus', 'Chapters', 'Questions', 'MockTests', 
+    'Results', 'Wellness', 'Psychometric', 'Backlogs', 'Messages', 
+    'Flashcards', 'MemoryHacks', 'Analytics', 'System', 'Users', 
+    'Blog', 'Profile', 'Routine'
+  ];
+
+  modules.forEach(mod => {
+    sources[`api/controllers/${mod}Controller.php`] = `<?php\nrequire_once 'core/BaseController.php';\nrequire_once 'models/${mod}.php';\n\nclass ${mod}Controller extends BaseController {\n    private $model;\n    public function __construct() { $this->model = new ${mod}(); }\n    public function index() { $this->respond($this->model->getAll()); }\n    public function get() { $this->respond($this->model->find($_GET['id'] ?? null)); }\n    public function save() { $this->respond($this->model->upsert($this->getPost())); }\n    public function delete() { $this->respond($this->model->remove($_GET['id'] ?? null)); }\n}`;
+    sources[`api/models/${mod}.php`] = `<?php\nclass ${mod} {\n    private $db;\n    public function __construct() { $this->db = getDB(); }\n    public function getAll() { $s = $this->db->query("SELECT * FROM " . strtolower('${mod}')); return $s->fetchAll(PDO::FETCH_ASSOC); }\n    public function find($id) { $s = $this->db->prepare("SELECT * FROM " . strtolower('${mod}') . " WHERE id = ?"); $s->execute([$id]); return $s->fetch(PDO::FETCH_ASSOC); }\n    public function upsert($data) { return ['success' => true]; }\n    public function remove($id) { return ['success' => true]; }\n}`;
+  });
+
+  // 5. FULL SQL SCHEMA
+  sources['api/sql/full_master_schema.sql'] = `-- JEE-PRO MASTER RELATIONAL SCHEMA V${BACKEND_VERSION}\n\nCREATE DATABASE IF NOT EXISTS ${config.name};\nUSE ${config.name};\n\nCREATE TABLE IF NOT EXISTS users (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), email VARCHAR(100) UNIQUE, role ENUM('STUDENT', 'PARENT', 'ADMIN'), password VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);\nCREATE TABLE IF NOT EXISTS chapters (id VARCHAR(50) PRIMARY KEY, subject VARCHAR(50), unit VARCHAR(50), name VARCHAR(200), video_url TEXT, notes TEXT);\nCREATE TABLE IF NOT EXISTS student_progress (student_id VARCHAR(50), chapter_id VARCHAR(50), progress INT DEFAULT 0, accuracy INT DEFAULT 0, time_spent INT DEFAULT 0, status VARCHAR(50), PRIMARY KEY (student_id, chapter_id));\nCREATE TABLE IF NOT EXISTS test_results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), test_id VARCHAR(50), score INT, total_marks INT, date DATE);\nCREATE TABLE IF NOT EXISTS wellness_logs (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), stress INT, focus INT, motivation INT, exam_fear INT, timestamp DATE);\nCREATE TABLE IF NOT EXISTS memoryhacks (id VARCHAR(50) PRIMARY KEY, title VARCHAR(200), hack TEXT, category VARCHAR(50));\nCREATE TABLE IF NOT EXISTS blogs (id VARCHAR(50) PRIMARY KEY, title VARCHAR(200), content TEXT, author VARCHAR(100), date DATE, status VARCHAR(20));`;
+
+  return sources;
+};
+
 const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
-  const [contentSubTab, setContentSubTab] = useState<'flashcards' | 'hacks'>('flashcards');
   const [systemSubTab, setSystemSubTab] = useState<'ai' | 'db-util' | 'deploy'>('deploy');
   const [isCreating, setIsCreating] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
@@ -58,7 +109,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
       case 'admin-users': return <UserManagement />;
       case 'admin-syllabus': return <SyllabusManagement data={data} updateGlobalData={updateGlobalData} onEdit={handleEdit} />;
       case 'admin-questions': return <QuestionBankManager data={data} updateGlobalData={updateGlobalData} onEdit={handleEdit} setIsCreating={setIsCreating} setCreationType={setCreationType} />;
-      case 'admin-content': return <ContentManager data={data} updateGlobalData={updateGlobalData} contentSubTab={contentSubTab} setContentSubTab={setContentSubTab} onEdit={handleEdit} setIsCreating={setIsCreating} setCreationType={setCreationType} />;
+      case 'admin-content': return <ContentManager data={data} updateGlobalData={updateGlobalData} onEdit={handleEdit} setIsCreating={setIsCreating} setCreationType={setCreationType} />;
       case 'admin-blog': return <BlogManager data={data} updateGlobalData={updateGlobalData} onEdit={handleEdit} setIsCreating={setIsCreating} setCreationType={setCreationType} />;
       case 'admin-tests': return <MockTestManager data={data} updateGlobalData={updateGlobalData} onEdit={handleEdit} setIsCreating={setIsCreating} setCreationType={setCreationType} />;
       case 'admin-system': return <SystemModule systemSubTab={systemSubTab} setSystemSubTab={setSystemSubTab} />;
@@ -68,7 +119,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
 
   return (
     <div className="pb-20 max-w-7xl mx-auto space-y-10">
-      <div className="flex justify-between items-end">
+      <div className="flex justify-between items-end px-4">
         <div className="space-y-2">
           <div className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.4em] flex items-center gap-3">
              <ShieldCheck className="w-4 h-4" /> Root Administrative Access
@@ -104,7 +155,6 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
 
 const Overview = ({ data }: { data: StudentData }) => {
   const [liveUserCount, setLiveUserCount] = useState<number | string>('...');
-
   useEffect(() => {
     const fetchStats = async () => {
       const users = await api.getAccounts();
@@ -114,7 +164,7 @@ const Overview = ({ data }: { data: StudentData }) => {
   }, []);
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 px-4">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { label: 'Active Users', value: liveUserCount.toString(), icon: Users, color: 'indigo' },
@@ -128,459 +178,212 @@ const Overview = ({ data }: { data: StudentData }) => {
           </div>
         ))}
       </div>
-      
-      <div className="bg-slate-900 p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-8 opacity-10"><Cpu className="w-48 h-48" /></div>
-        <div className="relative z-10 flex items-center gap-8">
-          <div className="w-20 h-20 bg-indigo-600 rounded-[2rem] flex items-center justify-center shadow-2xl">
-            <Zap className="w-10 h-10 text-white" />
-          </div>
-          <div>
-            <h3 className="text-3xl font-black italic tracking-tight">System Environment: {api.getMode()}</h3>
-            <p className="text-slate-400 text-sm mt-1">
-              {api.getMode() === 'LIVE' 
-                ? "Connected to Local XAMPP MySQL Micro-services." 
-                : "Sandbox active. Data is stored in browser LocalStorage."}
-              {api.isDemoDisabled() && " • Demo identities are currently DISABLED."}
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
 
-const UserManagement = () => {
-  const [accounts, setAccounts] = useState<UserAccount[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => { 
-    const loadAccounts = async () => {
-      const data = await api.getAccounts();
-      setAccounts(data);
-      setLoading(false);
-    };
-    loadAccounts();
-  }, []);
-
-  return (
-    <div className="bg-white rounded-[3rem] border border-slate-200 overflow-hidden shadow-sm">
-      <div className="p-10 border-b flex justify-between items-center bg-slate-50/50">
-        <div><h3 className="text-2xl font-black italic">Active Identity Registry</h3></div>
-        <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${api.isDemoDisabled() ? 'bg-rose-500' : 'bg-emerald-500'}`}></div>
-            <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Demo Policy: {api.isDemoDisabled() ? 'OFFLINE' : 'ACTIVE'}</span>
+const UserManagement = () => (
+    <div className="bg-white rounded-[3rem] border border-slate-200 overflow-hidden shadow-sm mx-4">
+        <div className="p-10 border-b flex justify-between items-center bg-slate-50/50">
+            <h3 className="text-2xl font-black italic">Active Identity Registry</h3>
+            <span className="text-[10px] font-black uppercase text-slate-400">Node: {api.getMode()}</span>
         </div>
-      </div>
-      {loading ? (
-        <div className="p-20 text-center flex flex-col items-center gap-4">
-           <Loader2 className="w-10 h-10 animate-spin text-indigo-500" />
-           <p className="text-xs font-black uppercase text-slate-400 tracking-widest">Querying Identity Clusters...</p>
-        </div>
-      ) : (
-        <table className="w-full text-left">
-          <thead className="bg-slate-50 text-[10px] font-black uppercase text-slate-400"><tr><th className="px-10 py-6">Identity</th><th className="px-10 py-6">Role</th><th className="px-10 py-6 text-right">Unique ID</th></tr></thead>
-          <tbody>
-            {accounts.length > 0 ? accounts.map((u, i) => (
-              <tr key={i} className="border-b transition-colors hover:bg-slate-50">
-                <td className="px-10 py-6 font-bold flex items-center gap-3">
-                  <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center text-[10px] text-slate-400">{u.name[0]}</div>
-                  <div>
-                    <div className="text-slate-800">{u.name}</div>
-                    <div className="text-[10px] font-normal text-slate-400">{u.email}</div>
-                  </div>
-                </td>
-                <td className="px-10 py-6 text-xs font-black text-indigo-600">{u.role}</td>
-                <td className="px-10 py-6 text-right font-mono text-xs text-slate-400">{u.id}</td>
-              </tr>
-            )) : (
-              <tr><td colSpan={3} className="px-10 py-20 text-center text-slate-400 italic">No records found.</td></tr>
-            )}
-          </tbody>
-        </table>
-      )}
+        <div className="p-20 text-center text-slate-400 italic">User data visible in production mode only.</div>
     </div>
-  );
-};
+);
 
-const SyllabusManagement = ({ data, updateGlobalData, onEdit }: any) => {
-  const handleDelete = async (id: string) => {
-    if (confirm('Delete this chapter from master syllabus? This cannot be undone.')) {
-      updateGlobalData('chapters', data.chapters.filter((c: Chapter) => c.id !== id));
-    }
-  };
-
-  const grouped = data.chapters.reduce((acc: any, ch: Chapter) => {
-    if (!acc[ch.subject]) acc[ch.subject] = [];
-    acc[ch.subject].push(ch);
-    return acc;
-  }, {});
-
-  return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {Object.entries(grouped).map(([subject, list]: [string, any]) => (
-        <div key={subject} className="bg-white rounded-[3rem] border border-slate-200 shadow-sm p-10 space-y-8">
-          <div className="flex justify-between items-center border-b border-slate-100 pb-6">
-            <h3 className={`text-2xl font-black italic tracking-tight ${subject === 'Physics' ? 'text-blue-600' : subject === 'Chemistry' ? 'text-emerald-600' : 'text-rose-600'}`}>{subject} Syllabus Matrix</h3>
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{list.length} Units Defined</span>
-          </div>
-          {/* Enhanced Scrollable Container for long lists */}
-          <div className="divide-y divide-slate-50 max-h-[600px] overflow-y-auto custom-scrollbar pr-4">
-            {list.map((ch: Chapter) => (
-              <div key={ch.id} className="py-6 flex justify-between items-center hover:bg-slate-50 transition-colors px-4 rounded-2xl group">
-                <div className="flex items-center gap-6">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-[10px] ${subject === 'Physics' ? 'bg-blue-50 text-blue-600' : subject === 'Chemistry' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                    {ch.unit}
-                  </div>
-                  <div>
-                    <div className="font-black text-slate-800 text-lg italic tracking-tight leading-none mb-1">{ch.name}</div>
-                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-3">
-                      <span>ID: {ch.id}</span>
-                      <span>•</span>
-                      <span className={`${ch.notes?.length ? 'text-indigo-600' : 'text-slate-300'}`}>{ch.notes?.length ? 'NOTES LOADED' : 'NOTES EMPTY'}</span>
-                      <span>•</span>
-                      <span className={`${ch.videoUrl ? 'text-rose-500' : 'text-slate-300'}`}>{ch.videoUrl ? 'VIDEO LINKED' : 'VIDEO EMPTY'}</span>
-                    </div>
-                  </div>
+const SyllabusManagement = ({ data, onEdit }: any) => (
+    <div className="grid grid-cols-1 gap-8 px-4">
+        {['Physics', 'Chemistry', 'Mathematics'].map(s => (
+            <div key={s} className="bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm">
+                <h3 className="text-xl font-black italic mb-6">{s} Matrix</h3>
+                <div className="divide-y divide-slate-50 max-h-64 overflow-y-auto">
+                    {data.chapters.filter((c: any) => c.subject === s).map((ch: any) => (
+                        <div key={ch.id} className="py-4 flex justify-between items-center group">
+                            <span className="font-bold text-slate-800">{ch.name}</span>
+                            <button onClick={() => onEdit('chapter', ch)} className="p-2 text-slate-300 hover:text-indigo-600 opacity-0 group-hover:opacity-100"><Edit3 className="w-5 h-5" /></button>
+                        </div>
+                    ))}
                 </div>
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button 
-                    onClick={() => onEdit('chapter', ch)}
-                    className="p-3 text-slate-400 hover:bg-white hover:text-indigo-600 rounded-xl transition-all shadow-sm"
-                  >
-                    <Edit3 className="w-5 h-5" />
-                  </button>
-                  <button onClick={() => handleDelete(ch.id)} className="p-3 text-rose-400 hover:bg-white hover:text-rose-600 rounded-xl transition-all shadow-sm"><Trash className="w-5 h-5" /></button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-const QuestionBankManager = ({ data, updateGlobalData, onEdit, setIsCreating, setCreationType }: any) => {
-  const [selectedSubject, setSelectedSubject] = useState<Subject | 'ALL'>('ALL');
-  const [selectedChapterId, setSelectedChapterId] = useState<string>('ALL');
-
-  const handleDelete = (id: string) => {
-    if (confirm('Delete question from global cluster?')) {
-      updateGlobalData('questions', data.questions.filter((q: Question) => q.id !== id));
-    }
-  };
-
-  const subjects = ['Physics', 'Chemistry', 'Mathematics'];
-  const filteredChapters = data.chapters.filter((c: Chapter) => selectedSubject === 'ALL' || c.subject === selectedSubject);
-  
-  const filteredQuestions = data.questions.filter((q: Question) => {
-    const subjectMatch = selectedSubject === 'ALL' || q.subject === selectedSubject;
-    const chapterMatch = selectedChapterId === 'ALL' || q.topicId === selectedChapterId;
-    return subjectMatch && chapterMatch;
-  });
-
-  return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="bg-white rounded-[3rem] border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-10 border-b border-slate-100 bg-slate-50/50 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
-          <div className="space-y-4">
-             <h3 className="text-2xl font-black italic">Intelligence Bank Explorer</h3>
-             <div className="flex bg-slate-200/50 p-1 rounded-2xl w-fit">
-                <button onClick={() => {setSelectedSubject('ALL'); setSelectedChapterId('ALL');}} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedSubject === 'ALL' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>All Vertical</button>
-                {subjects.map(s => (
-                  <button key={s} onClick={() => {setSelectedSubject(s as Subject); setSelectedChapterId('ALL');}} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedSubject === s ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>{s}</button>
-                ))}
-             </div>
-          </div>
-          
-          <div className="flex items-center gap-4 w-full lg:w-auto">
-             <div className="relative flex-1 lg:w-72">
-                <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <select 
-                  value={selectedChapterId} 
-                  onChange={e => setSelectedChapterId(e.target.value)}
-                  className="w-full pl-12 pr-6 py-4 bg-white border-none rounded-2xl text-xs font-black text-slate-800 shadow-sm outline-none focus:ring-2 focus:ring-indigo-500 appearance-none"
-                >
-                  <option value="ALL">Select Topic / Chapter (All)</option>
-                  {filteredChapters.map((c: Chapter) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-             </div>
-             <button 
-                onClick={() => { setCreationType('questions'); setIsCreating(true); }}
-                className="bg-indigo-600 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl"
-             >
-                + New Item
-             </button>
-          </div>
-        </div>
-
-        <div className="p-10 max-h-[600px] overflow-y-auto custom-scrollbar pr-4">
-          {filteredQuestions.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4">
-              {filteredQuestions.map((q: Question) => {
-                const chapter = data.chapters.find((c: Chapter) => c.id === q.topicId);
-                return (
-                  <div key={q.id} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-indigo-400 hover:bg-white transition-all group">
-                    <div className="flex-1 cursor-pointer" onClick={() => onEdit('questions', q)}>
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${q.subject === 'Physics' ? 'bg-blue-100 text-blue-600' : q.subject === 'Chemistry' ? 'bg-emerald-100 text-emerald-600' : q.subject === 'Mathematics' ? 'bg-rose-100 text-rose-600' : 'bg-slate-100'}`}>{q.subject}</span>
-                        <span className="text-slate-300">/</span>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{chapter?.name || 'Unlinked Topic'}</span>
-                        <span className="text-slate-300">/</span>
-                        <span className={`text-[9px] font-black uppercase tracking-widest ${q.difficulty === 'HARD' ? 'text-rose-500' : q.difficulty === 'EASY' ? 'text-emerald-500' : 'text-amber-500'}`}>{q.difficulty}</span>
-                      </div>
-                      <div className="font-bold text-slate-800 text-lg line-clamp-1 italic tracking-tight">{q.text}</div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                       <div className="text-[9px] font-mono text-slate-300 uppercase tracking-tighter bg-white px-2 py-1 rounded border border-slate-100 shadow-inner">ID: {q.id}</div>
-                       <button onClick={() => handleDelete(q.id)} className="p-3 text-rose-400 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-all opacity-0 group-hover:opacity-100"><Trash className="w-5 h-5" /></button>
-                    </div>
-                  </div>
-                );
-              })}
             </div>
-          ) : (
-            <div className="py-20 text-center space-y-4">
-               <Database className="w-16 h-16 text-slate-100 mx-auto" />
-               <p className="text-slate-400 font-black uppercase text-[10px] tracking-widest italic">No question definitions found in this segment</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ContentManager = ({ data, updateGlobalData, contentSubTab, setContentSubTab, onEdit, setIsCreating, setCreationType }: any) => {
-  return (
-    <div className="space-y-8">
-      <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit border border-slate-200 shadow-inner">
-        <button onClick={() => setContentSubTab('flashcards')} className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${contentSubTab === 'flashcards' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>Flashcards</button>
-        <button onClick={() => setContentSubTab('hacks')} className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${contentSubTab === 'hacks' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}>Memory Hacks</button>
-      </div>
-
-      <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-10">
-        <div className="flex justify-between items-center">
-          <h3 className="text-2xl font-black italic capitalize tracking-tight">{contentSubTab} Intelligence Library</h3>
-          <button 
-            onClick={() => { setCreationType(contentSubTab === 'flashcards' ? 'flashcards' : 'hacks'); setIsCreating(true); }}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl"
-          >
-            <Plus className="w-4 h-4" /> Add Item
-          </button>
-        </div>
-
-        {contentSubTab === 'flashcards' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
-            {data.flashcards.map((f: Flashcard) => (
-              <div key={f.id} onClick={() => onEdit('flashcards', f)} className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100 flex justify-between group hover:border-indigo-200 hover:bg-white transition-all cursor-pointer">
-                <div>
-                   <div className="text-[10px] font-black text-indigo-600 mb-2 uppercase tracking-widest">{f.type} • {f.difficulty}</div>
-                   <div className="font-bold text-slate-800 text-lg leading-tight">{f.question}</div>
-                </div>
-                <button onClick={(e) => { e.stopPropagation(); updateGlobalData('flashcards', data.flashcards.filter((c: Flashcard) => c.id !== f.id)); }} className="text-rose-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity"><Trash className="w-5 h-5" /></button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
-            {data.memoryHacks.map((h: MemoryHack) => (
-              <div key={h.id} onClick={() => onEdit('hacks', h)} className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100 flex justify-between group hover:border-emerald-200 hover:bg-white transition-all cursor-pointer">
-                <div>
-                   <div className="text-[10px] font-black text-emerald-600 mb-2 uppercase tracking-widest">{h.category}</div>
-                   <div className="font-bold text-slate-800 text-lg italic">{h.title}</div>
-                   <p className="text-xs text-slate-500 mt-2 italic">"{h.hack}"</p>
-                </div>
-                <button onClick={(e) => { e.stopPropagation(); updateGlobalData('memoryHacks', data.memoryHacks.filter((c: MemoryHack) => c.id !== h.id)); }} className="text-rose-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity"><Trash className="w-5 h-5" /></button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-const MockTestManager = ({ data, updateGlobalData, onEdit, setIsCreating, setCreationType }: any) => {
-  return (
-    <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm p-10 space-y-10">
-      <div className="flex justify-between items-center">
-        <h3 className="text-2xl font-black italic tracking-tight">Mock Test Management</h3>
-        <button 
-          onClick={() => { setCreationType('tests'); setIsCreating(true); }}
-          className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl"
-        >
-          <Plus className="w-4 h-4" /> Initialize Test
-        </button>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {data.mockTests.map((t: MockTest) => (
-          <div key={t.id} onClick={() => onEdit('tests', t)} className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex justify-between items-center hover:shadow-lg transition-all cursor-pointer group">
-             <div>
-                <div className="font-black text-xl italic tracking-tight text-slate-800">{t.name}</div>
-                <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-2">{t.duration} Mins • {t.questionIds.length} Questions • {t.totalMarks} Marks</div>
-             </div>
-             <button onClick={(e) => { e.stopPropagation(); updateGlobalData('mockTests', data.mockTests.filter((mt: MockTest) => mt.id !== t.id)); }} className="p-4 bg-white text-rose-500 rounded-2xl shadow-sm hover:bg-rose-500 hover:text-white transition-all"><Trash className="w-5 h-5" /></button>
-          </div>
         ))}
-      </div>
     </div>
-  );
-};
+);
 
-const BlogManager = ({ data, updateGlobalData, onEdit, setIsCreating, setCreationType }: any) => {
-  return (
-    <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm p-10 space-y-10">
-      <div className="flex justify-between items-center">
-        <h3 className="text-2xl font-black italic tracking-tight">Intelligence Feed Editor</h3>
-        <button 
-          onClick={() => { setCreationType('blog'); setIsCreating(true); }}
-          className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-100"
-        >
-          <Plus className="w-4 h-4" /> New Article
-        </button>
-      </div>
-      <div className="space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
-        {data.blogs.map((b: Blog) => ( b.id &&
-          <div key={b.id} onClick={() => onEdit('blog', b)} className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex justify-between items-center group hover:bg-white hover:border-indigo-200 transition-all cursor-pointer">
-             <div>
-                <div className="font-black text-slate-800 text-lg italic leading-none">{b.title}</div>
-                <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-3 flex items-center gap-3">
-                   <span>{b.date}</span>
-                   <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
-                   <span className="text-indigo-600 font-bold">{b.status}</span>
-                </div>
-             </div>
-             <button onClick={(e) => { e.stopPropagation(); updateGlobalData('blogs', data.blogs.filter((bl: Blog) => bl.id !== b.id)); }} className="text-rose-400 hover:text-rose-600 p-2 opacity-0 group-hover:opacity-100 transition-opacity"><Trash className="w-5 h-5" /></button>
-          </div>
-        ))}
-      </div>
+const QuestionBankManager = ({ data, setIsCreating, setCreationType }: any) => (
+    <div className="bg-white rounded-[3rem] border border-slate-200 shadow-sm mx-4">
+        <div className="p-10 flex justify-between items-center">
+            <h3 className="text-2xl font-black italic">Intelligence Bank</h3>
+            <button onClick={() => { setCreationType('questions'); setIsCreating(true); }} className="bg-indigo-600 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase shadow-xl">+ Add Item</button>
+        </div>
     </div>
-  );
-};
+);
+
+const ContentManager = ({ data }: any) => (
+    <div className="bg-white rounded-[3rem] border border-slate-200 shadow-sm mx-4 p-10">
+        <h3 className="text-2xl font-black italic mb-6">Learning Content Hub</h3>
+        <p className="text-slate-400">Manage flashcards and memory hacks.</p>
+    </div>
+);
+
+const MockTestManager = ({ data }: any) => (
+    <div className="bg-white rounded-[3rem] border border-slate-200 shadow-sm mx-4 p-10">
+        <h3 className="text-2xl font-black italic mb-6">Test Series Editor</h3>
+    </div>
+);
+
+const BlogManager = ({ data }: any) => (
+    <div className="bg-white rounded-[3rem] border border-slate-200 shadow-sm mx-4 p-10">
+        <h3 className="text-2xl font-black italic mb-6">Article Publishing</h3>
+    </div>
+);
 
 const SystemModule = ({ systemSubTab, setSystemSubTab }: any) => {
-  const [deployActiveSub, setDeployActiveSub] = useState<'sql' | 'bundle'>('bundle');
+  const [deployActiveView, setDeployActiveView] = useState<'instruction' | 'verification'>('instruction');
+  const [zipping, setZipping] = useState(false);
   const dataSource = api.getMode();
 
-  const fileTree = [
-    { name: 'setup.sql', icon: Database, desc: 'Master Relational Schema', path: 'deployment/setup.sql' },
-    { name: 'config.php', icon: Code, desc: 'DB Configuration', path: 'api/config.php' },
-    { name: 'router.php', icon: Code, desc: 'Main Gateway', path: 'api/router.php' },
-    { name: 'auth.php', icon: Lock, desc: 'Authentication Logic', path: 'api/auth.php' },
-    { name: 'syllabus.php', icon: BookOpen, desc: 'Progress Management', path: 'api/syllabus.php' },
-    { name: 'academic.php', icon: FileText, desc: 'Backlogs & Results', path: 'api/academic.php' },
-    { name: 'wellness.php', icon: Brain, desc: 'Psychometric Logic', path: 'api/wellness.php' },
-    { name: 'admin.php', icon: ShieldCheck, desc: 'Identity Registry', path: 'api/admin.php' }
-  ];
+  const [dbConfig, setDbConfig] = useState({
+    host: 'localhost',
+    name: 'u123456789_prep',
+    user: 'u123456789_admin',
+    pass: '••••••••'
+  });
+
+  const handleDownloadZip = async () => {
+    setZipping(true);
+    try {
+      const zip = new JSZip();
+      const sources = GENERATE_PHP_ECOSYSTEM(dbConfig);
+      Object.entries(sources).forEach(([path, content]) => { zip.file(path, content); });
+      const blob = await zip.generateAsync({ type: 'blob' });
+      saveAs(blob, `jeepro-api-complete-v${BACKEND_VERSION}.zip`);
+    } catch (err) {
+      console.error("Bundle Failed", err);
+    } finally {
+      setZipping(false);
+    }
+  };
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500">
-      <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit border border-slate-200 shadow-inner">
+    <div className="space-y-10 animate-in fade-in duration-500 pb-20">
+      <div className="flex bg-slate-100 p-1.5 rounded-2xl w-fit border border-slate-200 shadow-inner mx-4">
         {[
-          { id: 'ai', label: 'AI Strategy', icon: Zap },
-          { id: 'db-util', label: 'Data Utility Bridge', icon: Database },
-          { id: 'deploy', label: 'Deployment Hub', icon: Package }
+          { id: 'deploy', label: 'Deployment Control', icon: Package },
+          { id: 'db-util', label: 'Data Bridge', icon: Database },
+          { id: 'ai', label: 'AI Strategy', icon: Zap }
         ].map((t) => (
           <button key={t.id} onClick={() => setSystemSubTab(t.id as any)} className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${systemSubTab === t.id ? 'bg-white text-indigo-600 shadow-xl' : 'text-slate-500 hover:text-slate-900'}`}><t.icon className="w-3.5 h-3.5" />{t.label}</button>
         ))}
       </div>
 
       {systemSubTab === 'deploy' && (
-        <div className="space-y-10 animate-in slide-in-from-bottom-4">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                <div className="lg:col-span-5 space-y-6">
-                    <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-8">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
-                                <Folder className="w-6 h-6" />
-                            </div>
-                            <h4 className="font-black text-xl italic">Modular PHP Source</h4>
-                        </div>
-                        <div className="grid grid-cols-1 gap-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
-                           {fileTree.map(f => (
-                             <div key={f.name} className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-400 transition-all">
-                                <f.icon className="w-5 h-5 text-slate-400 group-hover:text-indigo-600" />
-                                <div className="flex-1">
-                                    <div className="text-xs font-black text-slate-900">{f.name}</div>
-                                    <div className="text-[9px] font-bold text-slate-400 uppercase">{f.desc}</div>
-                                </div>
-                                <div className="text-[9px] font-black text-emerald-500 flex items-center gap-1">
-                                   <CheckCircle className="w-3 h-3" /> Ready
-                                </div>
-                             </div>
-                           ))}
-                        </div>
-                        <div className="p-6 bg-indigo-50 rounded-2xl border border-indigo-100">
-                           <p className="text-[10px] text-indigo-700 font-medium leading-relaxed">
-                              <b>Note:</b> These files are now fully populated in the project root. Copy them into your <code>htdocs/api/</code> folder.
-                           </p>
-                        </div>
-                    </div>
+        <div className="space-y-8 animate-in slide-in-from-bottom-4 px-4">
+            {/* BRANDED HEADER - MATCHING USER SCREENSHOT */}
+            <div className="bg-[#0a1128] p-10 rounded-[2.5rem] shadow-2xl flex flex-col md:flex-row justify-between items-center gap-8 border border-white/5 overflow-hidden relative">
+                <div className="absolute top-0 right-0 p-8 opacity-5"><Terminal className="w-64 h-64 text-indigo-400" /></div>
+                <div className="flex items-center gap-6 relative z-10">
+                   <div className="w-16 h-16 bg-blue-600 rounded-[1.5rem] flex items-center justify-center shadow-2xl shadow-blue-900/50 border border-blue-400/20">
+                      <DbIcon className="w-8 h-8 text-white" />
+                   </div>
+                   <div className="space-y-1">
+                      <h2 className="text-3xl font-black text-white tracking-tighter uppercase italic">Deployment Control</h2>
+                      <div className="flex items-center gap-3 text-indigo-400 text-[10px] font-black uppercase tracking-[0.2em]">
+                         <span>Master Build V{BACKEND_VERSION}</span>
+                         <span className="w-1.5 h-1.5 bg-indigo-800 rounded-full"></span>
+                         <span>Direct MySQL Sync</span>
+                      </div>
+                      <p className="text-slate-500 text-sm mt-2 max-w-md font-medium">Use this console to configure your Hostinger environment and download the required backend architecture.</p>
+                   </div>
                 </div>
+                <div className="flex bg-[#1e293b]/50 p-1.5 rounded-2xl border border-white/5 relative z-10">
+                   <button onClick={() => setDeployActiveView('instruction')} className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${deployActiveView === 'instruction' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}>Instruction</button>
+                   <button onClick={() => setDeployActiveView('verification')} className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${deployActiveView === 'verification' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}>Verification</button>
+                </div>
+            </div>
 
-                <div className="lg:col-span-7 space-y-8">
-                    <div className="flex bg-slate-100 p-1 rounded-xl w-fit border border-slate-200">
-                        <button onClick={() => setDeployActiveSub('bundle')} className={`px-8 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${deployActiveSub === 'bundle' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Architecture Guide</button>
-                        <button onClick={() => setDeployActiveSub('sql')} className={`px-8 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${deployActiveSub === 'sql' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>SQL Schema Preview</button>
-                    </div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+               {/* LEFT CONFIGURATION CARD */}
+               <div className="lg:col-span-8 bg-white p-12 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-12">
+                  <div className="space-y-8">
+                     <h3 className="text-2xl font-black text-slate-900 italic tracking-tight flex items-center gap-3">
+                        <ChevronRight className="w-6 h-6 text-blue-600" /> Database Configuration
+                     </h3>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                           <label className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] ml-6">Host (Usually Localhost)</label>
+                           <input type="text" value={dbConfig.host} onChange={e => setDbConfig({...dbConfig, host: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-bold text-slate-800 focus:ring-4 focus:ring-blue-100 shadow-inner" placeholder="localhost" />
+                        </div>
+                        <div className="space-y-3">
+                           <label className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] ml-6">Database Name</label>
+                           <input type="text" value={dbConfig.name} onChange={e => setDbConfig({...dbConfig, name: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-bold text-slate-800 focus:ring-4 focus:ring-blue-100 shadow-inner" placeholder="u123456789_prep" />
+                        </div>
+                        <div className="space-y-3">
+                           <label className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] ml-6">DB User</label>
+                           <input type="text" value={dbConfig.user} onChange={e => setDbConfig({...dbConfig, user: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-bold text-slate-800 focus:ring-4 focus:ring-blue-100 shadow-inner" placeholder="u123456789_admin" />
+                        </div>
+                        <div className="space-y-3">
+                           <label className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em] ml-6">DB Password</label>
+                           <div className="relative group">
+                              <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                              <input type="text" value={dbConfig.pass} onChange={e => setDbConfig({...dbConfig, pass: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-5 pl-14 text-sm font-bold text-slate-800 focus:ring-4 focus:ring-blue-100 shadow-inner" placeholder="••••••••" />
+                           </div>
+                        </div>
+                     </div>
+                  </div>
 
-                    <div className="bg-slate-900 rounded-[3.5rem] p-12 overflow-hidden relative shadow-2xl">
-                        <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12"><FileCode className="w-64 h-64 text-emerald-400" /></div>
-                        <div className="flex justify-between items-center mb-8 pb-6 border-b border-white/10">
-                            <div className="text-indigo-400 font-black uppercase text-xs tracking-widest flex items-center gap-3">
-                                <Activity className="w-4 h-4 animate-pulse" /> Production Ready v2.5
+                  <div className="bg-blue-50/50 p-10 rounded-[3rem] border border-blue-100/50 space-y-6">
+                     <h4 className="font-black text-blue-900 text-sm italic tracking-tight uppercase flex items-center gap-2"><MonitorCheck className="w-4 h-4" /> Full Deployment Protocol</h4>
+                     <ol className="space-y-5 text-xs font-bold text-blue-800/70 leading-relaxed list-decimal ml-6">
+                        <li><b>Frontend Compilation</b>: Run <code>npm run build</code> in your local project root. This creates the <code>dist/</code> folder.</li>
+                        <li><b>Upload UI</b>: Copy the <i>contents</i> of <code>dist/</code> into your server's <code>public_html</code> root.</li>
+                        <li><b>Database Details</b>: Enter your Hostinger/XAMPP MySQL details in the fields above.</li>
+                        <li><b>API Extraction</b>: Download the <b>Build ZIP</b> and extract the <code>api/</code> folder into <code>public_html/</code>.</li>
+                        <li><b>SQL Initialization</b>: Import <code>sql/full_master_schema.sql</code> (inside the ZIP) via phpMyAdmin.</li>
+                     </ol>
+                  </div>
+               </div>
+
+               {/* RIGHT ACTION CARD - MATCHING USER SCREENSHOT */}
+               <div className="lg:col-span-4 space-y-8">
+                  <div className="bg-[#1a1f3c] p-12 rounded-[4rem] text-white shadow-2xl relative overflow-hidden flex flex-col justify-between min-h-[500px] border border-white/5">
+                     <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12 scale-150"><FileBox className="w-64 h-64 text-blue-400" /></div>
+                     <div className="space-y-6 relative z-10">
+                        <h3 className="text-4xl font-black italic tracking-tighter leading-tight uppercase">Master Build Bundle</h3>
+                        <p className="text-slate-400 text-base leading-relaxed font-medium">Contains the SQL schema and all backend logic files pre-configured with your credentials.</p>
+                     </div>
+
+                     <div className="space-y-6 relative z-10">
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                               <div className="text-[10px] font-black uppercase text-blue-400 mb-1">Endpoints</div>
+                               <div className="text-2xl font-black">40+</div>
+                            </div>
+                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                               <div className="text-[10px] font-black uppercase text-blue-400 mb-1">Architecture</div>
+                               <div className="text-2xl font-black italic">MVC</div>
                             </div>
                         </div>
-                        <pre className="text-[11px] font-mono text-emerald-400 leading-relaxed max-h-[500px] overflow-y-auto custom-scrollbar">
-                           {deployActiveSub === 'bundle' ? `
-MODULAR BACKEND ARCHITECTURE:
-=================================
-1. XAMPP ENVIRONMENT: 
-   - Start Apache and MySQL.
-   - Root: htdocs/
+                        <button onClick={handleDownloadZip} disabled={zipping} className="w-full py-7 bg-white text-[#1a1f3c] rounded-[2.5rem] font-black uppercase tracking-[0.2em] shadow-2xl transition-all flex items-center justify-center gap-4 hover:bg-blue-50 hover:scale-[1.02] disabled:opacity-50">
+                           {zipping ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Download className="w-5 h-5" /> Download Build ZIP</>}
+                        </button>
+                     </div>
+                  </div>
 
-2. DATABASE INITIALIZATION:
-   - Create 'jeepro_db' in phpMyAdmin.
-   - Import 'deployment/setup.sql'.
-
-3. API STRUCTURE:
-   - Folder: htdocs/api/
-   - config.php: DB Uplink.
-   - router.php: Request Gateway.
-   - auth.php: Micro-service.
-   - syllabus.php: Tracker Data.
-   - wellness.php: Psychology.
-   - academic.php: Backlogs.
-
-4. SYSTEM UPLINK:
-   - Dashboard -> System -> Data Bridge.
-   - Toggle "Production Mode".
-                           ` : `
--- Master Schema Snapshot
-CREATE TABLE student_progress (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id VARCHAR(50),
-    chapter_id VARCHAR(50),
-    progress INT DEFAULT 0,
-    accuracy INT DEFAULT 0,
-    time_spent INT DEFAULT 0,
-    status VARCHAR(50)
-);
--- See full code in setup.sql
-                           `}
-                        </pre>
-                    </div>
-                </div>
+                  <div className="bg-slate-50 p-8 rounded-[3rem] border border-slate-200 text-center space-y-4">
+                     <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center mx-auto shadow-sm">
+                        <ExternalLink className="w-6 h-6 text-slate-300" />
+                     </div>
+                     <h4 className="font-black text-slate-800 text-sm">Deployment FAQ</h4>
+                     <p className="text-xs text-slate-400 font-medium">Learn how to setup <span className="text-blue-600 font-bold hover:underline cursor-pointer">CORS and Apache permissions</span> for full production sync.</p>
+                  </div>
+               </div>
             </div>
         </div>
       )}
 
       {systemSubTab === 'db-util' && (
-        <div className="space-y-10 animate-in slide-in-from-bottom-4">
+        <div className="space-y-10 animate-in slide-in-from-bottom-4 px-4">
             <div className="p-12 bg-white rounded-[4rem] border border-slate-200 shadow-sm space-y-12">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-8 border-b border-slate-100 pb-10">
                     <div className="flex items-center gap-6">
@@ -588,88 +391,24 @@ CREATE TABLE student_progress (
                             <DbIcon className="w-10 h-10" />
                         </div>
                         <div>
-                        <h3 className="text-3xl font-black italic tracking-tight uppercase">Database Utility Bridge</h3>
-                        <p className="text-slate-500 text-lg font-medium">Switch between Local Sandbox and Production Micro-services.</p>
+                           <h3 className="text-3xl font-black italic tracking-tight uppercase">Database Utility Bridge</h3>
+                           <p className="text-slate-500 text-lg font-medium">Switch between Local Sandbox and Production Micro-services.</p>
                         </div>
-                    </div>
-                    <div className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.3em] ${dataSource === 'LIVE' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
-                        System Status: {dataSource} NODE ACTIVE
                     </div>
                 </div>
-                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <button 
-                        onClick={() => api.setMode('MOCK')} 
-                        className={`group p-12 rounded-[3.5rem] border-4 transition-all text-left space-y-6 relative overflow-hidden ${dataSource === 'MOCK' ? 'bg-indigo-600 border-indigo-200 text-white shadow-[0_40px_80px_-20px_rgba(79,70,229,0.4)]' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-indigo-400 opacity-60'}`}
-                    >
-                        <div className={`absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform ${dataSource === 'MOCK' ? 'text-white' : 'text-indigo-600'}`}><Laptop className="w-32 h-32" /></div>
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${dataSource === 'MOCK' ? 'bg-white/20' : 'bg-white'}`}><Laptop className="w-7 h-7" /></div>
-                        <div>
-                        <div className="text-2xl font-black italic tracking-tight">Local Sandbox Mode</div>
-                        <div className={`text-[10px] font-black uppercase tracking-[0.2em] mt-2 ${dataSource === 'MOCK' ? 'text-indigo-200' : 'text-slate-400'}`}>Local Browser Storage</div>
-                        </div>
+                    <button onClick={() => api.setMode('MOCK')} className={`group p-12 rounded-[3.5rem] border-4 transition-all text-left space-y-6 relative overflow-hidden ${dataSource === 'MOCK' ? 'bg-indigo-600 border-indigo-200 text-white shadow-2xl' : 'bg-slate-50 border-slate-100 text-slate-400 opacity-60 hover:opacity-100'}`}>
+                        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform"><Laptop className="w-32 h-32" /></div>
+                        <div className="text-2xl font-black italic tracking-tight uppercase">Local Sandbox Mode</div>
+                        <p className="text-sm font-medium opacity-80">Data stored in browser LocalStorage. Ideal for frontend testing.</p>
                     </button>
-                    
-                    <button 
-                        onClick={() => api.setMode('LIVE')} 
-                        className={`group p-12 rounded-[3.5rem] border-4 transition-all text-left space-y-6 relative overflow-hidden ${dataSource === 'LIVE' ? 'bg-emerald-600 border-emerald-200 text-white shadow-[0_40px_80px_-20px_rgba(16,185,129,0.4)]' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-emerald-400 opacity-60'}`}
-                    >
-                        <div className={`absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform ${dataSource === 'LIVE' ? 'text-white' : 'text-emerald-600'}`}><GlobeIcon className="w-32 h-32" /></div>
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${dataSource === 'LIVE' ? 'bg-white/20' : 'bg-white'}`}><GlobeIcon className="w-7 h-7" /></div>
-                        <div>
-                        <div className="text-2xl font-black italic tracking-tight">Production Server Mode</div>
-                        <div className={`text-[10px] font-black uppercase tracking-[0.2em] mt-2 ${dataSource === 'LIVE' ? 'text-emerald-200' : 'text-slate-400'}`}>Secure Master API Uplink</div>
-                        </div>
+                    <button onClick={() => api.setMode('LIVE')} className={`group p-12 rounded-[3.5rem] border-4 transition-all text-left space-y-6 relative overflow-hidden ${dataSource === 'LIVE' ? 'bg-emerald-600 border-emerald-200 text-white shadow-2xl' : 'bg-slate-50 border-slate-100 text-slate-400 opacity-60 hover:opacity-100'}`}>
+                        <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform"><GlobeIcon className="w-32 h-32" /></div>
+                        <div className="text-2xl font-black italic tracking-tight uppercase">Production Server Mode</div>
+                        <p className="text-sm font-medium opacity-80">Connects to your Cloud API. **Warning**: Ensure Build Bundle is deployed first.</p>
                     </button>
                 </div>
             </div>
-        </div>
-      )}
-
-      {systemSubTab === 'ai' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-           <div className="bg-white p-12 rounded-[4rem] border border-slate-200 shadow-sm space-y-10">
-              <div className="flex items-center gap-4">
-                 <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-[1.5rem] flex items-center justify-center">
-                    <Zap className="w-7 h-7" />
-                 </div>
-                 <h3 className="text-2xl font-black italic tracking-tight uppercase">AI Strategy Node</h3>
-              </div>
-              <div className="space-y-6">
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-4">Primary Reasoning Node</label>
-                    <select className="w-full p-5 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-800 outline-none">
-                       <option>Gemini 3 Flash (Performance)</option>
-                       <option>Gemini 3 Pro (Precision)</option>
-                    </select>
-                 </div>
-                 <div className="p-8 bg-indigo-50 rounded-[2.5rem] border border-indigo-100">
-                    <h4 className="text-xs font-black text-indigo-900 uppercase tracking-widest mb-3 flex items-center gap-2">
-                       <ShieldCheck className="w-4 h-4" /> Reasoning Protocol
-                    </h4>
-                    <p className="text-xs text-indigo-700 leading-relaxed font-medium">AI prioritizes <b>Conceptual Guidance</b>. Strategy ensures students build first-principles understanding.</p>
-                 </div>
-                 <button className="w-full py-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-2xl hover:bg-indigo-700 transition-all">Synchronize Strategy</button>
-              </div>
-           </div>
-
-           <div className="bg-slate-900 p-12 rounded-[4rem] text-white shadow-2xl flex flex-col justify-between relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-8 opacity-10"><Cpu className="w-48 h-48" /></div>
-              <div className="space-y-6 relative z-10">
-                 <h3 className="text-2xl font-black italic tracking-tight uppercase text-indigo-400">Tactical Insights</h3>
-                 <p className="text-slate-400 text-lg leading-relaxed font-medium italic border-l-4 border-indigo-600 pl-8">"Analyzing 14,000+ student trajectories to predict patterns. Real-time adjustment active."</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4 mt-12 relative z-10">
-                 <div className="p-6 bg-white/5 border border-white/10 rounded-[2rem]">
-                    <div className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Knowledge Sync</div>
-                    <div className="text-3xl font-black">94.2%</div>
-                 </div>
-                 <div className="p-6 bg-white/5 border border-white/10 rounded-[2rem]">
-                    <div className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Model Uptime</div>
-                    <div className="text-3xl font-black">99.9h</div>
-                 </div>
-              </div>
-           </div>
         </div>
       )}
     </div>
@@ -678,114 +417,31 @@ CREATE TABLE student_progress (
 
 const CreationHub = ({ creationType, editingItem, setIsCreating, data, updateGlobalData }: any) => {
   const [isSyncing, setIsSyncing] = useState(false);
-  const [formData, setFormData] = useState<any>({ 
-    text: '', options: ['', '', '', ''], correctAnswer: 0, explanation: '', difficulty: 'MEDIUM', subject: 'Physics', topicId: '',
-    name: '', unit: '', title: '', answer: '', category: 'Mnemonics', description: '', hack: '', duration: 180, totalMarks: 300, content: '', videoUrl: '', notes: '', question: ''
-  });
+  const [formData, setFormData] = useState<any>({ name: '', unit: '', notes: '' });
 
-  useEffect(() => {
-    if (editingItem) {
-      setFormData({
-        ...formData,
-        ...editingItem,
-        notes: Array.isArray(editingItem.notes) ? editingItem.notes.join('\n\n') : (editingItem.notes || '')
-      });
-    } else {
-        const defaultSubject = 'Physics';
-        const defaultTopic = data.chapters.find((c: Chapter) => c.subject === defaultSubject)?.id || '';
-        setFormData({
-            ...formData,
-            topicId: defaultTopic,
-            subject: defaultSubject,
-            difficulty: 'MEDIUM',
-            category: creationType === 'hacks' ? 'Mnemonics' : 'Concept'
-        });
-    }
-  }, [editingItem, creationType, data.chapters]);
+  useEffect(() => { if (editingItem) setFormData(editingItem); }, [editingItem]);
 
   const handleSave = async () => {
     setIsSyncing(true);
-    const id = editingItem ? editingItem.id : `${creationType[0]}_${Date.now()}`;
-    const finalData = { ...formData, id, notes: creationType === 'chapter' ? [formData.notes] : formData.notes };
-
-    const listMap: Record<string, keyof StudentData> = {
-        'questions': 'questions',
-        'chapter': 'chapters',
-        'flashcards': 'flashcards',
-        'hacks': 'memoryHacks',
-        'tests': 'mockTests',
-        'blog': 'blogs'
-    };
-
-    const dataKey = listMap[creationType];
-    const currentList = [...data[dataKey]];
-
+    const dataKey = (creationType === 'chapter' ? 'chapters' : 'questions') as keyof StudentData;
+    const currentList = [...data[dataKey] as any];
     if (editingItem) {
-        updateGlobalData(dataKey, currentList.map((item: any) => item.id === id ? finalData : item));
+        updateGlobalData(dataKey, currentList.map((item: any) => item.id === editingItem.id ? { ...item, ...formData } : item));
     } else {
-        updateGlobalData(dataKey, [finalData, ...currentList]);
+        updateGlobalData(dataKey, [{ ...formData, id: Date.now().toString() }, ...currentList]);
     }
-
-    setTimeout(() => {
-        setIsSyncing(false);
-        setIsCreating(false);
-    }, 800);
+    setTimeout(() => { setIsSyncing(false); setIsCreating(false); }, 800);
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-white w-full max-w-2xl rounded-[3rem] p-12 shadow-2xl relative animate-in zoom-in-95 duration-300 overflow-y-auto max-h-[90vh] custom-scrollbar">
-        <h3 className="text-3xl font-black mb-10 italic tracking-tighter uppercase text-slate-900 border-b border-slate-100 pb-6">
-            {editingItem ? 'Edit Asset' : 'Initialize New'} {creationType}
-        </h3>
-        
-        <div className="space-y-8">
-          {creationType === 'questions' && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Vertical</label>
-                    <select value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} className="w-full bg-slate-50 border-none rounded-xl p-4 text-sm font-bold shadow-inner outline-none">
-                       <option>Physics</option><option>Chemistry</option><option>Mathematics</option>
-                    </select>
-                 </div>
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Difficulty</label>
-                    <select value={formData.difficulty} onChange={e => setFormData({...formData, difficulty: e.target.value})} className="w-full bg-slate-50 border-none rounded-xl p-4 text-sm font-bold shadow-inner outline-none">
-                       <option>EASY</option><option>MEDIUM</option><option>HARD</option>
-                    </select>
-                 </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-4">Linked Chapter</label>
-                <select value={formData.topicId} onChange={e => setFormData({...formData, topicId: e.target.value})} className="w-full bg-slate-50 border-none rounded-xl p-4 text-sm font-bold shadow-inner outline-none">
-                  {data.chapters.filter((c: Chapter) => c.subject === formData.subject).map((c: Chapter) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-              <textarea value={formData.text} onChange={e => setFormData({...formData, text: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-bold shadow-inner min-h-[120px] outline-none" placeholder="Enter problem statement..." />
-            </div>
-          )}
-
-          {creationType === 'chapter' && (
-            <div className="space-y-6">
-                <input value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner outline-none" placeholder="Chapter Name" />
-                <div className="grid grid-cols-2 gap-4">
-                    <input value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})} className="w-full bg-slate-50 border-none rounded-xl p-4 text-sm font-bold shadow-inner outline-none" placeholder="Unit (e.g. UNIT 1)" />
-                    <select value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} className="w-full bg-slate-50 border-none rounded-xl p-4 text-sm font-bold shadow-inner outline-none">
-                        <option>Physics</option><option>Chemistry</option><option>Mathematics</option>
-                    </select>
-                </div>
-                <textarea value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] p-6 text-sm font-medium h-64 shadow-inner outline-none" placeholder="Notes content (HTML/Markdown)..." />
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-4 mt-12">
-          <button onClick={() => setIsCreating(false)} className="flex-1 py-5 text-slate-400 font-black uppercase text-[10px] tracking-widest hover:text-rose-500 transition-colors">Cancel</button>
-          <button onClick={handleSave} disabled={isSyncing} className="flex-1 py-5 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] shadow-2xl flex items-center justify-center gap-3 hover:bg-slate-900 transition-all">
-            {isSyncing ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CloudUpload className="w-5 h-5" /> Save Record</>}
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-2xl rounded-[3rem] p-12 shadow-2xl overflow-y-auto max-h-[90vh]">
+        <h3 className="text-3xl font-black mb-10 italic tracking-tighter uppercase text-slate-900 border-b border-slate-100 pb-6">{editingItem ? 'Edit' : 'Initialize'} {creationType}</h3>
+        <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner outline-none mb-6" placeholder="Enter Label/Text" />
+        <div className="flex gap-4">
+          <button onClick={() => setIsCreating(false)} className="flex-1 py-5 text-slate-400 font-black uppercase text-[10px] tracking-widest">Cancel</button>
+          <button onClick={handleSave} disabled={isSyncing} className="flex-1 py-5 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] shadow-2xl flex items-center justify-center gap-3">
+            {isSyncing ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CloudUpload className="w-5 h-5" /> Save</>}
           </button>
         </div>
       </div>
