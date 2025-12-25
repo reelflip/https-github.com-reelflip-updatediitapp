@@ -6,26 +6,30 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist',
-    minify: false, // Keep code readable
-    cssCodeSplit: false,
+    // Disable minification so the output files are human-readable
+    minify: false,
+    // Ensure CSS isn't bundled into a single file if possible
+    cssCodeSplit: true,
     rollupOptions: {
-      // Required setting when preserveModules is true
+      // Mandates that Rollup exports symbols correctly for individual modules
       preserveEntrySignatures: 'exports-only',
       output: {
-        // Prevents bundling everything into one file
+        // CRITICAL: Prevents the "one giant file" behavior
         preserveModules: true,
-        // Maintains your folder structure (views/, services/, etc.) in the dist folder
+        // Maintains the root folder structure in the output
         preserveModulesRoot: '.',
-        // Output format as ES modules
+        // Outputs standard ES modules
         format: 'es',
-        // Simplifies file naming so they match your source names
+        // Maps source filenames to output filenames (e.g., views/Dashboard.tsx -> views/Dashboard.js)
         entryFileNames: (chunkInfo) => {
           return '[name].js';
         },
-        // Places all assets (CSS/Images) in a clean directory
+        // Places assets in a consistent location
         assetFileNames: 'assets/[name].[ext]',
-      }
-    }
+        // Ensures individual chunks are not combined
+        chunkFileNames: '[name].js',
+      },
+    },
   },
   server: {
     port: 3000,
