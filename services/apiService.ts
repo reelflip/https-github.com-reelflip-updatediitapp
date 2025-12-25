@@ -21,22 +21,29 @@ const safeJson = async (response: Response) => {
 
 export const api = {
   getMode: (): 'MOCK' | 'LIVE' => (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'MOCK',
-  setMode: (mode: 'MOCK' | 'LIVE') => { localStorage.setItem(API_CONFIG.MODE_KEY, mode); window.location.reload(); },
+  
+  setMode: (mode: 'MOCK' | 'LIVE') => { 
+    localStorage.setItem(API_CONFIG.MODE_KEY, mode); 
+    // Clear existing session to prevent role leakage between modes
+    localStorage.removeItem('jeepro_user');
+    localStorage.removeItem('jeepro_student_data');
+    window.location.reload(); 
+  },
   
   isDemoDisabled: (): boolean => (window as any).DISABLE_DEMO_LOGINS === true,
 
   async checkBackendStatus() {
     try {
-      const res = await fetch(`${API_CONFIG.BASE_URL}check.php`);
+      const res = await fetch(`${API_CONFIG.BASE_URL}check.php`, { cache: 'no-store' });
       const text = await res.text();
       return { success: res.ok, html: text, status: res.status };
     } catch (e) {
-      return { success: false, html: `<p style="color:red">Node Offline.</p>`, status: 0 };
+      return { success: false, html: "Node Offline: API gateway at ./api/check.php was not reachable.", status: 0 };
     }
   },
 
   async login(credentials: { email: string; role: UserRole }) {
-    // Check global kill-switch
+    // Check global kill-switch for demo keys
     if (!this.isDemoDisabled()) {
       if (credentials.email === 'ishu@gmail.com') return { success: true, user: { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2024-01-01' } };
       if (credentials.email === 'admin@jeepro.in') return { success: true, user: { id: 'ADMIN-001', name: 'System Admin', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '2024-01-01' } };
@@ -50,9 +57,9 @@ export const api = {
           body: JSON.stringify(credentials)
         });
         return await safeJson(res);
-      } catch(e) { return { success: false, error: 'Database Unreachable' }; }
+      } catch(e) { return { success: false, error: 'Production Node Unreachable' }; }
     }
-    return { success: false, error: 'User not found in Sandbox' };
+    return { success: false, error: 'User ID not found in Sandbox Mode.' };
   },
 
   async register(data: { name: string; email: string; role: UserRole; password?: string }) {
@@ -104,7 +111,6 @@ export const api = {
     return INITIAL_STUDENT_DATA;
   },
 
-  // NEW CRUD METHODS FOR LIVE MODE
   async saveEntity(module: string, data: any) {
     if (this.getMode() === 'LIVE') {
       try {
@@ -131,6 +137,9 @@ export const api = {
          return Array.isArray(data) ? data : [];
        } catch(e) { return []; }
      }
-     return [{ id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2024-01-01' }];
+     return [
+       { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2024-01-01' },
+       { id: 'ADMIN-001', name: 'System Root', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '2024-01-01' }
+     ];
   }
 };

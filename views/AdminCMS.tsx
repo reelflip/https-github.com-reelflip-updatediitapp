@@ -1,5 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
+import JSZip from 'jszip';
+// Fix: file-saver on esm.sh often provides the saveAs function as a default export
+import saveAs from 'file-saver';
 import { StudentData, Question, MockTest, Chapter, UserAccount, UserRole, ChapterStatus, Flashcard, MemoryHack, Blog } from '../types';
 import { api } from '../services/apiService';
 import { 
@@ -8,7 +11,8 @@ import {
   ChevronRight, TerminalSquare, RefreshCcw, Search, Plus, Trash2, Edit3, X, User,
   CheckCircle, AlertCircle, Percent, Settings, FileText, CheckSquare, Square,
   Lightbulb, PenTool, Eye, Calendar, UserPlus, Globe, Brain, Server, ShieldAlert, Cpu,
-  History, Code2, HardDrive, Network
+  History, Code2, HardDrive, Network, ToggleLeft, ToggleRight, Radio,
+  Users
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -21,6 +25,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [creationType, setCreationType] = useState<'Question' | 'Chapter' | 'MockTest' | 'Flashcard' | 'MemoryHack' | 'Blog'>('Question');
+  const mode = api.getMode();
 
   const updateGlobalData = (key: keyof StudentData, newValue: any) => {
     setData({ ...data, [key]: newValue });
@@ -47,7 +52,8 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
 
   return (
     <div className="pb-20 max-w-7xl mx-auto space-y-10 px-4">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+      {/* HEADER SECTION WITH RESTORED TOGGLE */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm">
         <div className="space-y-2">
           <div className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.4em] flex items-center gap-3">
              <ShieldCheck className="w-4 h-4" /> System Administrator Terminal
@@ -55,31 +61,45 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
           <h2 className="text-5xl font-black text-slate-900 tracking-tighter italic leading-none">Control Hub.</h2>
         </div>
         
-        {/* Hide Quick Actions in System Hub to ensure a focused deployment environment */}
-        {activeTab !== 'admin-system' && (
-          <div className="flex flex-wrap gap-3 animate-in fade-in duration-500">
+        <div className="flex flex-wrap items-center gap-4">
+          {/* THE RESTORED DEMO TO LIVE TOGGLE */}
+          <div className="flex items-center gap-3 bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-inner">
+             <div className="text-right">
+                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Data Bridge</div>
+                <div className={`text-[10px] font-black uppercase ${mode === 'LIVE' ? 'text-emerald-600' : 'text-slate-500'}`}>
+                   {mode === 'LIVE' ? 'Production (SQL)' : 'Sandbox (Demo)'}
+                </div>
+             </div>
              <button 
-              onClick={() => handleEdit('Blog', null)}
-              className="bg-white border-2 border-slate-100 text-slate-900 px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-emerald-600 transition-all flex items-center gap-3 shadow-sm"
+                onClick={() => api.setMode(mode === 'MOCK' ? 'LIVE' : 'MOCK')}
+                className={`w-14 h-8 rounded-full p-1 transition-all duration-300 relative ${mode === 'LIVE' ? 'bg-emerald-500' : 'bg-slate-300'}`}
              >
-               <PenTool className="w-4 h-4" /> New Article
-             </button>
-             <button 
-              onClick={() => handleEdit('Flashcard', null)}
-              className="bg-white border-2 border-slate-100 text-slate-900 px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-indigo-600 transition-all flex items-center gap-3 shadow-sm"
-             >
-               <Layers className="w-4 h-4" /> New Card
-             </button>
-             <button 
-              onClick={() => handleEdit('Question', null)}
-              className="bg-slate-900 text-white px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl flex items-center gap-3"
-             >
-               <Plus className="w-4 h-4" /> New Question
+                <div className={`w-6 h-6 bg-white rounded-full shadow-lg transition-transform duration-300 ${mode === 'LIVE' ? 'translate-x-6' : 'translate-x-0'}`}></div>
              </button>
           </div>
-        )}
+
+          <div className="h-10 w-px bg-slate-100 hidden md:block"></div>
+
+          {activeTab !== 'admin-system' && (
+            <div className="flex gap-2 animate-in fade-in duration-500">
+               <button 
+                onClick={() => handleEdit('Flashcard', null)}
+                className="bg-white border-2 border-slate-100 text-slate-900 px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-indigo-600 transition-all flex items-center gap-3 shadow-sm"
+               >
+                 <Layers className="w-4 h-4" /> Card
+               </button>
+               <button 
+                onClick={() => handleEdit('Question', null)}
+                className="bg-slate-900 text-white px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 shadow-xl flex items-center gap-3"
+               >
+                 <Plus className="w-4 h-4" /> Question
+               </button>
+            </div>
+          )}
+        </div>
       </div>
 
+      {/* VIEW ROUTING */}
       {activeTab === 'admin-overview' && <Overview data={data} />}
       {activeTab === 'admin-users' && <UserManagement />}
       {activeTab === 'admin-syllabus' && <SyllabusMaster data={data} onEdit={handleEdit} onDelete={handleDelete} />}
@@ -106,10 +126,10 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
 const Overview = ({ data }: { data: StudentData }) => (
   <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
     {[
-      { label: 'Live Node', value: api.getMode(), icon: Database, color: 'indigo' },
+      { label: 'Network State', value: api.getMode(), icon: Radio, color: 'indigo' },
       { label: 'Knowledge Base', value: data.flashcards.length + data.memoryHacks.length, icon: Brain, color: 'blue' },
       { label: 'Resource Bank', value: data.questions.length, icon: FileCode, color: 'rose' },
-      { label: 'Published Ops', value: data.blogs.length, icon: PenTool, color: 'emerald' },
+      { label: 'Connected Users', value: 'Live Hub', icon: Users, color: 'emerald' },
     ].map((s, i) => (
       <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm flex items-center justify-between group hover:border-indigo-400 transition-all">
         <div><div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{s.label}</div><div className="text-3xl font-black text-slate-900 mt-1">{s.value}</div></div>
@@ -194,7 +214,7 @@ const QuestionBank = ({ data, onEdit, onDelete }: any) => {
          <h3 className="text-2xl font-black italic flex items-center gap-4 text-slate-900"><Layers className="w-8 h-8 text-blue-600" /> Resource Ledger</h3>
          <div className="relative w-full md:w-96 group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-            <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search bank by topic or content..." className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold shadow-inner" />
+            <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search bank..." className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold shadow-inner" />
          </div>
       </div>
       <div className="space-y-4">
@@ -202,14 +222,14 @@ const QuestionBank = ({ data, onEdit, onDelete }: any) => {
           <div key={q.id} className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex justify-between items-center group hover:bg-white hover:border-indigo-400 hover:shadow-xl transition-all">
             <div className="flex-1 space-y-3">
                <div className="flex items-center gap-3">
-                  <span className="text-[9px] font-black uppercase text-indigo-500 tracking-widest bg-indigo-50 px-3 py-1 rounded-full">{q.subject}</span>
-                  <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${q.difficulty === 'HARD' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-500'}`}>{q.difficulty}</span>
+                  <span className="text-[9px] font-black uppercase text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full">{q.subject}</span>
+                  <span className={`text-[9px] font-black uppercase px-3 py-1 rounded-full ${q.difficulty === 'HARD' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-500'}`}>{q.difficulty}</span>
                </div>
-               <p className="font-bold text-slate-700 text-lg line-clamp-2 leading-relaxed italic">"{q.text}"</p>
+               <p className="font-bold text-slate-700 text-lg line-clamp-2 italic leading-relaxed">"{q.text}"</p>
             </div>
             <div className="flex gap-2 ml-10">
-               <button onClick={() => onEdit('Question', q)} className="p-4 bg-white text-slate-400 hover:text-indigo-600 transition-all rounded-2xl shadow-sm border border-slate-100 group-hover:scale-105"><Edit3 className="w-5 h-5" /></button>
-               <button onClick={() => onDelete('Question', q.id)} className="p-4 bg-white text-slate-400 hover:text-rose-600 transition-all rounded-2xl shadow-sm border border-slate-100 group-hover:scale-105"><Trash2 className="w-5 h-5" /></button>
+               <button onClick={() => onEdit('Question', q)} className="p-4 bg-white text-slate-400 hover:text-indigo-600 transition-all rounded-2xl shadow-sm border border-slate-100"><Edit3 className="w-5 h-5" /></button>
+               <button onClick={() => onDelete('Question', q.id)} className="p-4 bg-white text-slate-400 hover:text-rose-600 transition-all rounded-2xl shadow-sm border border-slate-100"><Trash2 className="w-5 h-5" /></button>
             </div>
           </div>
         ))}
@@ -222,7 +242,7 @@ const MockTestManager = ({ data, onEdit, onDelete }: any) => (
   <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-8 animate-in fade-in duration-500">
     <div className="flex justify-between items-center border-b border-slate-100 pb-6">
        <h3 className="text-2xl font-black italic flex items-center gap-4 text-slate-900"><FileText className="w-8 h-8 text-orange-600" /> Assessment Matrix</h3>
-       <button onClick={() => onEdit('MockTest', null)} className="px-6 py-2.5 bg-orange-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-700 transition-all shadow-lg">Generate New Paper</button>
+       <button onClick={() => onEdit('MockTest', null)} className="px-6 py-2.5 bg-orange-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-700 transition-all shadow-lg">New Paper</button>
     </div>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {data.mockTests.map((test: MockTest) => (
@@ -230,14 +250,14 @@ const MockTestManager = ({ data, onEdit, onDelete }: any) => (
            <div className="flex justify-between items-start mb-6">
               <div className="p-3 bg-orange-50 text-orange-600 rounded-2xl group-hover:scale-110 transition-transform"><FileText className="w-6 h-6" /></div>
               <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => onEdit('MockTest', test)} className="p-2.5 bg-white text-slate-400 hover:text-indigo-600 rounded-xl border border-slate-100 shadow-sm"><Edit3 className="w-4 h-4" /></button>
-                <button onClick={() => onDelete('MockTest', test.id)} className="p-2.5 bg-white text-slate-400 hover:text-rose-600 rounded-xl border border-slate-100 shadow-sm"><Trash2 className="w-4 h-4" /></button>
+                <button onClick={() => onEdit('MockTest', test)} className="p-2.5 bg-white text-slate-400 hover:text-indigo-600 rounded-xl border border-slate-100"><Edit3 className="w-4 h-4" /></button>
+                <button onClick={() => onDelete('MockTest', test.id)} className="p-2.5 bg-white text-slate-400 hover:text-rose-600 rounded-xl border border-slate-100"><Trash2 className="w-4 h-4" /></button>
               </div>
            </div>
            <h4 className="text-xl font-black text-slate-800 italic leading-tight group-hover:text-orange-600 transition-colors">{test.name}</h4>
            <div className="flex gap-4 mt-4">
               <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1"><Activity className="w-3 h-3" /> {test.questionIds.length} MCQs</div>
-              <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1"><Zap className="w-3 h-3" /> {test.duration} MINS</div>
+              <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1"><Zap className="w-3 h-3" /> {test.duration}m</div>
            </div>
         </div>
       ))}
@@ -256,7 +276,7 @@ const FlashcardsMaster = ({ data, onEdit, onDelete }: any) => (
          <div key={f.id} className="p-6 bg-slate-50 border border-slate-100 rounded-[2rem] flex justify-between items-center group hover:bg-white hover:border-indigo-400 transition-all">
             <div className="space-y-1">
                <div className="text-[9px] font-black uppercase text-indigo-500 bg-white px-2 py-0.5 rounded border border-indigo-100 w-fit">{f.subject}</div>
-               <p className="font-bold text-slate-700 text-sm italic">"{f.question}"</p>
+               <p className="font-bold text-slate-700 text-sm italic leading-tight line-clamp-1">"{f.question}"</p>
             </div>
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                <button onClick={() => onEdit('Flashcard', f)} className="p-2 text-slate-400 hover:text-indigo-600 transition-all"><Edit3 className="w-4 h-4" /></button>
@@ -295,7 +315,7 @@ const BlogManager = ({ data, onEdit, onDelete }: any) => (
   <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-8 animate-in fade-in duration-500">
     <div className="flex justify-between items-center border-b border-slate-100 pb-6">
        <h3 className="text-2xl font-black italic flex items-center gap-4 text-slate-900"><PenTool className="w-8 h-8 text-emerald-600" /> Article Editorial</h3>
-       <button onClick={() => onEdit('Blog', null)} className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg">Draft New Post</button>
+       <button onClick={() => onEdit('Blog', null)} className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg">Draft Post</button>
     </div>
     <div className="space-y-4">
        {data.blogs.map((b: Blog) => (
@@ -335,9 +355,131 @@ const SystemModule = () => {
 
   const handleDownload = async () => {
     setZipping(true);
-    await new Promise(r => setTimeout(r, 2500));
-    setZipping(false);
-    alert("Production Build ZIP generated successfully. Check your browser downloads.");
+    try {
+      const zip = new JSZip();
+      
+      // PRODUCTION API GATEWAY SOURCE
+      const indexPhp = `<?php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Content-Type: application/json");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
+
+// Production API Entry Point v5.4
+$request = $_SERVER['REQUEST_URI'];
+$method = $_SERVER['REQUEST_METHOD'];
+
+// Database Handshake
+try {
+    $db = new PDO("mysql:host=${config.host};dbname=${config.name}", "${config.user}", "${config.pass}");
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    echo json_encode(["success" => false, "error" => "Handshake Refused: " . $e->getMessage()]);
+    exit;
+}
+
+// Unified REST Router
+if (strpos($request, 'auth/login') !== false) {
+    $json = file_get_contents('php://input');
+    $data = json_decode($json, true);
+    $stmt = $db->prepare("SELECT * FROM users WHERE email = ? AND role = ? LIMIT 1");
+    $stmt->execute([$data['email'], $data['role']]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($user) {
+        echo json_encode(["success" => true, "user" => $user]);
+    } else {
+        echo json_encode(["success" => false, "error" => "Invalid Node Credentials"]);
+    }
+} else if (strpos($request, 'syllabus/get') !== false) {
+    $id = $_GET['id'] ?? '';
+    $stmt = $db->prepare("SELECT * FROM chapters WHERE student_id = ?");
+    $stmt->execute([$id]);
+    echo json_encode(["chapters" => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+} else if (strpos($request, 'questions/index') !== false) {
+    $stmt = $db->query("SELECT * FROM questions");
+    echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+} else {
+    echo json_encode(["node" => "Solaris Prime", "status" => "Listening", "api_version" => "5.4.0"]);
+}
+?>`;
+
+      const checkPhp = `<?php
+header("Content-Type: text/plain");
+echo "Solaris Intelligence Hub: Status 200 OK\\n";
+echo "Database Target: ${config.name}\\n";
+echo "Architecture: PHP/PDO RELATIONAL V5.4";
+?>`;
+
+      const schemaSql = `CREATE DATABASE IF NOT EXISTS ${config.name};
+USE ${config.name};
+
+CREATE TABLE users (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100) UNIQUE,
+    role ENUM('STUDENT', 'PARENT', 'ADMIN'),
+    password VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE chapters (
+    id VARCHAR(50) PRIMARY KEY,
+    student_id VARCHAR(50),
+    subject VARCHAR(20),
+    name VARCHAR(200),
+    unit VARCHAR(50),
+    progress INT DEFAULT 0,
+    accuracy INT DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'NOT_STARTED',
+    time_spent INT DEFAULT 0
+);
+
+CREATE TABLE questions (
+    id VARCHAR(50) PRIMARY KEY,
+    text TEXT,
+    subject VARCHAR(20),
+    options JSON,
+    correct_answer INT,
+    explanation TEXT,
+    difficulty VARCHAR(20)
+);
+
+CREATE TABLE results (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id VARCHAR(50),
+    test_name VARCHAR(100),
+    score INT,
+    total_marks INT,
+    date DATE,
+    accuracy INT
+);
+
+-- Pre-seed System Root
+INSERT INTO users (id, name, email, role) VALUES ('ADMIN-001', 'System Root', 'admin@jeepro.in', 'ADMIN');`;
+
+      const htaccess = `RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]`;
+
+      // Build Structure
+      zip.file("index.php", indexPhp);
+      zip.file("check.php", checkPhp);
+      zip.file(".htaccess", htaccess);
+      const sqlFolder = zip.folder("sql");
+      if (sqlFolder) sqlFolder.file("master_schema.sql", schemaSql);
+
+      const content = await zip.generateAsync({type:"blob"});
+      saveAs(content, "jeepro-production-engine-v5.4.zip");
+      
+      setLogs(prev => [...prev, { id: Date.now(), type: 'SYS', msg: 'Production Engine v5.4 ZIP compiled.', time: 'Now' }]);
+    } catch (err: any) {
+      alert("Encryption Engine Failure: " + err?.message);
+    } finally {
+      setZipping(false);
+    }
   };
 
   const runDiagnostic = async () => {
@@ -346,24 +488,18 @@ const SystemModule = () => {
     const res = await api.checkBackendStatus();
     setHealthStatus(res);
     setDiagnosing(false);
-    setLogs([...logs, { id: Date.now(), type: 'DIAG', msg: 'Full Database integrity check executed.', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
+    setLogs([...logs, { id: Date.now(), type: 'DIAG', msg: 'Database handshake protocol executed.', time: 'Now' }]);
   };
-
-  const mode = api.getMode();
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
-      {/* 1. Deployment Control Matrix */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-7 bg-white p-12 rounded-[4rem] border border-slate-200 shadow-sm space-y-10">
            <div className="flex justify-between items-center">
-              <h3 className="text-2xl font-black italic flex items-center gap-3"><Server className="w-7 h-7 text-indigo-600" /> Deployment Logic</h3>
-              <button 
-                onClick={() => api.setMode(mode === 'MOCK' ? 'LIVE' : 'MOCK')}
-                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'LIVE' ? 'bg-emerald-600 text-white shadow-emerald-200 shadow-xl' : 'bg-slate-200 text-slate-600'}`}
-              >
-                {mode === 'LIVE' ? 'PRODUCTION ACTIVE' : 'MOCK MODE'}
-              </button>
+              <h3 className="text-2xl font-black italic flex items-center gap-3"><Server className="w-7 h-7 text-indigo-600" /> Deployment Config</h3>
+              <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 rounded-xl text-[10px] font-black text-indigo-600 uppercase border border-indigo-100">
+                 <ShieldCheck className="w-4 h-4" /> SECURE HANDSHAKE
+              </div>
            </div>
            
            <div className="grid grid-cols-2 gap-6">
@@ -382,9 +518,7 @@ const SystemModule = () => {
 
            <div className="bg-amber-50 p-8 rounded-[2.5rem] text-amber-900 text-xs font-bold border border-amber-100 space-y-4">
               <div className="flex items-center gap-2 uppercase tracking-widest text-[10px] border-b border-amber-200 pb-2"><ShieldAlert className="w-4 h-4" /> Integrity Protocol</div>
-              <p>1. Ensure your server environment supports <b>PHP 8.2+</b> and <b>MySQL 5.7+</b>.</p>
-              <p>2. Toggle "Production Active" to switch from Local Browser storage to PHP PDO Handshake.</p>
-              <p>3. D-Checker will verify if the `/api` directory is readable and tables exist.</p>
+              <p>Values defined here will be hardcoded into the <b>index.php</b> in your download ZIP. Ensure these match your actual hosting environment.</p>
            </div>
         </div>
 
@@ -395,82 +529,81 @@ const SystemModule = () => {
                 <div className="w-20 h-20 bg-indigo-600 rounded-[2rem] flex items-center justify-center mb-8 shadow-2xl">
                     <Cpu className="w-10 h-10" />
                 </div>
-                <h3 className="text-5xl font-black italic tracking-tighter leading-none">Build <br /> Engine.</h3>
-                <p className="text-slate-400 text-sm font-medium max-w-xs leading-relaxed">Full logic engine (PHP/PDO architecture) v24.1</p>
+                <h3 className="text-5xl font-black italic tracking-tighter leading-none">Source <br /> Engine.</h3>
+                <p className="text-slate-400 text-sm font-medium max-w-xs leading-relaxed">Full PHP/PDO logic layer v5.4.0 Ready.</p>
               </div>
-              <button onClick={handleDownload} disabled={zipping} className="w-full mt-10 py-8 bg-white text-indigo-950 rounded-[2.5rem] font-black uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:scale-105 transition-all shadow-2xl relative z-10 disabled:opacity-50">
-                  {zipping ? <Loader2 className="animate-spin w-8 h-8" /> : <><Download className="w-8 h-8" /> Source ZIP</>}
+              <button 
+                onClick={handleDownload} 
+                disabled={zipping} 
+                className="w-full mt-10 py-8 bg-white text-indigo-950 rounded-[2.5rem] font-black uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:scale-105 transition-all shadow-2xl relative z-10 disabled:opacity-50"
+              >
+                  {zipping ? <Loader2 className="animate-spin w-8 h-8" /> : <><Download className="w-8 h-8" /> Download Build</>}
               </button>
            </div>
 
            <div className="bg-indigo-50 p-10 rounded-[3rem] border border-indigo-100 space-y-6">
-              <h4 className="text-[10px] font-black uppercase text-indigo-600 tracking-widest flex items-center gap-2"><Network className="w-4 h-4" /> Live Node Stats</h4>
+              <h4 className="text-[10px] font-black uppercase text-indigo-600 tracking-widest flex items-center gap-2"><Network className="w-4 h-4" /> Engine Meta</h4>
               <div className="grid grid-cols-2 gap-4">
                  <div className="p-5 bg-white rounded-2xl border border-indigo-100">
-                    <div className="text-[9px] font-black text-slate-400 uppercase mb-1">Response</div>
-                    <div className="text-lg font-black text-slate-800">12ms</div>
+                    <div className="text-[9px] font-black text-slate-400 uppercase mb-1">Architecture</div>
+                    <div className="text-sm font-black text-slate-800">RESTful PHP</div>
                  </div>
                  <div className="p-5 bg-white rounded-2xl border border-indigo-100">
-                    <div className="text-[9px] font-black text-slate-400 uppercase mb-1">Enc Type</div>
-                    <div className="text-lg font-black text-slate-800">SSL/TLS</div>
+                    <div className="text-[9px] font-black text-slate-400 uppercase mb-1">Database</div>
+                    <div className="text-sm font-black text-slate-800">MySQL 8.0+</div>
                  </div>
               </div>
            </div>
         </div>
       </div>
 
-      {/* 2. Integrity Diagnostics & Logs */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 bg-white p-12 rounded-[4rem] border border-slate-200 shadow-sm space-y-8">
             <div className="flex justify-between items-center border-b border-slate-50 pb-6">
-                <h3 className="text-2xl font-black italic flex items-center gap-3"><TerminalSquare className="w-7 h-7 text-emerald-600" /> Database Integrity (D-Checker)</h3>
+                <h3 className="text-2xl font-black italic flex items-center gap-3"><TerminalSquare className="w-7 h-7 text-emerald-600" /> System Integrity Check</h3>
                 <button 
                   onClick={runDiagnostic}
                   disabled={diagnosing}
-                  className="px-8 py-3 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center gap-3 disabled:opacity-50 shadow-lg shadow-emerald-100"
+                  className="px-8 py-3 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center gap-3 disabled:opacity-50 shadow-lg"
                 >
-                  {diagnosing ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCcw className="w-4 h-4" /> Execute Check</>}
+                  {diagnosing ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCcw className="w-4 h-4" /> Run D-Checker</>}
                 </button>
             </div>
             
             <div className="bg-slate-950 rounded-[3.5rem] p-10 font-mono text-[11px] text-emerald-500 overflow-y-auto max-h-[400px] shadow-2xl relative">
-               <div className="absolute top-0 right-0 p-8 opacity-5"><Activity className="w-48 h-48" /></div>
                <div className="space-y-1 relative z-10">
-                  <p className="text-white opacity-50"># IITGEE-PREP DIAGNOSTIC PROTOCOL V9.02</p>
+                  <p className="text-white opacity-50"># IITGEE-PREP KERNEL V5.4.0</p>
                   <p className="text-white opacity-50"># TIMESTAMP: {new Date().toISOString()}</p>
-                  <p className="mt-4">[OK] CORE KERNEL MOUNTED</p>
-                  <p>[OK] SCHEMATIC VERIFICATION: 42 TABLES MAPPED</p>
-                  <p className="text-indigo-400">[INFO] ACTIVE_SOURCE_TYPE: {mode}</p>
-                  <p>[OK] THREAD_POOL: 16 WORKERS READY</p>
+                  <p className="mt-4">[OK] LOCAL STORAGE INTERFACE READY</p>
+                  <p className="text-indigo-400">[INFO] ACTIVE_MODE: {api.getMode()}</p>
                   
                   {healthStatus ? (
                     <div className="animate-in fade-in duration-300 space-y-1">
-                       <p className="text-emerald-300 font-bold mt-4">[OK] PRODUCTION HANDSHAKE: SUCCESSFUL</p>
-                       <p>[OK] API_PATH_LOCATED: ./api/index.php</p>
+                       <p className="text-emerald-300 font-bold mt-4">[OK] PRODUCTION HANDSHAKE ATTEMPTED</p>
                        <div className="my-4 p-6 bg-emerald-900/20 rounded-3xl border border-emerald-500/20 whitespace-pre-wrap text-emerald-400 font-bold">
-                          {healthStatus.html || 'Node Response: Operational • Status 200 OK'}
+                          {healthStatus.html || 'Node Timeout or DNS Mismatch.'}
                        </div>
-                       <p className="text-white pt-4"># DIAGNOSTIC PROCESS TERMINATED. EXIT CODE 0.</p>
+                       <p className="text-white pt-4"># PROCESS COMPLETE.</p>
                     </div>
                   ) : diagnosing ? (
-                    <p className="animate-pulse text-indigo-400 mt-4">QUERYING PRODUCTION NODE AND VERIFYING TABLE INTEGRITY...</p>
+                    <p className="animate-pulse text-indigo-400 mt-4">QUERYING LIVE GATEWAY ./api/check.php ...</p>
                   ) : (
-                    <p className="text-slate-600 italic mt-4">WAITING FOR D-CHECKER TRIGGER...</p>
+                    <p className="text-slate-600 italic mt-4">READY FOR DIAGNOSTIC SEQUENCE...</p>
                   )}
                </div>
             </div>
         </div>
 
         <div className="lg:col-span-4 bg-white p-12 rounded-[4rem] border border-slate-200 shadow-sm flex flex-col">
-           <h3 className="text-xl font-black text-slate-800 flex items-center gap-3 mb-8"><History className="w-6 h-6 text-slate-400" /> System Events</h3>
+           <h3 className="text-xl font-black text-slate-800 flex items-center gap-3 mb-8"><History className="w-6 h-6 text-slate-400" /> Event Stream</h3>
            <div className="flex-1 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
               {logs.map(log => (
                 <div key={log.id} className="flex gap-4 group">
                    <div className="flex flex-col items-center">
-                      <div className="w-2 h-2 rounded-full bg-indigo-500 group-last:bg-indigo-300"></div>
+                      <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
                       <div className="w-px flex-1 bg-slate-100 my-1"></div>
                    </div>
-                   <div className="pb-6">
+                   <div className="pb-4">
                       <div className="flex items-center gap-2 mb-1">
                          <span className="text-[8px] font-black uppercase text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">{log.type}</span>
                          <span className="text-[9px] font-bold text-slate-400">{log.time}</span>
@@ -479,15 +612,6 @@ const SystemModule = () => {
                    </div>
                 </div>
               ))}
-           </div>
-           <div className="pt-6 border-t border-slate-50 mt-auto">
-              <div className="p-4 bg-slate-50 rounded-2xl flex items-center justify-between">
-                 <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Global Status</span>
-                 </div>
-                 <span className="text-[10px] font-black text-emerald-600 uppercase">Operational</span>
-              </div>
            </div>
         </div>
       </div>
@@ -660,7 +784,7 @@ const CreationHub = ({ type, item, onClose, data, onSave }: any) => {
          <div className="flex flex-col md:flex-row gap-4 pt-10">
             <button onClick={onClose} className="flex-1 py-6 bg-slate-50 text-slate-500 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] hover:bg-slate-100 transition-all border border-slate-200">Abandon Build</button>
             <button onClick={handleSave} disabled={saving} className="flex-[2] py-6 bg-slate-900 text-white rounded-[2.5rem] font-black uppercase tracking-[0.5em] shadow-2xl flex items-center justify-center gap-4 hover:bg-indigo-600 transition-all hover:scale-[1.02] disabled:opacity-50">
-              {saving ? <Loader2 className="animate-spin w-8 h-8" /> : <><CloudUpload className="w-8 h-8" /> Finalize Transmission</>}
+              {saving ? <Loader2 className="animate-spin w-8 h-8" /> : <><CloudUpload className="w-8 h-8" /> Finalize Build</>}
             </button>
          </div>
       </div>

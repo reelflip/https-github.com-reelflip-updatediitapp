@@ -1,6 +1,6 @@
 {
-  "name": "IITGEEPREP: Stellar Node Prime",
-  "version": "5.3.0",
-  "description": "Premium IIT-JEE academic tracker featuring abstracted practice drills, high-stakes mock archive, automated topic question mapping, and robust SQL persistence.",
+  "name": "IITGEEPREP: Solaris Node",
+  "version": "5.4.0",
+  "description": "High-performance IIT-JEE academic tracker with unified PHP/PDO gateway, verified cross-role handshake, and robust SQL persistence.",
   "requestFramePermissions": []
 }
