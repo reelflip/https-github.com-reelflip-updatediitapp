@@ -6,7 +6,7 @@ import {
   Mail, Lock, Loader2, TrendingUp, AlertCircle, Zap, 
   Shield, ArrowLeft, RefreshCw, KeyRound, Home, 
   Info, BookOpen, Layers, Phone, ChevronRight, UserCircle2, GraduationCap, HeartHandshake,
-  CheckCircle2, XCircle, ShieldCheck, Fingerprint, HelpCircle
+  CheckCircle2, XCircle, ShieldCheck, Fingerprint, HelpCircle, Sparkles
 } from 'lucide-react';
 
 interface LoginModuleProps {
@@ -20,7 +20,7 @@ const SECURITY_QUESTIONS = [
   "What is your mother's maiden name?",
   "In what city was your first high school?",
   "What was the name of your first pet?",
-  "What is your favorite book for JEE prep?"
+  "What is your favorite book for IITGEEPREP?"
 ];
 
 const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onNavigate }) => {
@@ -58,26 +58,31 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
     return strength;
   }, [formData.password]);
 
-  const handleLinkClick = (tab: string) => {
+  // Fix: Added missing handleLinkClick function to handle navigation from footer buttons
+  const handleLinkClick = (id: string) => {
     if (onNavigate) {
-      onNavigate(tab);
-    } else {
-      onCancel();
+      onNavigate(id);
     }
+  };
+
+  const handleQuickLogin = (email: string, targetRole: UserRole) => {
+    setFormData({ ...formData, email: email, password: '••••••••' });
+    setRole(targetRole);
+    executeAuth(email, targetRole);
   };
 
   const executeAuth = async (email: string, targetRole: UserRole) => {
     if (isAuthMode === 'register') {
       if (!passwordMatch) {
-        setAuthError("Handshake Error: Passwords do not match.");
+        setAuthError("Credential Mismatch: Passwords do not match.");
         return;
       }
       if (passwordStrength < 50) {
-        setAuthError("Security Protocol: Password is too weak.");
+        setAuthError("Security Protocol: Password strength insufficient.");
         return;
       }
       if (!formData.recoveryAnswer.trim()) {
-        setAuthError("Recovery Error: Security answer is required.");
+        setAuthError("Recovery Conflict: Security answer required.");
         return;
       }
     }
@@ -102,7 +107,7 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
     if (result.success && result.user) {
       onLoginSuccess(result.user);
     } else {
-      setAuthError(result.error || 'Authentication sequence failed.');
+      setAuthError(result.error || 'Identity Verification Failed.');
     }
     setIsProcessing(false);
   };
@@ -112,9 +117,10 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
     executeAuth(formData.email, role);
   };
 
+  const showDemo = (window as any).SHOW_DEMO_LOGINS !== false;
+
   return (
     <div className="min-h-screen z-[100] bg-slate-950 flex flex-col items-center justify-start p-4 py-12 lg:py-20 font-sans overflow-y-auto selection:bg-indigo-500/30">
-      {/* Dynamic Network Background - Fixed position to stay behind scrolling content */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,#1e1b4b_0%,#020617_100%)] opacity-40"></div>
         <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-indigo-600/20 blur-[120px] rounded-full animate-pulse"></div>
@@ -123,23 +129,19 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
       </div>
 
       <div className="max-w-[480px] w-full animate-in fade-in zoom-in-95 duration-700 relative z-10">
-        {/* Branding Header */}
         <div className="text-center space-y-4 mb-8">
           <div onClick={onCancel} className="inline-flex p-4 bg-white/5 backdrop-blur-3xl border border-white/10 rounded-3xl cursor-pointer hover:bg-white/10 transition-all hover:scale-105 group shadow-2xl">
             <Fingerprint className="text-indigo-400 w-8 h-8 transition-transform group-hover:rotate-12" />
           </div>
           <div>
             <h1 className="text-5xl font-black text-white tracking-tighter italic uppercase leading-none">
-              JEE<span className="text-indigo-500">NODE.</span>
+              IITGEE<span className="text-indigo-500">PREP.</span>
             </h1>
             <p className="text-slate-500 font-bold uppercase text-[9px] tracking-[0.6em] mt-2">Verified Identity Gateway</p>
           </div>
         </div>
 
-        {/* Auth Glass Card - No internal scrollbar, full height expansion */}
         <div className="bg-white/[0.02] backdrop-blur-3xl p-10 rounded-[3.5rem] border border-white/10 shadow-[0_30px_100px_-15px_rgba(0,0,0,0.7)] space-y-8 relative overflow-hidden">
-          
-          {/* Mode Switcher */}
           <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5 relative z-10">
             <button 
               onClick={() => { setIsAuthMode('login'); setAuthError(null); }} 
@@ -179,7 +181,7 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
             )}
             
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-3">Node Address (Email)</label>
+              <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-3">Uplink Address (Email)</label>
               <div className="relative group">
                 <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-indigo-400" />
                 <input 
@@ -266,7 +268,6 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
                </div>
             )}
             
-            {/* Role Handshake Grid */}
             <div className="grid grid-cols-2 gap-4">
                 <button 
                   type="button" 
@@ -276,7 +277,7 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
                   }`}
                 >
                   <GraduationCap className={`w-5 h-5 transition-transform group-hover:scale-110 ${role === UserRole.STUDENT ? 'text-indigo-400' : 'text-slate-600'}`} />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Student Node</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Student Access</span>
                 </button>
                 <button 
                   type="button" 
@@ -286,27 +287,58 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
                   }`}
                 >
                   <HeartHandshake className={`w-5 h-5 transition-transform group-hover:scale-110 ${role === UserRole.PARENT ? 'text-rose-400' : 'text-slate-600'}`} />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Guardian Node</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Guardian Access</span>
                 </button>
             </div>
 
             <button 
               type="submit" disabled={isProcessing || (isAuthMode === 'register' && (!passwordMatch || passwordStrength < 50))}
               className={`w-full py-5 rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] transition-all flex items-center justify-center gap-4 shadow-2xl active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed ${
-                isAuthMode === 'login' ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                isAuthMode === 'login' ? 'bg-indigo-600 hover:bg-indigo-50 text-white' : 'bg-emerald-600 hover:bg-emerald-50 text-white'
               }`}
             >
               {isProcessing ? <Loader2 className="w-6 h-6 animate-spin" /> : (
                 <>
-                  {isAuthMode === 'login' ? 'Initialize Node' : 'Register Handshake'}
+                  {isAuthMode === 'login' ? 'Initialize Session' : 'Register Profile'}
                   <ChevronRight className="w-5 h-5" />
                 </>
               )}
             </button>
           </form>
+
+          {/* Quick Access Profiles (Demo Buttons) */}
+          {isAuthMode === 'login' && showDemo && (
+            <div className="pt-6 border-t border-white/5 space-y-4 relative z-10 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-300">
+               <div className="text-center">
+                  <span className="text-[8px] font-black uppercase text-slate-500 tracking-[0.3em]">Quick Access Uplinks</span>
+               </div>
+               <div className="grid grid-cols-3 gap-3">
+                  <button 
+                    onClick={() => handleQuickLogin('ishu@gmail.com', UserRole.STUDENT)}
+                    className="flex flex-col items-center gap-2 p-3 bg-white/5 hover:bg-indigo-600/20 border border-white/5 hover:border-indigo-500/30 rounded-2xl transition-all group"
+                  >
+                     <GraduationCap className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
+                     <span className="text-[7px] font-black uppercase tracking-widest text-slate-400 group-hover:text-white">Student</span>
+                  </button>
+                  <button 
+                    onClick={() => handleQuickLogin('parent@jeepro.in', UserRole.PARENT)}
+                    className="flex flex-col items-center gap-2 p-3 bg-white/5 hover:bg-rose-600/20 border border-white/5 hover:border-rose-500/30 rounded-2xl transition-all group"
+                  >
+                     <HeartHandshake className="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform" />
+                     <span className="text-[7px] font-black uppercase tracking-widest text-slate-400 group-hover:text-white">Guardian</span>
+                  </button>
+                  <button 
+                    onClick={() => handleQuickLogin('admin@jeepro.in', UserRole.ADMIN)}
+                    className="flex flex-col items-center gap-2 p-3 bg-white/5 hover:bg-emerald-600/20 border border-white/5 hover:border-emerald-500/30 rounded-2xl transition-all group"
+                  >
+                     <ShieldCheck className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                     <span className="text-[7px] font-black uppercase tracking-widest text-slate-400 group-hover:text-white">Root</span>
+                  </button>
+               </div>
+            </div>
+          )}
         </div>
 
-        {/* Global Footer Utilities - Consistent for both modes */}
         <div className="mt-12 text-center space-y-12 pb-12 relative z-10">
            <div className="flex justify-center gap-12">
               {footerLinks.map(link => (
@@ -326,7 +358,7 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
               className="group flex items-center justify-center gap-3 mx-auto text-slate-600 hover:text-slate-300 transition-colors font-black text-[10px] uppercase tracking-[0.4em] bg-white/5 px-8 py-3 rounded-2xl border border-white/5 shadow-sm"
             >
               <Home className="w-4 h-4 transition-transform group-hover:-translate-y-0.5" /> 
-              Terminal Root
+              Home Portal
             </button>
         </div>
       </div>

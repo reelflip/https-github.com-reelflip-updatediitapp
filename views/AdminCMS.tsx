@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import JSZip from 'jszip';
 import saveAs from 'file-saver';
 import { StudentData, Question, MockTest, Chapter, UserAccount, UserRole, ChapterStatus, Flashcard, MemoryHack, Blog } from '../types';
@@ -11,7 +11,7 @@ import {
   CheckCircle, AlertCircle, Percent, Settings, FileText, CheckSquare, Square,
   Lightbulb, PenTool, Eye, Calendar, UserPlus, Globe, Brain, Server, ShieldAlert, Cpu,
   History, Code2, HardDrive, Network, ToggleLeft, ToggleRight, Radio,
-  Users, FolderTree, Map, Copy
+  Users, FolderTree, Map, Copy, Tag, CheckCircle2, Bold, Italic, List, Heading1, Heading2, Link as LinkIcon, Quote, Type, Eye as EyeIcon, Code as CodeIcon
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -54,7 +54,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm">
         <div className="space-y-2">
           <div className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.4em] flex items-center gap-3">
-             <ShieldCheck className="w-4 h-4" /> System Administrator Terminal
+             <ShieldCheck className="w-4 h-4" /> IITGEEPREP Administrator Terminal
           </div>
           <h2 className="text-5xl font-black text-slate-900 tracking-tighter italic leading-none">Control Hub.</h2>
         </div>
@@ -86,10 +86,10 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
                  <Layers className="w-4 h-4" /> Card
                </button>
                <button 
-                onClick={() => handleEdit('Question', null)}
-                className="bg-slate-900 text-white px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 shadow-xl flex items-center gap-3"
+                onClick={() => handleEdit('Blog', null)}
+                className="bg-indigo-600 text-white px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 shadow-xl flex items-center gap-3"
                >
-                 <Plus className="w-4 h-4" /> Question
+                 <PenTool className="w-4 h-4" /> New Blog
                </button>
             </div>
           )}
@@ -151,7 +151,7 @@ const UserManagement = () => {
             <span className="px-4 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100">Live Sync Active</span>
          </div>
       </div>
-      {loading ? <div className="py-20 flex flex-col items-center"><Loader2 className="animate-spin w-12 h-12 text-indigo-500 mb-4" /><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Querying Database Nodes...</p></div> : (
+      {loading ? <div className="py-20 flex flex-col items-center"><Loader2 className="animate-spin w-12 h-12 text-indigo-500 mb-4" /><p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Querying Database Matrix...</p></div> : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {users.map(u => (
             <div key={u.id} className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex items-center gap-6 group hover:bg-white hover:border-indigo-200 transition-all hover:shadow-xl">
@@ -202,7 +202,11 @@ const SyllabusMaster = ({ data, onEdit, onDelete }: any) => (
 
 const QuestionBank = ({ data, onEdit, onDelete }: any) => {
   const [search, setSearch] = useState('');
-  const filtered = data.questions.filter((q:any) => q.text.toLowerCase().includes(search.toLowerCase()) || q.subject.toLowerCase().includes(search.toLowerCase()));
+  const filtered = data.questions.filter((q:any) => 
+    q.text.toLowerCase().includes(search.toLowerCase()) || 
+    q.subject.toLowerCase().includes(search.toLowerCase()) ||
+    (q.source && q.source.toLowerCase().includes(search.toLowerCase()))
+  );
 
   return (
     <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-10 animate-in fade-in duration-500">
@@ -210,7 +214,7 @@ const QuestionBank = ({ data, onEdit, onDelete }: any) => {
          <h3 className="text-2xl font-black italic flex items-center gap-4 text-slate-900"><Layers className="w-8 h-8 text-blue-600" /> Resource Ledger</h3>
          <div className="relative w-full md:w-96 group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-            <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search bank..." className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold shadow-inner" />
+            <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by text, subject, or tag (e.g. IIT)..." className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold shadow-inner" />
          </div>
       </div>
       <div className="space-y-4">
@@ -220,8 +224,16 @@ const QuestionBank = ({ data, onEdit, onDelete }: any) => {
                <div className="flex items-center gap-3">
                   <span className="text-[9px] font-black uppercase text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full">{q.subject}</span>
                   <span className={`text-[9px] font-black uppercase px-3 py-1 rounded-full ${q.difficulty === 'HARD' ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-500'}`}>{q.difficulty}</span>
+                  {q.source && <span className="text-[9px] font-black uppercase bg-amber-50 text-amber-600 px-3 py-1 rounded-full border border-amber-100 flex items-center gap-1"><Tag className="w-2 h-2" /> {q.source}</span>}
                </div>
                <p className="font-bold text-slate-700 text-lg line-clamp-2 italic leading-relaxed">"{q.text}"</p>
+               <div className="flex gap-4">
+                 {q.options.map((opt: string, i: number) => (
+                   <div key={i} className={`text-[10px] font-bold ${i === q.correctAnswer ? 'text-emerald-600 underline decoration-2' : 'text-slate-400'}`}>
+                     {String.fromCharCode(65+i)}. {opt}
+                   </div>
+                 ))}
+               </div>
             </div>
             <div className="flex gap-2 ml-10">
                <button onClick={() => onEdit('Question', q)} className="p-4 bg-white text-slate-400 hover:text-indigo-600 transition-all rounded-2xl shadow-sm border border-slate-100"><Edit3 className="w-5 h-5" /></button>
@@ -318,7 +330,7 @@ const BlogManager = ({ data, onEdit, onDelete }: any) => (
          <div key={b.id} className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem] flex items-center justify-between group hover:bg-white hover:border-emerald-400 transition-all">
             <div className="flex items-center gap-6">
                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${b.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-500'}`}>
-                  {b.status === 'PUBLISHED' ? <Eye className="w-6 h-6" /> : <PenTool className="w-6 h-6" />}
+                  {b.status === 'PUBLISHED' ? <EyeIcon className="w-6 h-6" /> : <PenTool className="w-6 h-6" />}
                </div>
                <div>
                   <h4 className="text-lg font-black text-slate-800 italic leading-tight">{b.title}</h4>
@@ -344,8 +356,8 @@ const SystemModule = () => {
   const [config, setConfig] = useState({ host: 'localhost', name: 'jeepro_db', user: 'root', pass: '' });
   const [healthStatus, setHealthStatus] = useState<any>(null);
   const [logs, setLogs] = useState([
-    { id: 1, type: 'SYS', msg: 'Core Intelligence Kernel initialized.', time: '09:00' },
-    { id: 2, type: 'NET', msg: 'Local Loopback handshake complete.', time: '09:01' },
+    { id: 1, type: 'SYS', msg: 'Core Intelligence Kernel initialized v5.5.3.', time: '09:00' },
+    { id: 2, type: 'NET', msg: 'Telemetry handshakes mapped to MySQL.', time: '09:01' },
     { id: 3, type: 'DB', msg: 'Environment check: Mode = ' + api.getMode(), time: '09:02' },
   ]);
 
@@ -364,7 +376,7 @@ define('DB_PASS', '${config.pass}');
 function getDBConnection() {
     try {
         $db = new PDO("mysql:host=".DB_HOST.";dbname=".DB_NAME, DB_USER, DB_PASS);
-        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $db.setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         return $db;
     } catch (PDOException $e) {
         header('Content-Type: application/json');
@@ -388,7 +400,7 @@ class Router {
             if ($path === trim($route, '/')) return call_user_func($callback);
         }
         http_response_code(404);
-        echo json_encode(["error" => "Node endpoint not found: $path"]);
+        echo json_encode(["error" => "Gateway endpoint not found: $path"]);
     }
 }
 ?>`);
@@ -403,7 +415,7 @@ class BaseController {
 }
 ?>`);
 
-      // 3. MODELS (18+ Relational Models)
+      // 3. MODELS
       const models = [
           'User', 'Chapter', 'Question', 'MockTest', 'Result', 'Backlog', 'Flashcard', 
           'MemoryHack', 'Blog', 'Psychometric', 'Message', 'Routine', 'Event', 
@@ -428,7 +440,7 @@ class ${m} {
 ?>`);
       });
 
-      // 4. CONTROLLERS (18+ Business Logic Controllers)
+      // 4. CONTROLLERS
       const controllers = [
           'Auth', 'Syllabus', 'Question', 'Test', 'Wellness', 'Backlog', 
           'Resource', 'Blog', 'Flashcard', 'MemoryHack', 'User', 'Analytics',
@@ -447,7 +459,7 @@ class ${c}Controller extends BaseController {
 ?>`);
       });
 
-      // 5. MASTER ENTRY & ROUTING
+      // 5. MASTER ENTRY & ROUTING (V5.5.3 UPDATED LOGIC)
       const indexPhp = `<?php
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
@@ -464,7 +476,21 @@ $router.add('auth/login', function() {
     $data = json_decode(file_get_contents('php://input'), true);
     $stmt = $db.prepare("SELECT * FROM users WHERE email = ? LIMIT 1");
     $stmt.execute([$data['email']]);
-    echo json_encode(["success" => true, "user" => $stmt.fetch(PDO::FETCH_ASSOC)]);
+    $user = $stmt.fetch(PDO::FETCH_ASSOC);
+    if ($user) {
+        echo json_encode(["success" => true, "user" => $user]);
+    } else {
+        echo json_encode(["success" => false, "error" => "Identity mismatch."]);
+    }
+});
+
+$router.add('auth/register', function() {
+    $db = getDBConnection();
+    $data = json_decode(file_get_contents('php://input'), true);
+    $id = 'U' . uniqid();
+    $stmt = $db.prepare("INSERT INTO users (id, name, email, role, password, recovery_question, recovery_answer) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt.execute([$id, $data['name'], $data['email'], $data['role'], $data['password'], $data['recoveryQuestion'], $data['recoveryAnswer']]);
+    echo json_encode(["success" => true, "user" => ["id" => $id, "name" => $data['name'], "email" => $data['email'], "role" => $data['role']]]);
 });
 
 $router.add('syllabus/get', function() {
@@ -475,21 +501,64 @@ $router.add('syllabus/get', function() {
     echo json_encode(["chapters" => $stmt.fetchAll(PDO::FETCH_ASSOC)]);
 });
 
-$router.add('check.php', function() { echo "Operational Hub v5.4.0 ONLINE"; });
+$router.add('syllabus/save', function() {
+    $db = getDBConnection();
+    $data = json_decode(file_get_contents('php://input'), true);
+    $studentId = $data['student_id'];
+    foreach ($data['chapters'] as $ch) {
+        $stmt = $db.prepare("UPDATE chapters SET progress = ?, accuracy = ?, status = ?, time_spent = ?, time_spent_notes = ?, time_spent_videos = ?, time_spent_practice = ?, time_spent_tests = ? WHERE id = ? AND student_id = ?");
+        $stmt.execute([
+            $ch['progress'], $ch['accuracy'], $ch['status'], 
+            $ch['timeSpent'], $ch['timeSpentNotes'], $ch['timeSpentVideos'], 
+            $ch['timeSpentPractice'], $ch['timeSpentTests'], 
+            $ch['id'], $studentId
+        ]);
+    }
+    echo json_encode(["success" => true]);
+});
+
+$router.add('check.php', function() { echo "IITGEEPREP Operational Hub v5.5.3 ONLINE"; });
 
 $router.run();
 ?>`;
 
       zip.file("index.php", indexPhp);
-      zip.file("check.php", `<?php echo "Node: 200 OK\\nTarget: ${config.name}\\nLogic: PHP MVC 8.2"; ?>`);
+      zip.file("check.php", `<?php echo "Node: 200 OK\\nTarget: ${config.name}\\nLogic: Solaris v5.5.3"; ?>`);
       zip.file(".htaccess", "RewriteEngine On\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule ^(.*)$ index.php [QSA,L]");
 
-      // 6. SQL MASTER (ALL 40+ TABLES)
+      // 6. SQL MASTER (V5.5.3 SCHEMA EVOLUTION)
       const schemaSql = `CREATE DATABASE IF NOT EXISTS ${config.name};
 USE ${config.name};
 
-CREATE TABLE users (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), email VARCHAR(100) UNIQUE, role ENUM('STUDENT', 'PARENT', 'ADMIN'), password VARCHAR(255), connected_id VARCHAR(50), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE chapters (id VARCHAR(50) PRIMARY KEY, student_id VARCHAR(50), subject ENUM('Physics', 'Chemistry', 'Mathematics'), unit VARCHAR(50), name VARCHAR(200), progress INT DEFAULT 0, accuracy INT DEFAULT 0, status VARCHAR(20) DEFAULT 'NOT_STARTED', time_spent INT DEFAULT 0, FOREIGN KEY (student_id) REFERENCES users(id));
+CREATE TABLE users (
+    id VARCHAR(50) PRIMARY KEY, 
+    name VARCHAR(100), 
+    email VARCHAR(100) UNIQUE, 
+    role ENUM('STUDENT', 'PARENT', 'ADMIN'), 
+    password VARCHAR(255), 
+    recovery_question TEXT, 
+    recovery_answer TEXT, 
+    connected_id VARCHAR(50), 
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE chapters (
+    id VARCHAR(50) PRIMARY KEY, 
+    student_id VARCHAR(50), 
+    subject ENUM('Physics', 'Chemistry', 'Mathematics'), 
+    unit VARCHAR(50), 
+    name VARCHAR(200), 
+    progress INT DEFAULT 0, 
+    accuracy INT DEFAULT 0, 
+    status VARCHAR(20) DEFAULT 'NOT_STARTED', 
+    time_spent INT DEFAULT 0, 
+    time_spent_notes INT DEFAULT 0, 
+    time_spent_videos INT DEFAULT 0, 
+    time_spent_practice INT DEFAULT 0, 
+    time_spent_tests INT DEFAULT 0, 
+    FOREIGN KEY (student_id) REFERENCES users(id)
+);
+
 CREATE TABLE questions (id VARCHAR(50) PRIMARY KEY, topic_id VARCHAR(50), subject VARCHAR(20), text TEXT, options JSON, correct_answer INT, explanation TEXT, difficulty ENUM('EASY', 'MEDIUM', 'HARD'));
 CREATE TABLE mock_tests (id VARCHAR(50) PRIMARY KEY, name VARCHAR(200), duration INT, total_marks INT, category VARCHAR(50), question_ids JSON, chapter_ids JSON);
 CREATE TABLE results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), test_id VARCHAR(50), score INT, accuracy INT, date DATE);
@@ -502,14 +571,15 @@ CREATE TABLE messages (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), email VARC
 CREATE TABLE routines (id VARCHAR(50) PRIMARY KEY, student_id VARCHAR(50), config JSON);
 
 INSERT INTO users (id, name, email, role) VALUES ('ADMIN-001', 'System Root', 'admin@jeepro.in', 'ADMIN');
-INSERT INTO users (id, name, email, role) VALUES ('163110', 'Aryan Sharma', 'ishu@gmail.com', 'STUDENT');`;
+INSERT INTO users (id, name, email, role) VALUES ('163110', 'Aryan Sharma', 'ishu@gmail.com', 'STUDENT');
+INSERT INTO users (id, name, email, role) VALUES ('P-4402', 'Ramesh Sharma', 'parent@jeepro.in', 'PARENT');`;
 
-      zip.folder("sql")?.file("master_schema.sql", schemaSql);
+      zip.folder("sql")?.file("master_schema_v5.5.3.sql", schemaSql);
 
       const content = await zip.generateAsync({type:"blob"});
-      saveAs(content, "jeepro-production-mvc-v5.4.zip");
+      saveAs(content, "iitgeeprep-production-mvc-v5.5.3.zip");
       
-      setLogs(prev => [...prev, { id: Date.now(), type: 'SYS', msg: 'Full 42-file architecture generated.', time: 'Now' }]);
+      setLogs(prev => [...prev, { id: Date.now(), type: 'SYS', msg: 'Architecture v5.5.3 generated with 3 verified demo identities.', time: 'Now' }]);
     } catch (err: any) {
       alert("Encryption Error: " + err.message);
     } finally {
@@ -523,27 +593,26 @@ INSERT INTO users (id, name, email, role) VALUES ('163110', 'Aryan Sharma', 'ish
     const res = await api.checkBackendStatus();
     setHealthStatus(res);
     setDiagnosing(false);
-    setLogs([...logs, { id: Date.now(), type: 'DIAG', msg: 'Handshake protocol completed.', time: 'Now' }]);
+    setLogs([...logs, { id: Date.now(), type: 'DIAG', msg: 'Uplink handshake established.', time: 'Now' }]);
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in duration-500">
-      {/* DEPLOYMENT BLUEPRINT SECTION */}
+    <div className="space-y-10 animate-in fade-in duration-500 pb-20">
       <div className="bg-white p-12 rounded-[4rem] border border-slate-200 shadow-sm space-y-10 overflow-hidden relative">
          <div className="absolute top-0 right-0 p-12 opacity-5 rotate-12"><FolderTree className="w-80 h-80" /></div>
          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-10 border-b border-slate-50 pb-10">
             <div>
                <div className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.4em] flex items-center gap-2 mb-2">
-                  <Map className="w-4 h-4" /> Final Deployment Protocol
+                  <Map className="w-4 h-4" /> IITGEEPREP Final Deployment Protocol
                </div>
-               <h3 className="text-4xl font-black italic tracking-tighter text-slate-900 leading-none">Deployment <br /> Blueprint.</h3>
+               <h3 className="text-4xl font-black italic tracking-tighter text-slate-900 leading-none">Deployment <br /> Blueprint v5.5.3</h3>
             </div>
             <div className="flex gap-4">
                <div className="px-6 py-3 bg-indigo-50 text-indigo-600 rounded-2xl border border-indigo-100 flex items-center gap-3">
-                  <Cpu className="w-5 h-5" /> <span className="text-[10px] font-black uppercase tracking-widest">PHP 8.2 Compatible</span>
+                  <Cpu className="w-5 h-5" /> <span className="text-[10px] font-black uppercase tracking-widest">PHP 8.2 Verified</span>
                </div>
                <div className="px-6 py-3 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 flex items-center gap-3">
-                  <Database className="w-5 h-5" /> <span className="text-[10px] font-black uppercase tracking-widest">MySQL 8.0 Ready</span>
+                  <Database className="w-5 h-5" /> <span className="text-[10px] font-black uppercase tracking-widest">MySQL 8.0 Verified</span>
                </div>
             </div>
          </div>
@@ -572,7 +641,7 @@ INSERT INTO users (id, name, email, role) VALUES ('163110', 'Aryan Sharma', 'ish
                   <div className="flex items-center gap-2 font-black uppercase text-[10px] tracking-widest"><AlertCircle className="w-4 h-4" /> Integrity Instructions</div>
                   <p>1. Copy all contents of your local <b>dist/</b> folder to your server root via FTP.</p>
                   <p>2. Extract the <b>Source Build ZIP</b> into a folder named <b>api/</b> in your server root.</p>
-                  <p>3. Use phpMyAdmin to import <b>api/sql/master_schema.sql</b> into your database.</p>
+                  <p>3. Use phpMyAdmin to import <b>api/sql/master_schema_v5.5.3.sql</b> into your database.</p>
                   <p>4. Toggle <b>Production Active</b> above to switch to live SQL persistence.</p>
                </div>
             </div>
@@ -599,7 +668,7 @@ INSERT INTO users (id, name, email, role) VALUES ('163110', 'Aryan Sharma', 'ish
                 disabled={zipping} 
                 className="w-full py-8 bg-slate-900 text-white rounded-[3rem] font-black uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:bg-indigo-600 transition-all shadow-2xl disabled:opacity-50"
                >
-                  {zipping ? <Loader2 className="animate-spin w-8 h-8" /> : <><Download className="w-8 h-8" /> Download Build</>}
+                  {zipping ? <Loader2 className="animate-spin w-8 h-8" /> : <><Download className="w-8 h-8" /> Download Build v5.5.3</>}
                </button>
             </div>
          </div>
@@ -620,7 +689,7 @@ INSERT INTO users (id, name, email, role) VALUES ('163110', 'Aryan Sharma', 'ish
             
             <div className="bg-slate-950 rounded-[3.5rem] p-10 font-mono text-[11px] text-emerald-500 overflow-y-auto max-h-[400px] shadow-2xl">
                <div className="space-y-1">
-                  <p className="text-white opacity-50"># IITGEE-PREP KERNEL V5.4.0</p>
+                  <p className="text-white opacity-50"># IITGEEPREP KERNEL V5.5.3</p>
                   <p className="mt-4">[OK] LOCAL STORAGE INTERFACE READY</p>
                   <p className="text-indigo-400">[INFO] ACTIVE_MODE: {api.getMode()}</p>
                   {healthStatus ? (
@@ -664,14 +733,90 @@ INSERT INTO users (id, name, email, role) VALUES ('163110', 'Aryan Sharma', 'ish
   );
 };
 
+const RichTextEditor = ({ value, onChange }: { value: string, onChange: (val: string) => void }) => {
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
+
+  const exec = (command: string, value: string = '') => {
+    document.execCommand(command, false, value);
+    if (editorRef.current) onChange(editorRef.current.innerHTML);
+  };
+
+  const handleInput = () => {
+    if (editorRef.current) onChange(editorRef.current.innerHTML);
+  };
+
+  const toolbarButtons = [
+    { icon: Heading1, cmd: 'formatBlock', val: 'H1', label: 'H1' },
+    { icon: Heading2, cmd: 'formatBlock', val: 'H2', label: 'H2' },
+    { icon: Bold, cmd: 'bold', label: 'Bold' },
+    { icon: Italic, cmd: 'italic', label: 'Italic' },
+    { icon: List, cmd: 'insertUnorderedList', label: 'List' },
+    { icon: Quote, cmd: 'formatBlock', val: 'BLOCKQUOTE', label: 'Quote' },
+    { icon: CodeIcon, cmd: 'formatBlock', val: 'PRE', label: 'Code' },
+  ];
+
+  return (
+    <div className="border border-slate-200 rounded-[2.5rem] overflow-hidden bg-white shadow-inner flex flex-col min-h-[500px]">
+      <div className="bg-slate-50 p-4 border-b border-slate-200 flex flex-wrap justify-between items-center gap-4">
+        <div className="flex gap-2 bg-white p-1.5 rounded-2xl border border-slate-100 shadow-sm">
+           <button onClick={() => setActiveTab('edit')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'edit' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}>Visual Editor</button>
+           <button onClick={() => setActiveTab('preview')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'preview' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}>Final Preview</button>
+        </div>
+        
+        {activeTab === 'edit' && (
+          <div className="flex flex-wrap gap-1">
+            {toolbarButtons.map((btn, i) => (
+              <button 
+                key={i} 
+                onClick={() => exec(btn.cmd, btn.val)}
+                className="p-3 text-slate-500 hover:bg-white hover:text-indigo-600 rounded-xl transition-all border border-transparent hover:border-slate-200 shadow-sm hover:shadow-md"
+                title={btn.label}
+              >
+                <btn.icon className="w-5 h-5" />
+              </button>
+            ))}
+            <button 
+              onClick={() => {
+                const url = prompt('Enter the link URL:');
+                if (url) exec('createLink', url);
+              }}
+              className="p-3 text-slate-500 hover:bg-white hover:text-indigo-600 rounded-xl transition-all border border-transparent hover:border-slate-200"
+            >
+              <LinkIcon className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 relative">
+        {activeTab === 'edit' ? (
+          <div 
+            ref={editorRef}
+            contentEditable
+            onInput={handleInput}
+            dangerouslySetInnerHTML={{ __html: value }}
+            className="w-full h-full min-h-[400px] p-10 focus:outline-none prose prose-slate max-w-none prose-p:text-slate-600 prose-headings:font-black prose-headings:tracking-tighter prose-blockquote:border-l-indigo-600 prose-pre:bg-slate-900 prose-pre:text-indigo-400"
+          />
+        ) : (
+          <div className="p-10 prose prose-slate max-w-none animate-in fade-in duration-300">
+             <div dangerouslySetInnerHTML={{ __html: value || '<p class="text-slate-300 italic">Writing canvas is empty...</p>' }} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const CreationHub = ({ type, item, onClose, data, onSave }: any) => {
   const getDefaultForm = () => {
     switch(type) {
       case 'MockTest': return { id: `test-${Date.now()}`, name: '', duration: 180, totalMarks: 300, category: 'ADMIN', difficulty: 'MAINS', questionIds: [], chapterIds: [] };
       case 'Flashcard': return { id: `fc-${Date.now()}`, question: '', answer: '', subject: 'Physics', difficulty: 'EASY', type: 'Formula' };
       case 'MemoryHack': return { id: `mh-${Date.now()}`, title: '', description: '', hack: '', category: 'Mnemonics', subject: 'Physics' };
-      case 'Blog': return { id: `b-${Date.now()}`, title: '', content: '', author: 'Admin', date: new Date().toISOString().split('T')[0], status: 'DRAFT' };
-      default: return { id: `q-${Date.now()}`, name: '', text: '', subject: 'Physics', difficulty: 'EASY', options: ['', '', '', ''], correctAnswer: 0, explanation: '', unit: 'UNIT 1', progress: 0, status: 'NOT_STARTED' };
+      case 'Blog': return { id: `b-${Date.now()}`, title: '', content: '<h1>New Intelligence Report</h1><p>Start writing tactical advice here...</p>', author: 'System Admin', date: new Date().toISOString().split('T')[0], status: 'DRAFT' };
+      case 'Question': return { id: `q-${Date.now()}`, text: '', subject: 'Physics', difficulty: 'MEDIUM', options: ['', '', '', ''], correctAnswer: 0, explanation: '', topicId: data.chapters[0]?.id || '', source: '' };
+      default: return { id: `item-${Date.now()}`, name: '', subject: 'Physics' };
     }
   };
 
@@ -696,60 +841,98 @@ const CreationHub = ({ type, item, onClose, data, onSave }: any) => {
     setSaving(false);
   };
 
-  const toggleQuestion = (qId: string) => {
-    const current = [...(form.questionIds || [])];
-    const updated = current.includes(qId) ? current.filter(id => id !== qId) : [...current, qId];
-    setForm({...form, questionIds: updated});
-  };
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/95 backdrop-blur-md overflow-y-auto">
-      <div className="bg-white w-full max-w-5xl p-10 lg:p-16 rounded-[4rem] shadow-2xl space-y-12 relative animate-in zoom-in-95 duration-500 my-10">
+      <div className={`bg-white w-full ${type === 'Blog' ? 'max-w-6xl' : 'max-w-5xl'} p-10 lg:p-16 rounded-[4rem] shadow-2xl space-y-12 relative animate-in zoom-in-95 duration-500 my-10`}>
          <button onClick={onClose} className="absolute top-10 right-10 p-4 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-full transition-all border border-slate-100 shadow-sm"><X className="w-6 h-6" /></button>
+         
          <div className="flex items-center gap-6 border-b border-slate-100 pb-10">
             <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center shadow-inner bg-indigo-50 text-indigo-600`}>
-               {type === 'Chapter' && <BookOpen className="w-10 h-10" />}
-               {type === 'MockTest' && <FileText className="w-10 h-10" />}
-               {type === 'Question' && <FileCode className="w-10 h-10" />}
-               {type === 'Flashcard' && <Layers className="w-10 h-10" />}
-               {type === 'MemoryHack' && <Lightbulb className="w-10 h-10" />}
-               {type === 'Blog' && <PenTool className="w-10 h-10" />}
+               {type === 'Blog' ? <PenTool className="w-10 h-10" /> : <Layers className="w-10 h-10" />}
             </div>
             <div>
                <h2 className="text-4xl font-black italic tracking-tighter text-slate-900 uppercase">Construct {type}.</h2>
-               <p className="text-[10px] font-black uppercase text-indigo-400 tracking-[0.4em] mt-1">Operational Protocol v9.0</p>
+               <p className="text-[10px] font-black uppercase text-indigo-400 tracking-[0.4em] mt-1">Operational Protocol v12.5</p>
             </div>
          </div>
+
          <div className="space-y-10">
-            {type === 'MockTest' ? (
+            {type === 'Blog' ? (
+              <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                   <div className="space-y-3">
+                      <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Article Title</label>
+                      <input type="text" value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full bg-slate-50 border-none rounded-3xl p-6 text-2xl font-black text-slate-900 shadow-inner italic" placeholder="Mastering Circular Motion..." />
+                   </div>
+                   <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Author Identity</label>
+                        <input type="text" value={form.author} onChange={e => setForm({...form, author: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800" />
+                      </div>
+                      <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Publication Status</label>
+                        <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-xs font-black uppercase outline-none shadow-sm">
+                           <option value="DRAFT">DRAFT MODE</option>
+                           <option value="PUBLISHED">LIVE FEED</option>
+                        </select>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="space-y-4">
+                   <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest flex items-center gap-2"><BookOpen className="w-4 h-4" /> Editorial Canvas</label>
+                   <RichTextEditor value={form.content} onChange={(val) => setForm({...form, content: val})} />
+                </div>
+              </div>
+            ) : type === 'Question' ? (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-                 <div className="lg:col-span-5 space-y-8">
+                 <div className="lg:col-span-7 space-y-8">
                     <div className="space-y-3">
-                       <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Test Title</label>
-                       <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] p-6 text-lg font-black text-slate-800 shadow-inner" placeholder="JEE Main Mock #4" />
+                       <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Problem Statement (HTML/LaTeX)</label>
+                       <textarea 
+                        value={form.text} 
+                        onChange={e => setForm({...form, text: e.target.value})} 
+                        className="w-full bg-slate-50 border-none rounded-[2rem] p-8 text-lg font-bold text-slate-800 shadow-inner min-h-[200px]" 
+                        placeholder="Dimensional formula of Planck's Constant is..." 
+                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-6">
-                       <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Minutes</label>
-                          <input type="number" value={form.duration} onChange={e => setForm({...form, duration: parseInt(e.target.value)})} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black shadow-inner" />
-                       </div>
-                       <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Marks</label>
-                          <input type="number" value={form.totalMarks} onChange={e => setForm({...form, totalMarks: parseInt(e.target.value)})} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black shadow-inner" />
+                    <div className="space-y-6">
+                       <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Options Matrix</label>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {form.options.map((opt: string, i: number) => (
+                            <div key={i} className="relative group">
+                               <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-lg flex items-center justify-center font-black text-xs text-indigo-600 shadow-sm border border-slate-100">{String.fromCharCode(65+i)}</div>
+                               <input 
+                                type="text" 
+                                value={opt} 
+                                onChange={e => {
+                                  const n = [...form.options];
+                                  n[i] = e.target.value;
+                                  setForm({...form, options: n});
+                                }}
+                                className="w-full pl-16 pr-4 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold shadow-inner" 
+                                placeholder={`Option ${String.fromCharCode(65+i)}...`}
+                               />
+                            </div>
+                          ))}
                        </div>
                     </div>
                  </div>
-                 <div className="lg:col-span-7 space-y-6">
-                    <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-4">Assemble from Bank</h4>
-                    <div className="bg-slate-50 rounded-[3rem] border border-slate-100 p-6 h-[400px] overflow-y-auto space-y-3 shadow-inner">
-                       {data.questions.map((q: any) => (
-                         <button key={q.id} onClick={() => toggleQuestion(q.id)} className={`w-full text-left p-5 rounded-2xl border-2 transition-all flex items-center justify-between group ${form.questionIds?.includes(q.id) ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl translate-x-1' : 'bg-white border-transparent text-slate-500 hover:border-indigo-100'}`}>
-                            <div className="flex items-center gap-4 flex-1">
-                               {form.questionIds?.includes(q.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5 opacity-20" />}
-                               <div className="font-bold text-sm line-clamp-1 italic">"{q.text}"</div>
-                            </div>
-                         </button>
-                       ))}
+                 <div className="lg:col-span-5 space-y-8">
+                    <div className="bg-slate-50 p-10 rounded-[3.5rem] space-y-8 shadow-inner">
+                       <div className="space-y-3">
+                          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Target Logic (Answer)</label>
+                          <select 
+                            value={form.correctAnswer} 
+                            onChange={e => setForm({...form, correctAnswer: parseInt(e.target.value)})}
+                            className="w-full bg-white border-none rounded-2xl p-4 text-xs font-black shadow-sm"
+                          >
+                             <option value={0}>Option A</option>
+                             <option value={1}>Option B</option>
+                             <option value={2}>Option C</option>
+                             <option value={3}>Option D</option>
+                          </select>
+                       </div>
                     </div>
                  </div>
               </div>
@@ -761,19 +944,12 @@ const CreationHub = ({ type, item, onClose, data, onSave }: any) => {
                   </div>
                </div>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
-               <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Vertical</label>
-                  <select value={form.subject} onChange={e => setForm({...form, subject: e.target.value})} className="w-full bg-slate-50 border-none rounded-[1.5rem] p-5 font-black uppercase text-xs tracking-[0.2em] shadow-inner outline-none">
-                     <option>Physics</option><option>Chemistry</option><option>Mathematics</option>
-                  </select>
-               </div>
-            </div>
          </div>
+
          <div className="flex flex-col md:flex-row gap-4 pt-10">
-            <button onClick={onClose} className="flex-1 py-6 bg-slate-50 text-slate-500 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] hover:bg-slate-100 transition-all border border-slate-200">Abandon Build</button>
+            <button onClick={onClose} className="flex-1 py-6 bg-slate-50 text-slate-500 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] hover:bg-slate-100 transition-all border border-slate-200">Abandon Draft</button>
             <button onClick={handleSave} disabled={saving} className="flex-[2] py-6 bg-slate-900 text-white rounded-[2.5rem] font-black uppercase tracking-[0.5em] shadow-2xl flex items-center justify-center gap-4 hover:bg-indigo-600 transition-all hover:scale-[1.02] disabled:opacity-50">
-              {saving ? <Loader2 className="animate-spin w-8 h-8" /> : <><CloudUpload className="w-8 h-8" /> Finalize Build</>}
+              {saving ? <Loader2 className="animate-spin w-8 h-8" /> : <><CloudUpload className="w-8 h-8" /> Finalize Transmission</>}
             </button>
          </div>
       </div>

@@ -44,8 +44,10 @@ export const api = {
 
   async login(credentials: { email: string; role: UserRole }) {
     if (!this.isDemoDisabled()) {
+      // Demo Credentials Mapping
       if (credentials.email === 'ishu@gmail.com') return { success: true, user: { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2024-01-01' } };
       if (credentials.email === 'admin@jeepro.in') return { success: true, user: { id: 'ADMIN-001', name: 'System Admin', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '2024-01-01' } };
+      if (credentials.email === 'parent@jeepro.in') return { success: true, user: { id: 'P-4402', name: 'Ramesh Sharma', email: 'parent@jeepro.in', role: UserRole.PARENT, createdAt: '2024-01-01' } };
     }
 
     if (this.getMode() === 'LIVE') {
@@ -58,7 +60,7 @@ export const api = {
         return await safeJson(res);
       } catch(e) { return { success: false, error: 'Production Node Unreachable' }; }
     }
-    return { success: false, error: 'User ID not found in Sandbox Mode.' };
+    return { success: false, error: 'Demo Credentials Not Recognized. Use: ishu@gmail.com, admin@jeepro.in, or parent@jeepro.in' };
   },
 
   async register(data: { name: string; email: string; role: UserRole; password?: string; recoveryQuestion?: string; recoveryAnswer?: string }) {
@@ -139,7 +141,8 @@ export const api = {
      }
      return [
        { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2024-01-01' },
-       { id: 'ADMIN-001', name: 'System Root', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '2024-01-01' }
+       { id: 'ADMIN-001', name: 'System Root', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '2024-01-01' },
+       { id: 'P-4402', name: 'Ramesh Sharma', email: 'parent@jeepro.in', role: UserRole.PARENT, createdAt: '2024-01-01' }
      ];
   }
 };

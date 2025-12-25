@@ -1,5 +1,5 @@
 
-# IITGEEPREP: Production Deployment Protocol v5.4
+# IITGEEPREP: Production Deployment Protocol v5.5.3
 
 Follow these strict folder mapping rules to deploy the application to a production server (Hostinger, XAMPP, or any PHP/MySQL environment).
 
@@ -17,7 +17,7 @@ Your server's root folder (usually `public_html` or `htdocs`) MUST follow this s
 │   ├── controllers/    (18+ Controller logic files)
 │   ├── core/           (Router.php and BaseController.php)
 │   ├── models/         (18+ Data Model files)
-│   ├── sql/            (master_schema.sql)
+│   ├── sql/            (master_schema_v5.5.3.sql)
 │   ├── index.php       (Main API Gateway Entry)
 │   ├── check.php       (System Health Check)
 │   └── .htaccess       (Rewrites for Clean URLs)
@@ -38,14 +38,14 @@ Your server's root folder (usually `public_html` or `htdocs`) MUST follow this s
 1. Log in to the **IITGEEPREP Admin Console** on your local/demo site.
 2. Navigate to **System Hub** -> **Deployment Blueprint**.
 3. Input your production Database credentials (Host, DB Name, User, Pass).
-4. Click **"Download Build"** to get the `jeepro-production-mvc-v5.4.zip`.
+4. Click **"Download Build"** to get the `iitgeeprep-production-mvc-v5.5.3.zip`.
 5. On your server, create an **`api/`** folder in the root.
 6. Extract the ZIP contents directly into that **`api/`** folder.
 
 ### Phase C: Database Initialization
 1. Open **phpMyAdmin** on your hosting control panel.
 2. Select your production database.
-3. Import the **`api/sql/master_schema.sql`** file. This will create 40+ required relational tables.
+3. Import the **`api/sql/master_schema_v5.5.3.sql`** file. This will create 40+ required relational tables with telemetry support.
 
 ---
 
