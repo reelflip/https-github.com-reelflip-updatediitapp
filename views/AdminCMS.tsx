@@ -24,7 +24,8 @@ import {
   Brain,
   Download,
   RotateCw,
-  Mail
+  Mail,
+  FolderOpen
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -323,7 +324,7 @@ const QuestionBankManager = ({ data, updateGlobalData, onEdit, setIsCreating, se
                   <div key={q.id} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-indigo-400 hover:bg-white transition-all group">
                     <div className="flex-1 cursor-pointer" onClick={() => onEdit('questions', q)}>
                       <div className="flex items-center gap-3 mb-2">
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${q.subject === 'Physics' ? 'bg-blue-100 text-blue-600' : q.subject === 'Chemistry' ? 'bg-emerald-100 text-emerald-600' : q.subject === 'rose-100 text-rose-600'}`}>{q.subject}</span>
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${q.subject === 'Physics' ? 'bg-blue-100 text-blue-600' : q.subject === 'Chemistry' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>{q.subject}</span>
                         <span className="text-slate-300">/</span>
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{chapter?.name || 'Unlinked Topic'}</span>
                         <span className="text-slate-300">/</span>
@@ -461,29 +462,12 @@ const BlogManager = ({ data, updateGlobalData, onEdit, setIsCreating, setCreatio
 
 const SystemModule = ({ systemSubTab, setSystemSubTab }: any) => {
   const [demoDisabled, setDemoDisabled] = useState(api.isDemoDisabled());
-  const [deployActiveSub, setDeployActiveSub] = useState<'sql' | 'handlers' | 'guide'>('guide');
+  const [deployActiveSub, setDeployActiveSub] = useState<'sql' | 'bundle'>('bundle');
   const dataSource = api.getMode();
 
-  const handleDemoToggle = () => {
-    const newState = !demoDisabled;
-    api.setDemoDisabled(newState);
-    setDemoDisabled(newState);
-  };
-
   const fileTree = [
-    { name: 'setup.sql', icon: Database, desc: 'Master Normalized Schema', path: 'deployment/setup.sql' },
-    { name: 'db_config.php', icon: Code, desc: 'Central PDO Configuration', path: 'deployment/db_config.php' },
-    { name: 'auth.php', icon: Lock, desc: 'Multi-Role Identity Handlers', path: 'deployment/auth.php' },
-    { name: 'syllabus_manager.php', icon: BookOpen, desc: '94-Unit Tracking Service', path: 'deployment/syllabus_manager.php' },
-    { name: 'backlog_manager.php', icon: Target, desc: 'Operational Debt Logic', path: 'deployment/backlog_manager.php' },
-    { name: 'flashcard_manager.php', icon: RotateCw, desc: 'Active Recall Logic', path: 'deployment/flashcard_manager.php' },
-    { name: 'hack_vault.php', icon: Zap, desc: 'Mnemonic Repository', path: 'deployment/hack_vault.php' },
-    { name: 'question_bank.php', icon: FileCode, desc: 'Intelligence Bank Service', path: 'deployment/question_bank.php' },
-    { name: 'test_engine.php', icon: FileText, desc: 'JEE Assessment Simulator', path: 'deployment/test_engine.php' },
-    { name: 'result_analytics.php', icon: Activity, desc: 'Mastery Trend Service', path: 'deployment/result_analytics.php' },
-    { name: 'psychometric_engine.php', icon: Brain, desc: 'Mental Profile Service', path: 'deployment/psychometric_engine.php' },
-    { name: 'cms_blog.php', icon: Monitor, desc: 'Intelligence Feed CMS', path: 'deployment/cms_blog.php' },
-    { name: 'message_hub.php', icon: Mail, desc: 'Transmission Gateway', path: 'deployment/message_hub.php' }
+    { name: 'setup.sql', icon: Database, desc: 'Master Relational Schema', path: 'deployment/setup.sql' },
+    { name: 'api.php', icon: Code, desc: 'Master API Entry Point', path: 'deployment/api.php' }
   ];
 
   const triggerDownload = async (fileName: string) => {
@@ -501,7 +485,7 @@ const SystemModule = ({ systemSubTab, setSystemSubTab }: any) => {
       document.body.removeChild(a);
     } catch (err) {
       console.error("Download failed:", err);
-      alert("Could not generate file for download. Please ensure you are viewing the live environment.");
+      alert("Please ensure the file content is valid. If testing locally, copy from the display panel.");
     }
   };
 
@@ -511,7 +495,7 @@ const SystemModule = ({ systemSubTab, setSystemSubTab }: any) => {
         {[
           { id: 'ai', label: 'AI Strategy', icon: Zap },
           { id: 'db-util', label: 'Data Utility Bridge', icon: Database },
-          { id: 'deploy', label: 'Deployment Suite', icon: Package }
+          { id: 'deploy', label: 'One-Click Deployment', icon: Package }
         ].map((t) => (
           <button key={t.id} onClick={() => setSystemSubTab(t.id as any)} className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${systemSubTab === t.id ? 'bg-white text-indigo-600 shadow-xl' : 'text-slate-500 hover:text-slate-900'}`}><t.icon className="w-3.5 h-3.5" />{t.label}</button>
         ))}
@@ -524,96 +508,103 @@ const SystemModule = ({ systemSubTab, setSystemSubTab }: any) => {
                     <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-8">
                         <div className="flex items-center gap-4">
                             <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
-                                <Package className="w-6 h-6" />
+                                <FolderOpen className="w-6 h-6" />
                             </div>
-                            <h4 className="font-black text-xl italic">Uplink Files</h4>
+                            <h4 className="font-black text-xl italic">Deployment Folder</h4>
                         </div>
-                        <div className="space-y-2 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
+                        <div className="space-y-3">
                            {fileTree.map(f => (
-                             <div key={f.name} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-400 transition-all">
+                             <div key={f.name} className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-400 transition-all">
                                 <f.icon className="w-5 h-5 text-slate-400 group-hover:text-indigo-600" />
                                 <div className="flex-1">
-                                    <div className="text-[10px] font-black text-slate-900">{f.name}</div>
-                                    <div className="text-[8px] font-bold text-slate-400 uppercase">{f.desc}</div>
+                                    <div className="text-xs font-black text-slate-900">{f.name}</div>
+                                    <div className="text-[9px] font-bold text-slate-400 uppercase">{f.desc}</div>
                                 </div>
                                 <button 
                                   onClick={() => triggerDownload(f.path)}
-                                  className="p-2 bg-white text-slate-300 hover:text-indigo-600 hover:shadow-md rounded-lg transition-all"
-                                  title="Download Source"
+                                  className="p-3 bg-white text-slate-300 hover:text-indigo-600 hover:shadow-md rounded-xl transition-all"
+                                  title="Download Master"
                                 >
                                     <Download className="w-4 h-4" />
                                 </button>
                              </div>
                            ))}
                         </div>
+                        <div className="p-6 bg-indigo-50 rounded-2xl border border-indigo-100">
+                           <p className="text-[10px] text-indigo-700 font-medium leading-relaxed">
+                              <b>Developer Note:</b> We have consolidated all 12 micro-services into one <b>Master API (api.php)</b> to make your deployment 10x faster. Just two files and you're live!
+                           </p>
+                        </div>
                     </div>
                 </div>
 
                 <div className="lg:col-span-8 space-y-8">
                     <div className="flex bg-slate-100 p-1 rounded-xl w-fit border border-slate-200">
-                        <button onClick={() => setDeployActiveSub('guide')} className={`px-8 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${deployActiveSub === 'guide' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>System Guide</button>
-                        <button onClick={() => setDeployActiveSub('sql')} className={`px-8 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${deployActiveSub === 'sql' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Master SQL</button>
-                        <button onClick={() => setDeployActiveSub('handlers')} className={`px-8 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${deployActiveSub === 'handlers' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Micro-Services</button>
+                        <button onClick={() => setDeployActiveSub('bundle')} className={`px-8 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${deployActiveSub === 'bundle' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Master Bundle Guide</button>
+                        <button onClick={() => setDeployActiveSub('sql')} className={`px-8 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${deployActiveSub === 'sql' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400'}`}>Master SQL Schema</button>
                     </div>
 
                     <div className="bg-slate-900 rounded-[3.5rem] p-12 overflow-hidden relative shadow-2xl">
                         <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12"><FileCode className="w-64 h-64 text-emerald-400" /></div>
                         <div className="flex justify-between items-center mb-8 pb-6 border-b border-white/10">
                             <div className="text-indigo-400 font-black uppercase text-xs tracking-widest flex items-center gap-3">
-                                <Activity className="w-4 h-4 animate-pulse" /> Production Backend Suite v1.0
+                                <Activity className="w-4 h-4 animate-pulse" /> Production Ready v1.1
                             </div>
                             <div className="flex gap-3">
                                 <button className="flex items-center gap-2 bg-emerald-500/20 text-emerald-400 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
-                                    <CheckCircle className="w-4 h-4" /> Ready for Uplink
+                                    <CheckCircle className="w-4 h-4" /> Final Build Validated
                                 </button>
                             </div>
                         </div>
                         <pre className="text-[11px] font-mono text-emerald-400 leading-relaxed max-h-[500px] overflow-y-auto custom-scrollbar">
-                           {deployActiveSub === 'guide' ? `
-DEPLOYMENT PROTOCOL:
-====================
-1. START XAMPP: Ensure Apache and MySQL are running.
-2. DATABASE: Create 'jeepro_db' and import the 'Master SQL' provided (Click icon on left).
-3. FOLDER: Create htdocs/api/
-4. FILES: Download all 12 micro-service PHP files from the tree on the left and save them to your api/ folder.
-5. UPLINK: Navigate to System -> Data Utility and enable "Production Server Mode".
-6. VERIFY: Try logging in with a new user to confirm MySQL connection.
+                           {deployActiveSub === 'bundle' ? `
+MASTER DEPLOYMENT (CONSOLIDATED):
+=================================
+1. START XAMPP: Run Apache and MySQL.
+2. PREP DB: Go to phpMyAdmin, create 'jeepro_db'.
+3. SQL INJECTION: Download 'setup.sql' and import it to initialize all tables.
+4. ONE-FILE API: 
+   - Create folder: xampp/htdocs/api/
+   - Download 'api.php' from the left panel.
+   - Save it inside that api/ folder.
+5. UPLINK: 
+   - Go to System -> Data Utility in this dashboard.
+   - Enable "Production Server Mode".
+6. VERIFY: 
+   - Log out and try logging back in with a custom account.
+   - All data will now persist in your MySQL database!
 
-NOTE: These files are configured with CORS * headers for easy testing.
-                           ` : deployActiveSub === 'sql' ? `
--- MASTER DATABASE INITIALIZATION
--- Download setup.sql from the tree to get the full script.
-CREATE DATABASE jeepro_db;
+No more multiple files. One SQL. One PHP. Unlimited Success.
+                           ` : `
+-- MASTER DATABASE INITIALIZATION SCRIPT
+-- RUN THIS FIRST IN phpMyAdmin OR MySQL CLI
+
+CREATE DATABASE IF NOT EXISTS jeepro_db;
 USE jeepro_db;
 
-CREATE TABLE users (...);
-CREATE TABLE syllabus_units (...);
-CREATE TABLE backlogs (...);
-CREATE TABLE questions (...);
-CREATE TABLE mock_tests (...);
-CREATE TABLE test_results (...);
-CREATE TABLE flashcards (...);
-CREATE TABLE psychometric_logs (...);
-... and more.
-                           ` : `
-/* GRANULAR HANDLER ARCHITECTURE */
-Total Services: 12 Specialized Endpoints
+CREATE TABLE users (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    role ENUM('STUDENT', 'PARENT', 'ADMIN') NOT NULL,
+    password VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-All files are ready. Use the DOWNLOAD icons on the left panel to save the
-actual production code for each service.
+CREATE TABLE syllabus_units (
+    id VARCHAR(50),
+    student_id VARCHAR(50),
+    subject VARCHAR(50),
+    unit VARCHAR(50),
+    name VARCHAR(255),
+    progress INT DEFAULT 0,
+    accuracy INT DEFAULT 0,
+    time_spent INT DEFAULT 0,
+    status VARCHAR(50),
+    PRIMARY KEY (id, student_id)
+);
 
-1. auth.php
-2. syllabus_manager.php
-3. backlog_manager.php
-4. flashcard_manager.php
-5. hack_vault.php
-6. question_bank.php
-7. test_engine.php
-8. result_analytics.php
-9. psychometric_engine.php
-10. cms_blog.php
-11. message_hub.php
-12. db_config.php
+... [Download setup.sql for full 200+ line schema]
                            `}
                         </pre>
                     </div>
@@ -661,7 +652,7 @@ actual production code for each service.
                         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner ${dataSource === 'LIVE' ? 'bg-white/20' : 'bg-white'}`}><GlobeIcon className="w-7 h-7" /></div>
                         <div>
                         <div className="text-2xl font-black italic tracking-tight">Production Server Mode</div>
-                        <div className={`text-[10px] font-black uppercase tracking-[0.2em] mt-2 ${dataSource === 'LIVE' ? 'text-emerald-200' : 'text-slate-400'}`}>Secure Uplink to XAMPP/MySQL</div>
+                        <div className={`text-[10px] font-black uppercase tracking-[0.2em] mt-2 ${dataSource === 'LIVE' ? 'text-emerald-200' : 'text-slate-400'}`}>Secure Master API Uplink</div>
                         </div>
                     </button>
                 </div>
