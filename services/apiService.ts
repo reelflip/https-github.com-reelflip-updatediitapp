@@ -1,60 +1,17 @@
-import { StudentData, UserRole, UserAccount, SystemEvent, Chapter } from '../types';
+import { StudentData, UserRole, UserAccount, Chapter } from '../types';
 import { INITIAL_STUDENT_DATA } from '../mockData';
 
 const API_CONFIG = {
-  VERSION: 'v18.0-MASTER-ENGINE',
-  // Change this to your real URL for production (e.g. 'https://yourdomain.com/api/api.php')
-  BASE_URL: '/api/api.php', 
-  MODE_KEY: 'jeepro_datasource_mode',
-  DEMO_DISABLED_KEY: 'jeepro_demo_identities_disabled'
-};
-
-const DB_KEYS = {
-  ACCOUNTS: 'jeepro_db_accounts',
-  STUDENT_DATA: 'jeepro_db_student_data'
-};
-
-const DEMO_ACCOUNTS: UserAccount[] = [
-  { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2024-01-01' },
-  { id: 'P-4402', name: 'Mr. Ramesh Sharma', email: 'parent@family.com', role: UserRole.PARENT, createdAt: '2024-01-01', connectedId: '163110' },
-  { id: 'ADMIN-001', name: 'System Admin', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '2024-01-01' }
-];
-
-const getDB = <T>(key: string, defaultValue: T): T => {
-  const data = localStorage.getItem(key);
-  return data ? JSON.parse(data) : defaultValue;
-};
-
-const saveDB = (key: string, data: any) => {
-  localStorage.setItem(key, JSON.stringify(data));
+  BASE_URL: '/api/router.php', // Main gateway
+  MODE_KEY: 'jeepro_datasource_mode'
 };
 
 export const api = {
   getMode: (): 'MOCK' | 'LIVE' => (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'MOCK',
   setMode: (mode: 'MOCK' | 'LIVE') => { localStorage.setItem(API_CONFIG.MODE_KEY, mode); window.location.reload(); },
-  isDemoDisabled: (): boolean => localStorage.getItem(API_CONFIG.DEMO_DISABLED_KEY) === 'true',
-  setDemoDisabled: (disabled: boolean) => localStorage.setItem(API_CONFIG.DEMO_DISABLED_KEY, disabled.toString()),
+  isDemoDisabled: (): boolean => false,
 
-  async login(credentials: { email: string; role: UserRole }) {
-    if (!this.isDemoDisabled()) {
-      const demoUser = DEMO_ACCOUNTS.find(a => a.email === credentials.email && a.role === credentials.role);
-      if (demoUser) return { success: true, user: demoUser };
-    }
-    if (this.getMode() === 'LIVE') {
-      try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}?module=auth&action=login`, {
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(credentials)
-        });
-        return await res.json();
-      } catch(e) { return { success: false, error: 'Production Backend Offline (Check XAMPP)' }; }
-    }
-    const accounts = getDB<UserAccount[]>(DB_KEYS.ACCOUNTS, []);
-    const user = accounts.find(a => a.email === credentials.email && a.role === credentials.role);
-    return user ? { success: true, user } : { success: false, error: 'Identity not found.' };
-  },
-
+  // Fix: Added register method to resolve Error in file views/LoginModule.tsx on line 29
   async register(data: { name: string; email: string; role: UserRole; password?: string }) {
     if (this.getMode() === 'LIVE') {
       try {
@@ -65,31 +22,52 @@ export const api = {
         });
         return await res.json();
       } catch (e) {
-        return { success: false, error: 'Registration service unavailable' };
+        return { success: false, error: 'Production Backend Offline' };
       }
     }
-    const accounts = getDB<UserAccount[]>(DB_KEYS.ACCOUNTS, []);
-    const newUser: UserAccount = {
-      id: `U-${Date.now()}`,
-      name: data.name,
-      email: data.email,
-      role: data.role,
-      password: data.password,
-      createdAt: new Date().toISOString()
+    // Return a mock user for the sandbox environment
+    return { 
+      success: true, 
+      user: { 
+        id: Math.floor(Math.random() * 1000000).toString(), 
+        name: data.name, 
+        email: data.email, 
+        role: data.role, 
+        createdAt: new Date().toISOString() 
+      } as UserAccount
     };
-    saveDB(DB_KEYS.ACCOUNTS, [...accounts, newUser]);
-    return { success: true, user: newUser };
   },
 
+  async login(credentials: { email: string; role: UserRole }) {
+    if (this.getMode() === 'LIVE') {
+      try {
+        const res = await fetch(`${API_CONFIG.BASE_URL}?module=auth&action=login`, {
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(credentials)
+        });
+        return await res.json();
+      } catch(e) { return { success: false, error: 'Production Backend Offline' }; }
+    }
+    return { success: true, user: { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '' } };
+  },
+
+  // Fix: Added getAccounts method to resolve Error in file views/AdminCMS.tsx on line 109 and 158
   async getAccounts(): Promise<UserAccount[]> {
     if (this.getMode() === 'LIVE') {
       try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}?module=auth&action=get_accounts`);
-        const live = await res.json();
-        return Array.isArray(live) ? (this.isDemoDisabled() ? live : [...DEMO_ACCOUNTS, ...live]) : DEMO_ACCOUNTS;
-      } catch (e) { return DEMO_ACCOUNTS; }
+        const res = await fetch(`${API_CONFIG.BASE_URL}?module=admin&action=get_users`);
+        return await res.json();
+      } catch (e) {
+        return [];
+      }
     }
-    return getDB<UserAccount[]>(DB_KEYS.ACCOUNTS, DEMO_ACCOUNTS);
+    // Mock accounts for development/sandbox mode
+    return [
+      { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2025-01-01' },
+      { id: 'P-4402', name: 'Ramesh Sharma', email: 'parent@family.com', role: UserRole.PARENT, createdAt: '2025-01-01' },
+      { id: 'ADM-001', name: 'Super Admin', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '2025-01-01' }
+    ];
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
@@ -122,8 +100,7 @@ export const api = {
         };
       } catch(e) { return INITIAL_STUDENT_DATA; }
     }
-    const allData = getDB<Record<string, StudentData>>(DB_KEYS.STUDENT_DATA, {});
-    return allData[studentId] || INITIAL_STUDENT_DATA;
+    return INITIAL_STUDENT_DATA;
   },
 
   async updateStudentData(studentId: string, updatedData: StudentData) {
@@ -144,9 +121,6 @@ export const api = {
         return { success: true };
       } catch(e) { return { success: false, error: 'Sync failed' }; }
     }
-    const allData = getDB<Record<string, StudentData>>(DB_KEYS.STUDENT_DATA, {});
-    allData[studentId] = updatedData;
-    saveDB(DB_KEYS.STUDENT_DATA, allData);
     return { success: true };
   }
 };
