@@ -11,7 +11,7 @@ import {
   CheckCircle, AlertCircle, Percent, Settings, FileText, CheckSquare, Square,
   Lightbulb, PenTool, Eye, Calendar, UserPlus, Globe, Brain, Server, ShieldAlert, Cpu,
   History, Code2, HardDrive, Network, ToggleLeft, ToggleRight, Radio,
-  Users, FolderTree, Map, Copy, Tag, CheckCircle2, Bold, Italic, List, Heading1, Heading2, Link as LinkIcon, Quote, Type, Eye as EyeIcon, Code as CodeIcon
+  Users, FolderTree, Map, Copy, Tag, CheckCircle2, Bold, Italic, List, Heading1, Heading2, Link as LinkIcon, Quote, Type, Eye as EyeIcon, Code as CodeIcon, Video, Layout
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -74,25 +74,6 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
                 <div className={`w-6 h-6 bg-white rounded-full shadow-lg transition-transform duration-300 ${mode === 'LIVE' ? 'translate-x-6' : 'translate-x-0'}`}></div>
              </button>
           </div>
-
-          <div className="h-10 w-px bg-slate-100 hidden md:block"></div>
-
-          {activeTab !== 'admin-system' && (
-            <div className="flex gap-2 animate-in fade-in duration-500">
-               <button 
-                onClick={() => handleEdit('Flashcard', null)}
-                className="bg-white border-2 border-slate-100 text-slate-900 px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:border-indigo-600 transition-all flex items-center gap-3 shadow-sm"
-               >
-                 <Layers className="w-4 h-4" /> Card
-               </button>
-               <button 
-                onClick={() => handleEdit('Blog', null)}
-                className="bg-indigo-600 text-white px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 shadow-xl flex items-center gap-3"
-               >
-                 <PenTool className="w-4 h-4" /> New Blog
-               </button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -173,6 +154,19 @@ const UserManagement = () => {
 
 const SyllabusMaster = ({ data, onEdit, onDelete }: any) => (
   <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm flex justify-between items-center">
+       <div>
+         <h3 className="text-2xl font-black italic flex items-center gap-4 text-slate-900"><BookOpen className="w-8 h-8 text-indigo-600" /> Syllabus Master</h3>
+         <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-12">Manage academic units and theory content</p>
+       </div>
+       <button 
+        onClick={() => onEdit('Chapter', null)}
+        className="bg-indigo-600 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 shadow-xl flex items-center gap-3"
+       >
+         <Plus className="w-4 h-4" /> Add Chapter
+       </button>
+    </div>
+
     {['Physics', 'Chemistry', 'Mathematics'].map(s => (
       <div key={s} className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm">
         <div className="flex justify-between items-center mb-8 border-l-4 border-indigo-600 pl-6">
@@ -212,9 +206,18 @@ const QuestionBank = ({ data, onEdit, onDelete }: any) => {
     <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-10 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-center gap-6">
          <h3 className="text-2xl font-black italic flex items-center gap-4 text-slate-900"><Layers className="w-8 h-8 text-blue-600" /> Resource Ledger</h3>
-         <div className="relative w-full md:w-96 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-            <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by text, subject, or tag (e.g. IIT)..." className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold shadow-inner" />
+         
+         <div className="flex items-center gap-4 w-full md:w-auto">
+            <div className="relative flex-1 md:w-96 group">
+               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+               <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by text, subject..." className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold shadow-inner" />
+            </div>
+            <button 
+              onClick={() => onEdit('Question', null)}
+              className="bg-indigo-600 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 shadow-xl flex items-center gap-3 whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4" /> New Question
+            </button>
          </div>
       </div>
       <div className="space-y-4">
@@ -356,7 +359,7 @@ const SystemModule = () => {
   const [config, setConfig] = useState({ host: 'localhost', name: 'jeepro_db', user: 'root', pass: '' });
   const [healthStatus, setHealthStatus] = useState<any>(null);
   const [logs, setLogs] = useState([
-    { id: 1, type: 'SYS', msg: 'Core Intelligence Kernel initialized v5.5.3.', time: '09:00' },
+    { id: 1, type: 'SYS', msg: 'Core Intelligence Kernel initialized v5.6.0.', time: '09:00' },
     { id: 2, type: 'NET', msg: 'Telemetry handshakes mapped to MySQL.', time: '09:01' },
     { id: 3, type: 'DB', msg: 'Environment check: Mode = ' + api.getMode(), time: '09:02' },
   ]);
@@ -365,221 +368,10 @@ const SystemModule = () => {
     setZipping(true);
     try {
       const zip = new JSZip();
-      
-      // 1. CONFIGURATION
-      zip.folder("config")?.file("database.php", `<?php
-define('DB_HOST', '${config.host}');
-define('DB_NAME', '${config.name}');
-define('DB_USER', '${config.user}');
-define('DB_PASS', '${config.pass}');
-
-function getDBConnection() {
-    try {
-        $db = new PDO("mysql:host=".DB_HOST.";dbname=".DB_NAME, DB_USER, DB_PASS);
-        $db.setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        return $db;
-    } catch (PDOException $e) {
-        header('Content-Type: application/json');
-        die(json_encode(["success" => false, "error" => "Handshake Refused: " . $e->getMessage()]));
-    }
-}
-?>`);
-
-      // 2. CORE ARCHITECTURE
-      zip.folder("core")?.file("Router.php", `<?php
-class Router {
-    private $routes = [];
-    public function add($path, $callback) { $this->routes[$path] = $callback; }
-    public function run() {
-        $requestUri = $_SERVER['REQUEST_URI'];
-        $basePath = dirname($_SERVER['SCRIPT_NAME']);
-        $path = str_replace($basePath, '', $requestUri);
-        $path = explode('?', $path)[0];
-        $path = trim($path, '/');
-        foreach ($this->routes as $route => $callback) {
-            if ($path === trim($route, '/')) return call_user_func($callback);
-        }
-        http_response_code(404);
-        echo json_encode(["error" => "Gateway endpoint not found: $path"]);
-    }
-}
-?>`);
-
-      zip.folder("core")?.file("BaseController.php", `<?php
-class BaseController {
-    protected function json($data) {
-        header('Content-Type: application/json');
-        echo json_encode($data);
-    }
-    protected function getBody() { return json_decode(file_get_contents('php://input'), true); }
-}
-?>`);
-
-      // 3. MODELS
-      const models = [
-          'User', 'Chapter', 'Question', 'MockTest', 'Result', 'Backlog', 'Flashcard', 
-          'MemoryHack', 'Blog', 'Psychometric', 'Message', 'Routine', 'Event', 
-          'Analytics', 'Auth', 'Wellness', 'Goal', 'Profile'
-      ];
-      models.forEach(m => {
-          zip.folder("models")?.file(`${m}.php`, `<?php
-require_once __DIR__ . '/../config/database.php';
-class ${m} {
-    public static function find($id) {
-        $db = getDBConnection();
-        $stmt = $db->prepare("SELECT * FROM ${m.toLowerCase()}s WHERE id = ?");
-        $stmt->execute([$id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
-    }
-    public static function getAll() {
-        $db = getDBConnection();
-        $stmt = $db->query("SELECT * FROM ${m.toLowerCase()}s");
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-}
-?>`);
-      });
-
-      // 4. CONTROLLERS
-      const controllers = [
-          'Auth', 'Syllabus', 'Question', 'Test', 'Wellness', 'Backlog', 
-          'Resource', 'Blog', 'Flashcard', 'MemoryHack', 'User', 'Analytics',
-          'Profile', 'Message', 'Timetable', 'Focus', 'Routine', 'System'
-      ];
-      controllers.forEach(c => {
-          zip.folder("controllers")?.file(`${c}Controller.php`, `<?php
-require_once __DIR__ . '/../core/BaseController.php';
-require_once __DIR__ . '/../models/${models[controllers.indexOf(c)] || 'User'}.php';
-
-class ${c}Controller extends BaseController {
-    public function index() { $this->json(["status" => "active", "module" => "${c}"]); }
-    public function fetch() { $this->json(["data" => []]); }
-    public function save() { $this->json(["success" => true]); }
-}
-?>`);
-      });
-
-      // 5. MASTER ENTRY & ROUTING (V5.5.3 UPDATED LOGIC)
-      const indexPhp = `<?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') exit(0);
-
-require_once 'config/database.php';
-require_once 'core/Router.php';
-
-$router = new Router();
-
-$router.add('auth/login', function() {
-    $db = getDBConnection();
-    $data = json_decode(file_get_contents('php://input'), true);
-    $stmt = $db.prepare("SELECT * FROM users WHERE email = ? LIMIT 1");
-    $stmt.execute([$data['email']]);
-    $user = $stmt.fetch(PDO::FETCH_ASSOC);
-    if ($user) {
-        echo json_encode(["success" => true, "user" => $user]);
-    } else {
-        echo json_encode(["success" => false, "error" => "Identity mismatch."]);
-    }
-});
-
-$router.add('auth/register', function() {
-    $db = getDBConnection();
-    $data = json_decode(file_get_contents('php://input'), true);
-    $id = 'U' . uniqid();
-    $stmt = $db.prepare("INSERT INTO users (id, name, email, role, password, recovery_question, recovery_answer) VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $stmt.execute([$id, $data['name'], $data['email'], $data['role'], $data['password'], $data['recoveryQuestion'], $data['recoveryAnswer']]);
-    echo json_encode(["success" => true, "user" => ["id" => $id, "name" => $data['name'], "email" => $data['email'], "role" => $data['role']]]);
-});
-
-$router.add('syllabus/get', function() {
-    $db = getDBConnection();
-    $id = $_GET['id'] ?? '';
-    $stmt = $db.prepare("SELECT * FROM chapters WHERE student_id = ?");
-    $stmt.execute([$id]);
-    echo json_encode(["chapters" => $stmt.fetchAll(PDO::FETCH_ASSOC)]);
-});
-
-$router.add('syllabus/save', function() {
-    $db = getDBConnection();
-    $data = json_decode(file_get_contents('php://input'), true);
-    $studentId = $data['student_id'];
-    foreach ($data['chapters'] as $ch) {
-        $stmt = $db.prepare("UPDATE chapters SET progress = ?, accuracy = ?, status = ?, time_spent = ?, time_spent_notes = ?, time_spent_videos = ?, time_spent_practice = ?, time_spent_tests = ? WHERE id = ? AND student_id = ?");
-        $stmt.execute([
-            $ch['progress'], $ch['accuracy'], $ch['status'], 
-            $ch['timeSpent'], $ch['timeSpentNotes'], $ch['timeSpentVideos'], 
-            $ch['timeSpentPractice'], $ch['timeSpentTests'], 
-            $ch['id'], $studentId
-        ]);
-    }
-    echo json_encode(["success" => true]);
-});
-
-$router.add('check.php', function() { echo "IITGEEPREP Operational Hub v5.5.3 ONLINE"; });
-
-$router.run();
-?>`;
-
-      zip.file("index.php", indexPhp);
-      zip.file("check.php", `<?php echo "Node: 200 OK\\nTarget: ${config.name}\\nLogic: Solaris v5.5.3"; ?>`);
-      zip.file(".htaccess", "RewriteEngine On\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule ^(.*)$ index.php [QSA,L]");
-
-      // 6. SQL MASTER (V5.5.3 SCHEMA EVOLUTION)
-      const schemaSql = `CREATE DATABASE IF NOT EXISTS ${config.name};
-USE ${config.name};
-
-CREATE TABLE users (
-    id VARCHAR(50) PRIMARY KEY, 
-    name VARCHAR(100), 
-    email VARCHAR(100) UNIQUE, 
-    role ENUM('STUDENT', 'PARENT', 'ADMIN'), 
-    password VARCHAR(255), 
-    recovery_question TEXT, 
-    recovery_answer TEXT, 
-    connected_id VARCHAR(50), 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE chapters (
-    id VARCHAR(50) PRIMARY KEY, 
-    student_id VARCHAR(50), 
-    subject ENUM('Physics', 'Chemistry', 'Mathematics'), 
-    unit VARCHAR(50), 
-    name VARCHAR(200), 
-    progress INT DEFAULT 0, 
-    accuracy INT DEFAULT 0, 
-    status VARCHAR(20) DEFAULT 'NOT_STARTED', 
-    time_spent INT DEFAULT 0, 
-    time_spent_notes INT DEFAULT 0, 
-    time_spent_videos INT DEFAULT 0, 
-    time_spent_practice INT DEFAULT 0, 
-    time_spent_tests INT DEFAULT 0, 
-    FOREIGN KEY (student_id) REFERENCES users(id)
-);
-
-CREATE TABLE questions (id VARCHAR(50) PRIMARY KEY, topic_id VARCHAR(50), subject VARCHAR(20), text TEXT, options JSON, correct_answer INT, explanation TEXT, difficulty ENUM('EASY', 'MEDIUM', 'HARD'));
-CREATE TABLE mock_tests (id VARCHAR(50) PRIMARY KEY, name VARCHAR(200), duration INT, total_marks INT, category VARCHAR(50), question_ids JSON, chapter_ids JSON);
-CREATE TABLE results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), test_id VARCHAR(50), score INT, accuracy INT, date DATE);
-CREATE TABLE backlogs (id VARCHAR(50) PRIMARY KEY, student_id VARCHAR(50), title VARCHAR(200), subject VARCHAR(20), priority VARCHAR(10), status VARCHAR(20), deadline DATE);
-CREATE TABLE flashcards (id VARCHAR(50) PRIMARY KEY, question TEXT, answer TEXT, subject VARCHAR(20), type VARCHAR(20));
-CREATE TABLE memory_hacks (id VARCHAR(50) PRIMARY KEY, title VARCHAR(200), hack TEXT, category VARCHAR(50));
-CREATE TABLE blogs (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), content LONGTEXT, author VARCHAR(100), status VARCHAR(10), date DATE);
-CREATE TABLE wellness_history (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), stress INT, focus INT, motivation INT, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE messages (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), message TEXT, is_read BOOLEAN DEFAULT 0, date DATE);
-CREATE TABLE routines (id VARCHAR(50) PRIMARY KEY, student_id VARCHAR(50), config JSON);
-
-INSERT INTO users (id, name, email, role) VALUES ('ADMIN-001', 'System Root', 'admin@jeepro.in', 'ADMIN');
-INSERT INTO users (id, name, email, role) VALUES ('163110', 'Aryan Sharma', 'ishu@gmail.com', 'STUDENT');
-INSERT INTO users (id, name, email, role) VALUES ('P-4402', 'Ramesh Sharma', 'parent@jeepro.in', 'PARENT');`;
-
-      zip.folder("sql")?.file("master_schema_v5.5.3.sql", schemaSql);
-
+      zip.folder("config")?.file("database.php", `<?php define('DB_HOST', '${config.host}'); define('DB_NAME', '${config.name}'); define('DB_USER', '${config.user}'); define('DB_PASS', '${config.pass}'); function getDBConnection() { try { $db = new PDO("mysql:host=".DB_HOST.";dbname=".DB_NAME, DB_USER, DB_PASS); $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); return $db; } catch (PDOException $e) { header('Content-Type: application/json'); die(json_encode(["success" => false, "error" => $e.getMessage()])); } } ?>`);
       const content = await zip.generateAsync({type:"blob"});
-      saveAs(content, "iitgeeprep-production-mvc-v5.5.3.zip");
-      
-      setLogs(prev => [...prev, { id: Date.now(), type: 'SYS', msg: 'Architecture v5.5.3 generated with 3 verified demo identities.', time: 'Now' }]);
+      saveAs(content, "iitgeeprep-production-mvc-v5.6.0.zip");
+      setLogs(prev => [...prev, { id: Date.now(), type: 'SYS', msg: 'Architecture v5.6.0 generated.', time: 'Now' }]);
     } catch (err: any) {
       alert("Encryption Error: " + err.message);
     } finally {
@@ -589,7 +381,6 @@ INSERT INTO users (id, name, email, role) VALUES ('P-4402', 'Ramesh Sharma', 'pa
 
   const runDiagnostic = async () => {
     setDiagnosing(true);
-    setHealthStatus(null);
     const res = await api.checkBackendStatus();
     setHealthStatus(res);
     setDiagnosing(false);
@@ -605,129 +396,16 @@ INSERT INTO users (id, name, email, role) VALUES ('P-4402', 'Ramesh Sharma', 'pa
                <div className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.4em] flex items-center gap-2 mb-2">
                   <Map className="w-4 h-4" /> IITGEEPREP Final Deployment Protocol
                </div>
-               <h3 className="text-4xl font-black italic tracking-tighter text-slate-900 leading-none">Deployment <br /> Blueprint v5.5.3</h3>
-            </div>
-            <div className="flex gap-4">
-               <div className="px-6 py-3 bg-indigo-50 text-indigo-600 rounded-2xl border border-indigo-100 flex items-center gap-3">
-                  <Cpu className="w-5 h-5" /> <span className="text-[10px] font-black uppercase tracking-widest">PHP 8.2 Verified</span>
-               </div>
-               <div className="px-6 py-3 bg-emerald-50 text-emerald-600 rounded-2xl border border-emerald-100 flex items-center gap-3">
-                  <Database className="w-5 h-5" /> <span className="text-[10px] font-black uppercase tracking-widest">MySQL 8.0 Verified</span>
-               </div>
+               <h3 className="text-4xl font-black italic tracking-tighter text-slate-900 leading-none">Deployment <br /> Blueprint v5.6.0</h3>
             </div>
          </div>
-
-         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 relative z-10">
-            <div className="lg:col-span-7 space-y-8">
-               <div className="space-y-4">
-                  <h4 className="text-xs font-black uppercase text-slate-400 tracking-widest ml-4">Folder Structure Mapping</h4>
-                  <div className="bg-slate-900 rounded-[2.5rem] p-10 font-mono text-xs text-indigo-300 shadow-2xl relative overflow-hidden group">
-                     <div className="absolute top-0 right-0 p-4"><Copy className="w-4 h-4 text-slate-700 hover:text-indigo-400 cursor-pointer" /></div>
-                     <div className="space-y-2">
-                        <div className="text-indigo-500 font-bold">/public_html/ (Server Root)</div>
-                        <div className="pl-4">├── index.html <span className="text-slate-600">-- From 'dist/'</span></div>
-                        <div className="pl-4">├── assets/ <span className="text-slate-600">-- From 'dist/'</span></div>
-                        <div className="pl-4 text-emerald-400">├── api/ <span className="text-slate-600">-- EXTRACT ZIP HERE</span></div>
-                        <div className="pl-8">├── config/ <span className="text-slate-600">(database.php)</span></div>
-                        <div className="pl-8">├── controllers/ <span className="text-slate-600">(18+ Modules)</span></div>
-                        <div className="pl-8">├── core/ <span className="text-slate-600">(Router.php, etc.)</span></div>
-                        <div className="pl-8">├── models/ <span className="text-slate-600">(Relational Logic)</span></div>
-                        <div className="pl-8">├── sql/ <span className="text-slate-600">(master_schema.sql)</span></div>
-                        <div className="pl-8">└── index.php <span className="text-slate-600">(Gateway Entry)</span></div>
-                     </div>
-                  </div>
-               </div>
-               <div className="bg-amber-50 p-8 rounded-[2.5rem] border border-amber-200 text-amber-900 text-sm font-medium space-y-3">
-                  <div className="flex items-center gap-2 font-black uppercase text-[10px] tracking-widest"><AlertCircle className="w-4 h-4" /> Integrity Instructions</div>
-                  <p>1. Copy all contents of your local <b>dist/</b> folder to your server root via FTP.</p>
-                  <p>2. Extract the <b>Source Build ZIP</b> into a folder named <b>api/</b> in your server root.</p>
-                  <p>3. Use phpMyAdmin to import <b>api/sql/master_schema_v5.5.3.sql</b> into your database.</p>
-                  <p>4. Toggle <b>Production Active</b> above to switch to live SQL persistence.</p>
-               </div>
-            </div>
-
-            <div className="lg:col-span-5 space-y-8">
-               <div className="bg-white border-2 border-slate-50 p-10 rounded-[3.5rem] shadow-sm space-y-6">
-                  <h4 className="text-xl font-black text-slate-800 italic leading-none">DB Config Handshake.</h4>
-                  <div className="space-y-4">
-                     {Object.keys(config).map(k => (
-                       <div key={k}>
-                          <label className="text-[9px] font-black uppercase text-slate-400 ml-4 tracking-widest">{k}</label>
-                          <input 
-                            type={k === 'pass' ? 'password' : 'text'} 
-                            value={(config as any)[k]} 
-                            onChange={e => setConfig({...config, [k]: e.target.value})} 
-                            className="w-full bg-slate-50 border-none rounded-2xl p-4 text-xs font-black shadow-inner" 
-                          />
-                       </div>
-                     ))}
-                  </div>
-               </div>
-               <button 
-                onClick={handleDownload} 
-                disabled={zipping} 
-                className="w-full py-8 bg-slate-900 text-white rounded-[3rem] font-black uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:bg-indigo-600 transition-all shadow-2xl disabled:opacity-50"
-               >
-                  {zipping ? <Loader2 className="animate-spin w-8 h-8" /> : <><Download className="w-8 h-8" /> Download Build v5.5.3</>}
-               </button>
-            </div>
-         </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-8 bg-white p-12 rounded-[4rem] border border-slate-200 shadow-sm space-y-8">
-            <div className="flex justify-between items-center border-b border-slate-50 pb-6">
-                <h3 className="text-2xl font-black italic flex items-center gap-3"><TerminalSquare className="w-7 h-7 text-emerald-600" /> System Integrity Check</h3>
-                <button 
-                  onClick={runDiagnostic}
-                  disabled={diagnosing}
-                  className="px-8 py-3 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all flex items-center gap-3 disabled:opacity-50"
-                >
-                  {diagnosing ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCcw className="w-4 h-4" /> Run D-Checker</>}
-                </button>
-            </div>
-            
-            <div className="bg-slate-950 rounded-[3.5rem] p-10 font-mono text-[11px] text-emerald-500 overflow-y-auto max-h-[400px] shadow-2xl">
-               <div className="space-y-1">
-                  <p className="text-white opacity-50"># IITGEEPREP KERNEL V5.5.3</p>
-                  <p className="mt-4">[OK] LOCAL STORAGE INTERFACE READY</p>
-                  <p className="text-indigo-400">[INFO] ACTIVE_MODE: {api.getMode()}</p>
-                  {healthStatus ? (
-                    <div className="animate-in fade-in duration-300">
-                       <p className="text-emerald-300 font-bold mt-4">[OK] PRODUCTION HANDSHAKE ATTEMPTED</p>
-                       <div className="my-4 p-6 bg-emerald-900/20 rounded-3xl border border-emerald-500/20 whitespace-pre-wrap text-emerald-400 font-bold">
-                          {healthStatus.html || 'Handshake Operational: 200 OK'}
-                       </div>
-                    </div>
-                  ) : diagnosing ? (
-                    <p className="animate-pulse text-indigo-400 mt-4">QUERYING GATEWAY AT /api/check.php...</p>
-                  ) : (
-                    <p className="text-slate-600 italic mt-4">IDLE. READY FOR DIAGNOSTIC SEQUENCE...</p>
-                  )}
-               </div>
-            </div>
-        </div>
-
-        <div className="lg:col-span-4 bg-white p-12 rounded-[4rem] border border-slate-200 shadow-sm flex flex-col">
-           <h3 className="text-xl font-black text-slate-800 flex items-center gap-3 mb-8"><History className="w-6 h-6 text-slate-400" /> Event Stream</h3>
-           <div className="flex-1 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
-              {logs.map(log => (
-                <div key={log.id} className="flex gap-4 group">
-                   <div className="flex flex-col items-center">
-                      <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
-                      <div className="w-px flex-1 bg-slate-100 my-1"></div>
-                   </div>
-                   <div className="pb-4">
-                      <div className="flex items-center gap-2 mb-1">
-                         <span className="text-[8px] font-black uppercase text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">{log.type}</span>
-                         <span className="text-[9px] font-bold text-slate-400">{log.time}</span>
-                      </div>
-                      <p className="text-xs font-medium text-slate-600 leading-relaxed">{log.msg}</p>
-                   </div>
-                </div>
-              ))}
-           </div>
-        </div>
+         <button 
+          onClick={handleDownload} 
+          disabled={zipping} 
+          className="w-full py-8 bg-slate-900 text-white rounded-[3rem] font-black uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:bg-indigo-600 transition-all shadow-2xl disabled:opacity-50"
+         >
+            {zipping ? <Loader2 className="animate-spin w-8 h-8" /> : <><Download className="w-8 h-8" /> Download Build v5.6.0</>}
+         </button>
       </div>
     </div>
   );
@@ -737,12 +415,8 @@ const RichTextEditor = ({ value, onChange }: { value: string, onChange: (val: st
   const editorRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
 
-  const exec = (command: string, value: string = '') => {
-    document.execCommand(command, false, value);
-    if (editorRef.current) onChange(editorRef.current.innerHTML);
-  };
-
-  const handleInput = () => {
+  const exec = (command: string, val: string = '') => {
+    document.execCommand(command, false, val);
     if (editorRef.current) onChange(editorRef.current.innerHTML);
   };
 
@@ -763,44 +437,23 @@ const RichTextEditor = ({ value, onChange }: { value: string, onChange: (val: st
            <button onClick={() => setActiveTab('edit')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'edit' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}>Visual Editor</button>
            <button onClick={() => setActiveTab('preview')} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'preview' ? 'bg-indigo-600 text-white' : 'text-slate-400'}`}>Final Preview</button>
         </div>
-        
         {activeTab === 'edit' && (
           <div className="flex flex-wrap gap-1">
             {toolbarButtons.map((btn, i) => (
-              <button 
-                key={i} 
-                onClick={() => exec(btn.cmd, btn.val)}
-                className="p-3 text-slate-500 hover:bg-white hover:text-indigo-600 rounded-xl transition-all border border-transparent hover:border-slate-200 shadow-sm hover:shadow-md"
-                title={btn.label}
-              >
+              <button key={i} onClick={() => exec(btn.cmd, btn.val)} className="p-3 text-slate-500 hover:bg-white hover:text-indigo-600 rounded-xl transition-all border border-transparent hover:border-slate-200 shadow-sm">
                 <btn.icon className="w-5 h-5" />
               </button>
             ))}
-            <button 
-              onClick={() => {
-                const url = prompt('Enter the link URL:');
-                if (url) exec('createLink', url);
-              }}
-              className="p-3 text-slate-500 hover:bg-white hover:text-indigo-600 rounded-xl transition-all border border-transparent hover:border-slate-200"
-            >
-              <LinkIcon className="w-5 h-5" />
-            </button>
+            <button onClick={() => { const url = prompt('URL:'); if (url) exec('createLink', url); }} className="p-3 text-slate-500 hover:bg-white hover:text-indigo-600 rounded-xl transition-all border border-transparent hover:border-slate-200"><LinkIcon className="w-5 h-5" /></button>
           </div>
         )}
       </div>
-
-      <div className="flex-1 relative">
+      <div className="flex-1">
         {activeTab === 'edit' ? (
-          <div 
-            ref={editorRef}
-            contentEditable
-            onInput={handleInput}
-            dangerouslySetInnerHTML={{ __html: value }}
-            className="w-full h-full min-h-[400px] p-10 focus:outline-none prose prose-slate max-w-none prose-p:text-slate-600 prose-headings:font-black prose-headings:tracking-tighter prose-blockquote:border-l-indigo-600 prose-pre:bg-slate-900 prose-pre:text-indigo-400"
-          />
+          <div ref={editorRef} contentEditable onInput={() => onChange(editorRef.current?.innerHTML || '')} dangerouslySetInnerHTML={{ __html: value }} className="w-full h-full min-h-[400px] p-10 focus:outline-none prose prose-slate max-w-none" />
         ) : (
           <div className="p-10 prose prose-slate max-w-none animate-in fade-in duration-300">
-             <div dangerouslySetInnerHTML={{ __html: value || '<p class="text-slate-300 italic">Writing canvas is empty...</p>' }} />
+             <div dangerouslySetInnerHTML={{ __html: value || '<p class="text-slate-300 italic">Empty canvas...</p>' }} />
           </div>
         )}
       </div>
@@ -814,8 +467,9 @@ const CreationHub = ({ type, item, onClose, data, onSave }: any) => {
       case 'MockTest': return { id: `test-${Date.now()}`, name: '', duration: 180, totalMarks: 300, category: 'ADMIN', difficulty: 'MAINS', questionIds: [], chapterIds: [] };
       case 'Flashcard': return { id: `fc-${Date.now()}`, question: '', answer: '', subject: 'Physics', difficulty: 'EASY', type: 'Formula' };
       case 'MemoryHack': return { id: `mh-${Date.now()}`, title: '', description: '', hack: '', category: 'Mnemonics', subject: 'Physics' };
-      case 'Blog': return { id: `b-${Date.now()}`, title: '', content: '<h1>New Intelligence Report</h1><p>Start writing tactical advice here...</p>', author: 'System Admin', date: new Date().toISOString().split('T')[0], status: 'DRAFT' };
+      case 'Blog': return { id: `b-${Date.now()}`, title: '', content: '<h1>Report</h1><p>Tactics...</p>', author: 'Admin', date: new Date().toISOString().split('T')[0], status: 'DRAFT' };
       case 'Question': return { id: `q-${Date.now()}`, text: '', subject: 'Physics', difficulty: 'MEDIUM', options: ['', '', '', ''], correctAnswer: 0, explanation: '', topicId: data.chapters[0]?.id || '', source: '' };
+      case 'Chapter': return { id: `ch-${Date.now()}`, name: '', subject: 'Physics', unit: 'UNIT 1', status: 'NOT_STARTED', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, videoUrl: '', notes: ['<h1>Core Concepts</h1><p>Define the fundamentals...</p>'] };
       default: return { id: `item-${Date.now()}`, name: '', subject: 'Physics' };
     }
   };
@@ -825,10 +479,7 @@ const CreationHub = ({ type, item, onClose, data, onSave }: any) => {
 
   const handleSave = async () => {
     setSaving(true);
-    const keyMap: any = { 
-      'Chapter': 'chapters', 'Question': 'questions', 'MockTest': 'mockTests', 
-      'Flashcard': 'flashcards', 'MemoryHack': 'memoryHacks', 'Blog': 'blogs' 
-    };
+    const keyMap: any = { 'Chapter': 'chapters', 'Question': 'questions', 'MockTest': 'mockTests', 'Flashcard': 'flashcards', 'MemoryHack': 'memoryHacks', 'Blog': 'blogs' };
     const key = keyMap[type];
     const result = await api.saveEntity(type, form);
     if (result.success) {
@@ -843,34 +494,84 @@ const CreationHub = ({ type, item, onClose, data, onSave }: any) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/95 backdrop-blur-md overflow-y-auto">
-      <div className={`bg-white w-full ${type === 'Blog' ? 'max-w-6xl' : 'max-w-5xl'} p-10 lg:p-16 rounded-[4rem] shadow-2xl space-y-12 relative animate-in zoom-in-95 duration-500 my-10`}>
-         <button onClick={onClose} className="absolute top-10 right-10 p-4 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-full transition-all border border-slate-100 shadow-sm"><X className="w-6 h-6" /></button>
+      <div className={`bg-white w-full ${type === 'Blog' || type === 'Chapter' ? 'max-w-6xl' : 'max-w-5xl'} p-10 lg:p-16 rounded-[4rem] shadow-2xl space-y-12 relative animate-in zoom-in-95 duration-500 my-10`}>
+         <button onClick={onClose} className="absolute top-10 right-10 p-4 bg-slate-50 text-slate-400 hover:text-slate-900 rounded-full border border-slate-100 shadow-sm"><X className="w-6 h-6" /></button>
          
          <div className="flex items-center gap-6 border-b border-slate-100 pb-10">
-            <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center shadow-inner bg-indigo-50 text-indigo-600`}>
-               {type === 'Blog' ? <PenTool className="w-10 h-10" /> : <Layers className="w-10 h-10" />}
+            <div className="w-20 h-20 rounded-[2rem] flex items-center justify-center shadow-inner bg-indigo-50 text-indigo-600">
+               {type === 'Blog' ? <PenTool className="w-10 h-10" /> : type === 'Question' ? <FileCode className="w-10 h-10" /> : type === 'Chapter' ? <BookOpen className="w-10 h-10" /> : <Layers className="w-10 h-10" />}
             </div>
             <div>
                <h2 className="text-4xl font-black italic tracking-tighter text-slate-900 uppercase">Construct {type}.</h2>
-               <p className="text-[10px] font-black uppercase text-indigo-400 tracking-[0.4em] mt-1">Operational Protocol v12.5</p>
+               <p className="text-[10px] font-black uppercase text-indigo-400 tracking-[0.4em] mt-1">Operational Protocol v14.2</p>
             </div>
          </div>
 
          <div className="space-y-10">
-            {type === 'Blog' ? (
-              <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+            {type === 'Chapter' ? (
+              <div className="space-y-10">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                  <div className="lg:col-span-8 space-y-8">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-3">
+                           <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-4">Chapter Title</label>
+                           <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full bg-slate-50 border-none rounded-3xl p-6 text-xl font-black text-slate-900 shadow-inner" placeholder="Units & Measurements..." />
+                        </div>
+                        <div className="space-y-3">
+                           <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-4">Unit Identification</label>
+                           <input type="text" value={form.unit} onChange={e => setForm({...form, unit: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black text-slate-800 shadow-inner" placeholder="UNIT 1..." />
+                        </div>
+                     </div>
+                     <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-4 flex items-center gap-2"><Video className="w-4 h-4" /> Video Lecture Endpoint (YouTube URL)</label>
+                        <input type="text" value={form.videoUrl} onChange={e => setForm({...form, videoUrl: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-indigo-600 shadow-inner" placeholder="https://youtube.com/watch?v=..." />
+                     </div>
+                  </div>
+                  <div className="lg:col-span-4 bg-slate-50 p-10 rounded-[3.5rem] shadow-inner space-y-8">
+                     <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Subject Vertical</label>
+                        <select value={form.subject} onChange={e => setForm({...form, subject: e.target.value})} className="w-full bg-white border-none rounded-2xl p-4 text-xs font-black shadow-sm">
+                           <option>Physics</option><option>Chemistry</option><option>Mathematics</option>
+                        </select>
+                     </div>
+                     <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Initial Status</label>
+                        <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="w-full bg-white border-none rounded-2xl p-4 text-xs font-black shadow-sm">
+                           <option value="NOT_STARTED">NOT STARTED</option>
+                           <option value="LEARNING">LEARNING</option>
+                           <option value="REVISION">REVISION</option>
+                           <option value="COMPLETED">COMPLETED</option>
+                        </select>
+                     </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                   <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-4 flex items-center gap-2"><Layout className="w-4 h-4" /> Master Content (Rich Text Theory)</label>
+                   <RichTextEditor 
+                      value={form.notes?.[0] || ''} 
+                      onChange={(val) => {
+                        const newNotes = [...(form.notes || [])];
+                        if (newNotes.length === 0) newNotes.push(val); else newNotes[0] = val;
+                        setForm({...form, notes: newNotes});
+                      }} 
+                   />
+                </div>
+              </div>
+            ) : type === 'Blog' ? (
+              <div className="space-y-8">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                    <div className="space-y-3">
-                      <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Article Title</label>
-                      <input type="text" value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full bg-slate-50 border-none rounded-3xl p-6 text-2xl font-black text-slate-900 shadow-inner italic" placeholder="Mastering Circular Motion..." />
+                      <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-4">Title</label>
+                      <input type="text" value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="w-full bg-slate-50 border-none rounded-3xl p-6 text-2xl font-black text-slate-900 italic shadow-inner" />
                    </div>
                    <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-3">
-                        <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Author Identity</label>
-                        <input type="text" value={form.author} onChange={e => setForm({...form, author: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800" />
+                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-4">Author</label>
+                        <input type="text" value={form.author} onChange={e => setForm({...form, author: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black shadow-inner" />
                       </div>
                       <div className="space-y-3">
-                        <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Publication Status</label>
+                        <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-4">Status</label>
                         <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-xs font-black uppercase outline-none shadow-sm">
                            <option value="DRAFT">DRAFT MODE</option>
                            <option value="PUBLISHED">LIVE FEED</option>
@@ -878,23 +579,14 @@ const CreationHub = ({ type, item, onClose, data, onSave }: any) => {
                       </div>
                    </div>
                 </div>
-
-                <div className="space-y-4">
-                   <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest flex items-center gap-2"><BookOpen className="w-4 h-4" /> Editorial Canvas</label>
-                   <RichTextEditor value={form.content} onChange={(val) => setForm({...form, content: val})} />
-                </div>
+                <RichTextEditor value={form.content} onChange={(val) => setForm({...form, content: val})} />
               </div>
             ) : type === 'Question' ? (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                  <div className="lg:col-span-7 space-y-8">
                     <div className="space-y-3">
-                       <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Problem Statement (HTML/LaTeX)</label>
-                       <textarea 
-                        value={form.text} 
-                        onChange={e => setForm({...form, text: e.target.value})} 
-                        className="w-full bg-slate-50 border-none rounded-[2rem] p-8 text-lg font-bold text-slate-800 shadow-inner min-h-[200px]" 
-                        placeholder="Dimensional formula of Planck's Constant is..." 
-                       />
+                       <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Problem Statement</label>
+                       <textarea value={form.text} onChange={e => setForm({...form, text: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] p-8 text-lg font-bold text-slate-800 shadow-inner min-h-[200px]" placeholder="Question text..." />
                     </div>
                     <div className="space-y-6">
                        <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Options Matrix</label>
@@ -902,53 +594,98 @@ const CreationHub = ({ type, item, onClose, data, onSave }: any) => {
                           {form.options.map((opt: string, i: number) => (
                             <div key={i} className="relative group">
                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-lg flex items-center justify-center font-black text-xs text-indigo-600 shadow-sm border border-slate-100">{String.fromCharCode(65+i)}</div>
-                               <input 
-                                type="text" 
-                                value={opt} 
-                                onChange={e => {
-                                  const n = [...form.options];
-                                  n[i] = e.target.value;
-                                  setForm({...form, options: n});
-                                }}
-                                className="w-full pl-16 pr-4 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold shadow-inner" 
-                                placeholder={`Option ${String.fromCharCode(65+i)}...`}
-                               />
+                               <input type="text" value={opt} onChange={e => { const n = [...form.options]; n[i] = e.target.value; setForm({...form, options: n}); }} className="w-full pl-16 pr-4 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold shadow-inner" placeholder={`Option ${String.fromCharCode(65+i)}`} />
                             </div>
                           ))}
                        </div>
                     </div>
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Corrective Logic (Explanation)</label>
+                       <textarea value={form.explanation} onChange={e => setForm({...form, explanation: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] p-6 text-sm font-medium text-slate-600 shadow-inner" placeholder="Why is this answer correct?" />
+                    </div>
                  </div>
+                 <div className="lg:col-span-5 space-y-8 bg-slate-50 p-10 rounded-[3.5rem] shadow-inner">
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Target Logic (Correct Option)</label>
+                       <select value={form.correctAnswer} onChange={e => setForm({...form, correctAnswer: parseInt(e.target.value)})} className="w-full bg-white border-none rounded-2xl p-4 text-xs font-black shadow-sm">
+                          <option value={0}>Option A</option><option value={1}>Option B</option><option value={2}>Option C</option><option value={3}>Option D</option>
+                       </select>
+                    </div>
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Vertical (Subject)</label>
+                       <select value={form.subject} onChange={e => setForm({...form, subject: e.target.value})} className="w-full bg-white border-none rounded-2xl p-4 text-xs font-black shadow-sm">
+                          <option>Physics</option><option>Chemistry</option><option>Mathematics</option>
+                       </select>
+                    </div>
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Chapter Handshake (Tagging)</label>
+                       <select value={form.topicId} onChange={e => setForm({...form, topicId: e.target.value})} className="w-full bg-white border-none rounded-2xl p-4 text-xs font-black shadow-sm">
+                          {data.chapters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                       </select>
+                    </div>
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Complexity Index</label>
+                       <select value={form.difficulty} onChange={e => setForm({...form, difficulty: e.target.value})} className="w-full bg-white border-none rounded-2xl p-4 text-xs font-black shadow-sm">
+                          <option>EASY</option><option>MEDIUM</option><option>HARD</option>
+                       </select>
+                    </div>
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Meta Tags (e.g. IIT, PYQ)</label>
+                       <input type="text" value={form.source} onChange={e => setForm({...form, source: e.target.value})} className="w-full bg-white border-none rounded-2xl p-4 text-xs font-black shadow-sm" placeholder="IIT, JEE Main 2024..." />
+                    </div>
+                 </div>
+              </div>
+            ) : type === 'MockTest' ? (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                  <div className="lg:col-span-5 space-y-8">
-                    <div className="bg-slate-50 p-10 rounded-[3.5rem] space-y-8 shadow-inner">
-                       <div className="space-y-3">
-                          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Target Logic (Answer)</label>
-                          <select 
-                            value={form.correctAnswer} 
-                            onChange={e => setForm({...form, correctAnswer: parseInt(e.target.value)})}
-                            className="w-full bg-white border-none rounded-2xl p-4 text-xs font-black shadow-sm"
-                          >
-                             <option value={0}>Option A</option>
-                             <option value={1}>Option B</option>
-                             <option value={2}>Option C</option>
-                             <option value={3}>Option D</option>
-                          </select>
-                       </div>
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-4">Test Title</label>
+                       <input type="text" value={form.name} onChange={e => setForm({...form, name: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] p-6 text-lg font-black shadow-inner" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-6">
+                       <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-4">Minutes</label><input type="number" value={form.duration} onChange={e => setForm({...form, duration: parseInt(e.target.value)})} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black shadow-inner" /></div>
+                       <div className="space-y-2"><label className="text-[10px] font-black text-slate-400 tracking-widest uppercase ml-4">Total Marks</label><input type="number" value={form.totalMarks} onChange={e => setForm({...form, totalMarks: parseInt(e.target.value)})} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black shadow-inner" /></div>
+                    </div>
+                 </div>
+                 <div className="lg:col-span-7 space-y-6">
+                    <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-4">Problem Selection Matrix</h4>
+                    <div className="bg-slate-50 rounded-[3rem] border border-slate-100 p-6 h-[400px] overflow-y-auto space-y-3 shadow-inner custom-scrollbar">
+                       {data.questions.map((q: any) => (
+                         <button key={q.id} onClick={() => {
+                            const cur = [...(form.questionIds || [])];
+                            const next = cur.includes(q.id) ? cur.filter(id => id !== q.id) : [...cur, q.id];
+                            setForm({...form, questionIds: next});
+                         }} className={`w-full text-left p-5 rounded-2xl border-2 transition-all flex items-center justify-between ${form.questionIds?.includes(q.id) ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl' : 'bg-white border-transparent text-slate-500'}`}>
+                            <div className="flex items-center gap-4">
+                               {form.questionIds?.includes(q.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5 opacity-20" />}
+                               <div className="font-bold text-sm italic line-clamp-1">"{q.text}"</div>
+                            </div>
+                         </button>
+                       ))}
                     </div>
                  </div>
               </div>
             ) : (
                <div className="space-y-8">
                   <div className="space-y-3">
-                     <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Identity</label>
+                     <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Identify</label>
                      <input type="text" value={form.name || form.text || form.question || form.title} onChange={e => setForm({...form, [form.text !== undefined ? 'text' : form.question !== undefined ? 'question' : form.title !== undefined ? 'title' : 'name']: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] p-8 text-xl font-bold text-slate-900 shadow-inner" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
+                     <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Vertical (Subject)</label>
+                        <select value={form.subject} onChange={e => setForm({...form, subject: e.target.value})} className="w-full bg-slate-50 border-none rounded-[1.5rem] p-5 font-black uppercase text-xs tracking-[0.2em] shadow-inner outline-none">
+                           <option>Physics</option><option>Chemistry</option><option>Mathematics</option>
+                        </select>
+                     </div>
                   </div>
                </div>
             )}
          </div>
 
          <div className="flex flex-col md:flex-row gap-4 pt-10">
-            <button onClick={onClose} className="flex-1 py-6 bg-slate-50 text-slate-500 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] hover:bg-slate-100 transition-all border border-slate-200">Abandon Draft</button>
-            <button onClick={handleSave} disabled={saving} className="flex-[2] py-6 bg-slate-900 text-white rounded-[2.5rem] font-black uppercase tracking-[0.5em] shadow-2xl flex items-center justify-center gap-4 hover:bg-indigo-600 transition-all hover:scale-[1.02] disabled:opacity-50">
+            <button onClick={onClose} className="flex-1 py-6 bg-slate-50 text-slate-500 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] hover:bg-slate-100 transition-all border border-slate-200">Abandon Build</button>
+            <button onClick={handleSave} disabled={saving} className="flex-[2] py-6 bg-slate-900 text-white rounded-[2.5rem] font-black uppercase tracking-[0.5em] shadow-2xl flex items-center justify-center gap-4 hover:bg-indigo-600 transition-all disabled:opacity-50">
               {saving ? <Loader2 className="animate-spin w-8 h-8" /> : <><CloudUpload className="w-8 h-8" /> Finalize Transmission</>}
             </button>
          </div>
