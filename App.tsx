@@ -41,17 +41,25 @@ const App: React.FC = () => {
   useEffect(() => {
     try {
       const savedUser = localStorage.getItem('jeepro_user');
+      const savedData = localStorage.getItem('jeepro_student_data');
+      
       if (savedUser) {
         const parsedUser = JSON.parse(savedUser);
         if (parsedUser && parsedUser.id) {
           setUser(parsedUser);
           setRole(parsedUser.role);
-          loadUserData(parsedUser);
+          
+          if (savedData) {
+            setStudentData(JSON.parse(savedData));
+          } else {
+            loadUserData(parsedUser);
+          }
         }
       }
     } catch (e) {
       console.error("Session corrupted, clearing...", e);
       localStorage.removeItem('jeepro_user');
+      localStorage.removeItem('jeepro_student_data');
     }
   }, []);
 
@@ -60,6 +68,7 @@ const App: React.FC = () => {
       if (currentUser.role === UserRole.STUDENT) {
         const data = await api.getStudentData(currentUser.id);
         setStudentData(data);
+        localStorage.setItem('jeepro_student_data', JSON.stringify(data));
         setActiveTab('dashboard');
       } else if (currentUser.role === UserRole.PARENT) {
         setActiveTab('parent-status');
@@ -80,12 +89,14 @@ const App: React.FC = () => {
 
   const handleLogout = () => {
     localStorage.removeItem('jeepro_user');
+    localStorage.removeItem('jeepro_student_data');
     setUser(null);
     setActiveTab('about');
   };
 
   const syncStudentData = async (newData: StudentData) => {
     setStudentData(newData);
+    localStorage.setItem('jeepro_student_data', JSON.stringify(newData));
     if (user && user.role === UserRole.STUDENT) {
       await api.updateStudentData(user.id, newData);
     }
@@ -103,7 +114,7 @@ const App: React.FC = () => {
         case 'dashboard': return <StudentDashboard data={studentData} />;
         case 'learn': return <LearnModule data={studentData} setData={syncStudentData} />;
         case 'aitutor': return <AITutor data={studentData} />;
-        case 'tests': return <TestsView data={studentData} />;
+        case 'tests': return <TestsView data={studentData} setData={syncStudentData} />;
         case 'analytics': return <AnalyticsView data={studentData} />;
         case 'wellness': return <WellnessModule data={studentData} />;
         case 'psychometric': return <PsychometricTest data={studentData} setData={syncStudentData} />;
@@ -144,7 +155,7 @@ const App: React.FC = () => {
       case 'examguide': return <ExamGuideModule />;
       case 'blog': return <BlogModule data={studentData} />;
       case 'contact': return <ContactModule data={studentData} />;
-      case 'login': return <LoginModule onLoginSuccess={onLoginSuccess} onCancel={() => setActiveTab('about')} />;
+      case 'login': return <LoginModule onLoginSuccess={onLoginSuccess} onCancel={() => setActiveTab('about')} onNavigate={setActiveTab} />;
       default: return <LandingPage onLogin={() => setActiveTab('login')} studentData={studentData} setStudentData={syncStudentData} />;
     }
   };

@@ -11,7 +11,9 @@
         body { font-family: 'Inter', sans-serif; }
     </style>
     <script>
-      window.SHOW_DEMO_LOGINS = true;
+      // GLOBAL CONFIGURATION
+      window.SHOW_DEMO_LOGINS = true;     // Show/Hide demo buttons in UI
+      window.DISABLE_DEMO_LOGINS = false; // If true, "Master Keys" (ishu@gmail.com) are blocked.
     </script>
 <script type="importmap">
 {
@@ -32,7 +34,6 @@
 </head>
 <body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
-    <!-- Fixed: Use relative path for XAMPP compatibility -->
     <script type="module" src="./index.tsx"></script>
 </body>
 </html>

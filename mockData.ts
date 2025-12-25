@@ -43,11 +43,42 @@ export const INITIAL_STUDENT_DATA: StudentData = {
       totalMarks: 300, 
       category: 'ADMIN', 
       difficulty: 'MAINS', 
-      questionIds: ['q_p_units_1', 'q_p_units_2'],
-      chapterIds: ['p-units'] 
+      questionIds: ['q_p_units_1', 'q_p_units_2', 'q_m_sets_1', 'q_c_basic_1'],
+      chapterIds: ['p-units', 'm-sets', 'c-basic'] 
+    },
+    {
+      id: 'test_p_units_practice',
+      name: 'Units & Measurements Practice Drill',
+      duration: 30,
+      totalMarks: 40,
+      category: 'CHAPTER',
+      difficulty: 'EASY',
+      questionIds: ['q_p_units_1', 'q_p_units_2', 'q_p_units_3'],
+      chapterIds: ['p-units']
+    },
+    {
+      id: 'test_m_sets_practice',
+      name: 'Sets & Relations Foundation',
+      duration: 45,
+      totalMarks: 60,
+      category: 'CHAPTER',
+      difficulty: 'MEDIUM',
+      questionIds: ['q_m_sets_1', 'q_m_sets_2'],
+      chapterIds: ['m-sets']
+    },
+    {
+      id: 'test_full_grand_mock',
+      name: 'IITGEEPREP Full Syllabus Grand Mock #1',
+      duration: 180,
+      totalMarks: 300,
+      category: 'ADMIN',
+      difficulty: 'ADVANCED',
+      questionIds: ['q_p_units_1', 'q_p_units_3', 'q_m_sets_1', 'q_m_sets_2', 'q_c_basic_1', 'q_c_basic_2'],
+      chapterIds: ['p-units', 'm-sets', 'c-basic']
     }
   ],
   questions: [
+    // PHYSICS: Units & Measurements
     { 
       id: 'q_p_units_1', 
       topicId: 'p-units', 
@@ -65,13 +96,65 @@ export const INITIAL_STUDENT_DATA: StudentData = {
       text: "Which of the following is not a fundamental SI unit?", 
       options: ["Meter", "Candela", "Newton", "Kelvin"], 
       correctAnswer: 2, 
-      explanation: "Newton is a derived unit.",
+      explanation: "Newton is a derived unit of Force (kg·m/s²).",
+      difficulty: 'EASY' 
+    },
+    { 
+      id: 'q_p_units_3', 
+      topicId: 'p-units', 
+      subject: 'Physics', 
+      text: "The surface tension of a liquid is 70 dyne/cm. In MKS system, its value is:", 
+      options: ["70 N/m", "7 × 10⁻² N/m", "7 × 10³ N/m", "7 × 10⁻³ N/m"], 
+      correctAnswer: 1, 
+      explanation: "1 dyne/cm = 10⁻³ N/m. So 70 dyne/cm = 70 × 10⁻³ = 0.07 = 7 × 10⁻² N/m.",
+      difficulty: 'MEDIUM' 
+    },
+    // MATHEMATICS: Sets, Relations
+    { 
+      id: 'q_m_sets_1', 
+      topicId: 'm-sets', 
+      subject: 'Mathematics', 
+      text: "If A and B are two sets such that n(A) = 15, n(B) = 20 and n(A ∪ B) = 30, then n(A ∩ B) is:", 
+      options: ["2", "5", "10", "15"], 
+      correctAnswer: 1, 
+      explanation: "n(A ∩ B) = n(A) + n(B) - n(A ∪ B) = 15 + 20 - 30 = 5.",
+      difficulty: 'EASY' 
+    },
+    { 
+      id: 'q_m_sets_2', 
+      topicId: 'm-sets', 
+      subject: 'Mathematics', 
+      text: "The number of subsets of a set containing 5 elements is:", 
+      options: ["5", "10", "25", "32"], 
+      correctAnswer: 3, 
+      explanation: "Number of subsets = 2^n. For n=5, 2^5 = 32.",
+      difficulty: 'EASY' 
+    },
+    // CHEMISTRY: Basic Concepts
+    { 
+      id: 'q_c_basic_1', 
+      topicId: 'c-basic', 
+      subject: 'Chemistry', 
+      text: "The number of significant figures in 0.0025 is:", 
+      options: ["1", "2", "3", "4"], 
+      correctAnswer: 1, 
+      explanation: "Leading zeros are not significant. Only 2 and 5 are significant.",
+      difficulty: 'EASY' 
+    },
+    { 
+      id: 'q_c_basic_2', 
+      topicId: 'c-basic', 
+      subject: 'Chemistry', 
+      text: "One mole of any gas at STP occupies a volume of:", 
+      options: ["22.4 Liters", "11.2 Liters", "44.8 Liters", "2.24 Liters"], 
+      correctAnswer: 0, 
+      explanation: "Standard molar volume of an ideal gas at STP is 22.4 L.",
       difficulty: 'EASY' 
     }
   ],
   chapters: [
     // MATHEMATICS (14 Units)
-    { id: 'm-sets', subject: 'Mathematics', unit: 'UNIT 1', name: 'Sets, Relations and Functions', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'm-sets', subject: 'Mathematics', unit: 'UNIT 1', name: 'Sets, Relations and Functions', progress: 15, accuracy: 75, timeSpent: 3600, status: 'LEARNING' },
     { id: 'm-complex', subject: 'Mathematics', unit: 'UNIT 2', name: 'Complex Numbers & Quadratic Equations', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
     { id: 'm-matrices', subject: 'Mathematics', unit: 'UNIT 3', name: 'Matrices and Determinants', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
     { id: 'm-permutations', subject: 'Mathematics', unit: 'UNIT 4', name: 'Permutations and Combinations', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
@@ -87,7 +170,7 @@ export const INITIAL_STUDENT_DATA: StudentData = {
     { id: 'm-trig', subject: 'Mathematics', unit: 'UNIT 14', name: 'Trigonometry', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
 
     // PHYSICS (20 Units)
-    { id: 'p-units', subject: 'Physics', unit: 'UNIT 1', name: 'Units and Measurements', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'p-units', subject: 'Physics', unit: 'UNIT 1', name: 'Units and Measurements', progress: 40, accuracy: 85, timeSpent: 7200, status: 'LEARNING' },
     { id: 'p-kinematics', subject: 'Physics', unit: 'UNIT 2', name: 'Kinematics', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
     { id: 'p-laws', subject: 'Physics', unit: 'UNIT 3', name: 'Laws of Motion', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
     { id: 'p-work', subject: 'Physics', unit: 'UNIT 4', name: 'Work, Energy and Power', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
@@ -109,7 +192,7 @@ export const INITIAL_STUDENT_DATA: StudentData = {
     { id: 'p-skills', subject: 'Physics', unit: 'UNIT 20', name: 'Experimental Skills', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
 
     // CHEMISTRY (20 Units)
-    { id: 'c-basic', subject: 'Chemistry', unit: 'UNIT 1', name: 'Some Basic Concepts in Chemistry', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
+    { id: 'c-basic', subject: 'Chemistry', unit: 'UNIT 1', name: 'Some Basic Concepts in Chemistry', progress: 20, accuracy: 60, timeSpent: 2400, status: 'LEARNING' },
     { id: 'c-atomic', subject: 'Chemistry', unit: 'UNIT 2', name: 'Atomic Structure', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
     { id: 'c-bonding', subject: 'Chemistry', unit: 'UNIT 3', name: 'Chemical Bonding & Molecular Structure', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },
     { id: 'c-thermo', subject: 'Chemistry', unit: 'UNIT 4', name: 'Chemical Thermodynamics', progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' },

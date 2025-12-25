@@ -1,145 +1,134 @@
 
 import React from 'react';
-import { BookOpen, Target, CalendarClock, BarChart, BookX, Heart, CheckCircle2, Award, Users, Globe, Brain, TrendingUp } from 'lucide-react';
+import { 
+  BookOpen, Target, CalendarClock, BarChart2, ClipboardList, 
+  Heart, Brain, Award, Users, Globe, CheckCircle2, 
+  Sparkles, Zap, TrendingUp, ShieldCheck, ChevronRight,
+  Cpu, Network, Fingerprint, Activity
+} from 'lucide-react';
 
 const AboutModule: React.FC = () => {
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 pb-20">
-      <div className="max-w-6xl mx-auto space-y-12">
-        {/* Philosophy Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left mb-16">
-            <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl transition-transform hover:-translate-y-2 duration-300">
-                <span className="text-5xl font-black text-blue-600 block mb-2 italic tracking-tighter">IIT</span>
-                <h3 className="text-[10px] text-slate-500 uppercase font-black tracking-[0.2em] block mb-4">Targeting Excellence</h3>
-                <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                    Focused on the rigor required for the <strong>Indian Institutes of Technology</strong>. We provide the depth needed for JEE Advanced.
-                </p>
-            </div>
-            <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl transition-transform hover:-translate-y-2 duration-300">
-                <span className="text-5xl font-black text-orange-500 block mb-2 italic tracking-tighter">GEE</span>
-                <h3 className="text-[10px] text-slate-500 uppercase font-black tracking-[0.2em] block mb-4">General Engineering</h3>
-                <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                    Beyond IITs, we cover all major <strong>entrance exams</strong> like BITSAT, VITEEE, and MET to ensure you have options.
-                </p>
-            </div>
-            <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl transition-transform hover:-translate-y-2 duration-300">
-                <span className="text-5xl font-black text-green-600 block mb-2 italic tracking-tighter">Prep</span>
-                <h3 className="text-[10px] text-slate-500 uppercase font-black tracking-[0.2em] block mb-4">Strategic Preparation</h3>
-                <p className="text-sm text-slate-600 leading-relaxed font-medium">
-                    Moving beyond rote learning. We use <strong>analytics and study planners</strong> to optimize your routine for maximum output.
-                </p>
-            </div>
-        </div>
+    <div className="bg-slate-50 text-slate-900 min-h-screen selection:bg-blue-600/10">
+      <div className="max-w-7xl mx-auto py-24 px-6 space-y-32 animate-in fade-in duration-1000">
+        
+        {/* --- HERO SECTION --- */}
+        <section className="relative text-center space-y-10 pt-10">
+          <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-blue-600/5 blur-[140px] rounded-full pointer-events-none -z-10"></div>
+          
+          <div className="inline-flex items-center gap-3 px-6 py-2.5 bg-white rounded-full text-[10px] font-black uppercase tracking-[0.4em] text-blue-600 border border-slate-200 shadow-sm">
+             <Sparkles className="w-4 h-4" /> Global Intelligence Node 01
+          </div>
+          
+          <h1 className="text-7xl md:text-[9rem] font-black tracking-tighter italic leading-[0.8] uppercase text-slate-900">
+            ENGINEER <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-b from-blue-600 to-indigo-900">DESTINY.</span>
+          </h1>
+          
+          <p className="text-slate-500 max-w-2xl mx-auto leading-relaxed text-xl md:text-2xl font-medium italic">
+            "The digital infrastructure for high-velocity engineering aspirants. Track mastery, solve gaps, dominate the curve."
+          </p>
 
-        {/* Feature Breakdown */}
-        <div className="space-y-12 mb-24 pt-12">
-            <div className="text-center max-w-2xl mx-auto space-y-4">
-                <h2 className="text-5xl font-black text-slate-900 tracking-tighter italic">Tools for Success.</h2>
-                <p className="text-slate-500 font-medium">Our platform is built around the core pillars of effective exam preparation.</p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <FeatureCard 
-                    icon={<BookOpen className="w-6 h-6 text-blue-600" />}
-                    bg="bg-blue-50"
-                    title="Syllabus Tracker"
-                    desc="Granular tracking for Physics, Chemistry, and Maths. Visualize your coverage instantly."
-                />
-                <FeatureCard 
-                    icon={<Target className="w-6 h-6 text-orange-600" />}
-                    bg="bg-orange-50"
-                    title="Mock Tests"
-                    desc="Realistic practice with pattern-based mock tests and a vast question bank."
-                />
-                <FeatureCard 
-                    icon={<CalendarClock className="w-6 h-6 text-purple-600" />}
-                    bg="bg-purple-50"
-                    title="Smart Timetable"
-                    desc="Personalized study schedules based on your school hours and sleep cycle."
-                />
-                <FeatureCard 
-                    icon={<BarChart className="w-6 h-6 text-indigo-600" />}
-                    bg="bg-indigo-50"
-                    title="Analytics"
-                    desc="Identify weak areas with detailed subject-wise performance reports."
-                />
-                <FeatureCard 
-                    icon={<BookX className="w-6 h-6 text-red-600" />}
-                    bg="bg-red-50"
-                    title="Mistake Notebook"
-                    desc="Log incorrect answers and review them systematically to prevent repetition."
-                />
-                <FeatureCard 
-                    icon={<Heart className="w-6 h-6 text-pink-600" />}
-                    bg="bg-pink-50"
-                    title="Wellness"
-                    desc="Guided breathing exercises and focus sounds to maintain peak mental health."
-                />
-            </div>
-        </div>
+          <div className="pt-10 flex flex-wrap justify-center gap-6">
+             <div className="px-10 py-5 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-blue-200 hover:scale-105 transition-all cursor-pointer">
+                Initialize Session
+             </div>
+             <div className="px-10 py-5 bg-white border border-slate-200 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-slate-50 transition-all cursor-pointer shadow-sm">
+                Explore Protocol
+             </div>
+          </div>
+        </section>
 
-        {/* Mission Section */}
-        <div className="bg-slate-100 rounded-[4rem] p-12 md:p-20 mb-16 flex flex-col md:flex-row items-center gap-16 shadow-inner border border-slate-200/50">
-            <div className="flex-1 space-y-8">
-                <h2 className="text-5xl font-black text-slate-900 tracking-tighter italic">Why IITGEEPREP?</h2>
-                <p className="text-slate-600 leading-relaxed font-medium text-lg">
-                    The journey to an IIT or NIT is a marathon, not a sprint. Most students fail not due to a lack of effort, but due to a lack of <strong>structured planning</strong>.
-                </p>
-                <p className="text-slate-600 leading-relaxed font-medium text-lg">
-                    We empower students with data. By tracking every hour spent and every question solved, we turn the chaotic JEE preparation process into a measurable, manageable science.
-                </p>
-                <ul className="space-y-4 pt-4">
-                    {[
-                        "Designed by Engineers for Aspirants",
-                        "Supports JEE Main, Advanced, BITSAT & More",
-                        "Free Access to Premium Tracking Tools"
-                    ].map((item, i) => (
-                        <li key={i} className="flex items-center text-slate-800 font-bold">
-                            <CheckCircle2 className="w-6 h-6 text-indigo-600 mr-4" /> {item}
-                        </li>
-                    ))}
-                </ul>
+        {/* --- CORE PILLARS --- */}
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          {[
+            { label: 'IIT', tagline: 'The Gold Standard', desc: 'Precision-engineered tracking for JEE Advanced. We prioritize cognitive depth over volume.', icon: Cpu },
+            { label: 'GEE', tagline: 'Unified Access', desc: 'Strategic coverage for BITSAT, VITEEE, and State Entrances. One node, unlimited options.', icon: Network },
+            { label: 'PREP', tagline: 'Data Synergy', desc: 'Transforming chaotic study hours into a measurable science using local heuristics.', icon: Fingerprint },
+          ].map((item, i) => (
+            <div key={i} className="p-12 rounded-[4.5rem] bg-white border border-slate-200 hover:border-blue-600/30 transition-all group relative overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-blue-100">
+               <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform duration-1000"><item.icon className="w-40 h-40 text-blue-600" /></div>
+               <span className="text-7xl font-black block mb-8 italic tracking-tighter text-slate-200 group-hover:text-blue-600 transition-colors">{item.label}</span>
+               <h3 className="text-[10px] uppercase font-black tracking-[0.4em] text-blue-600 block mb-4">{item.tagline}</h3>
+               <p className="text-slate-500 leading-relaxed font-bold text-sm">
+                 {item.desc}
+               </p>
             </div>
-            <div className="flex-1 flex justify-center">
-                <div className="bg-white p-12 rounded-full shadow-2xl border-8 border-slate-50 text-center w-80 h-80 flex flex-col justify-center items-center relative group">
-                    <div className="absolute inset-0 bg-indigo-50 rounded-full scale-0 group-hover:scale-100 transition-transform duration-500 -z-10"></div>
-                    <Brain className="w-20 h-20 text-indigo-500 mb-4 transition-transform group-hover:scale-110" />
-                    <h3 className="text-xl font-black text-slate-900 mb-1 italic tracking-tight">Focus on Concepts</h3>
-                    <p className="text-xs text-slate-400 font-black uppercase tracking-widest">"Don't just memorize. Understand."</p>
-                </div>
-            </div>
-        </div>
+          ))}
+        </section>
 
-        {/* Parent Feature */}
-        <div className="bg-gradient-to-r from-teal-500 to-emerald-600 rounded-[3.5rem] p-12 text-white shadow-2xl mb-16 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:scale-110 transition-transform"><Users className="w-64 h-64" /></div>
-            <div className="flex flex-col md:flex-row items-center gap-10 relative z-10">
-                <div className="bg-white/20 backdrop-blur-md p-8 rounded-[2.5rem] shrink-0 border border-white/20">
-                    <Users className="w-16 h-16 text-white" />
-                </div>
-                <div className="flex-1 text-center md:text-left space-y-4">
-                    <h3 className="text-4xl font-black italic tracking-tighter">Empowering Parents.</h3>
-                    <p className="text-teal-50 leading-relaxed text-xl font-medium">
-                        Preparation is a family effort. IITGEEPREP allows parents to securely connect to their child's account to view <strong>real-time progress reports</strong>, syllabus coverage, and mock test scores—without needing to nag. Support your child with data, not pressure.
-                    </p>
-                </div>
+        {/* --- SYSTEM TOOLS --- */}
+        <section className="space-y-16">
+          <div className="flex flex-col md:flex-row justify-between items-end gap-10">
+            <div className="space-y-4">
+              <div className="text-[11px] font-black uppercase text-blue-600 tracking-[0.5em]">Tactical Interface</div>
+              <h2 className="text-6xl font-black italic tracking-tighter leading-none text-slate-900">The Engine.</h2>
             </div>
-        </div>
+            <p className="text-slate-400 font-medium text-lg max-w-sm md:text-right italic">"Optimizing the six fundamental dimensions of prep performance."</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              { title: 'Pulse Heatmaps', icon: Activity, desc: 'Real-time visualization of syllabus mastery based on historical accuracy.' },
+              { title: 'Mock Matrix', icon: Target, desc: 'Standardized test environments designed to simulate high-pressure exam day conditions.' },
+              { title: 'Neural Planner', icon: CalendarClock, desc: 'Dynamic scheduling that adapts to your school rhythm and coaching load.' },
+              { title: 'Retention Hub', icon: Zap, desc: 'Spaced repetition algorithms that prevent formula decay and concept drift.' },
+              { title: 'Error Ledger', icon: ClipboardList, desc: 'Classify and eliminate repetitive mistakes with topper-grade logging protocols.' },
+              { title: 'Wellness Sync', icon: Brain, desc: 'Psychometric monitoring to detect burnout risks and optimize mental stamina.' },
+            ].map((tool, i) => (
+              <div key={i} className="bg-white p-12 rounded-[4rem] border border-slate-100 hover:border-blue-600 transition-all hover:shadow-2xl hover:shadow-blue-100 group">
+                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-[1.5rem] flex items-center justify-center mb-10 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner">
+                  <tool.icon className="w-7 h-7" />
+                </div>
+                <h3 className="text-2xl font-black mb-4 italic tracking-tight text-slate-900">{tool.title}</h3>
+                <p className="text-slate-500 text-sm leading-relaxed font-medium group-hover:text-slate-600 transition-colors">
+                  {tool.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* --- WHY SECTION --- */}
+        <section className="bg-slate-900 rounded-[5rem] p-16 md:p-24 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center shadow-2xl relative overflow-hidden group">
+           <div className="absolute top-0 right-0 p-20 opacity-5 rotate-12 group-hover:scale-110 transition-transform duration-[3s]"><ShieldCheck className="w-[500px] h-[500px] text-white" /></div>
+           <div className="space-y-10 relative z-10">
+              <h2 className="text-7xl font-black tracking-tighter leading-[0.9] italic text-white uppercase">WHY <br /> IITGEEPREP?</h2>
+              <div className="space-y-6">
+                <p className="text-slate-300 text-xl font-bold leading-relaxed">
+                  Success in IIT is not an accident of intelligence. It is a <span className="text-blue-400 underline decoration-blue-400/30 decoration-4 underline-offset-8">consequence of architecture</span>.
+                </p>
+                <p className="text-slate-400 text-lg font-medium leading-relaxed opacity-80">
+                  Most aspirants fail because their data is scattered across notebooks. We unify your performance into a single Intelligence Node.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-4">
+                 {["Zero-Latency Sync", "Parent Sentinel Mode", "Psychometric Defense"].map((tag, i) => (
+                   <span key={i} className="px-5 py-2 bg-white/5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10 text-slate-400">{tag}</span>
+                 ))}
+              </div>
+           </div>
+           
+           <div className="bg-white p-16 rounded-[4rem] shadow-2xl text-center space-y-8 border border-slate-100 relative z-10 group-hover:-rotate-1 transition-transform duration-700">
+              <div className="w-24 h-24 bg-blue-50 text-blue-600 rounded-[2.5rem] flex items-center justify-center mx-auto border border-blue-100 shadow-inner">
+                 <Zap className="w-10 h-10" />
+              </div>
+              <div className="space-y-4">
+                 <h3 className="text-3xl font-black italic text-slate-900">Dominance Protocol</h3>
+                 <p className="text-slate-500 font-medium leading-relaxed italic">
+                    "Track the past. Solve the present. Engineer the future. All systems operational."
+                 </p>
+              </div>
+              <div className="flex justify-center gap-3 pt-6">
+                 <div className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></div>
+                 <div className="w-2.5 h-2.5 rounded-full bg-slate-200"></div>
+                 <div className="w-2.5 h-2.5 rounded-full bg-slate-200"></div>
+              </div>
+           </div>
+        </section>
       </div>
     </div>
   );
 };
-
-const FeatureCard: React.FC<{icon: React.ReactNode, bg: string, title: string, desc: string}> = ({ icon, bg, title, desc }) => (
-    <div className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200 hover:border-indigo-400 transition-all hover:shadow-2xl group flex flex-col items-center text-center">
-        <div className={`${bg} w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 duration-300 shadow-inner`}>
-            {icon}
-        </div>
-        <h3 className="text-xl font-black text-slate-800 mb-3 italic tracking-tight transition-colors">{title}</h3>
-        <p className="text-sm text-slate-500 leading-relaxed font-medium">
-            {desc}
-        </p>
-    </div>
-);
 
 export default AboutModule;

@@ -8,26 +8,29 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
   const menuItems = [
-    { id: 'about', label: 'ABOUT' },
+    { id: 'about', label: 'ABOUT US' },
     { id: 'features', label: 'FEATURES' },
     { id: 'examguide', label: 'EXAM GUIDE' },
-    { id: 'blog', label: 'BLOG' },
-    { id: 'contact', label: 'CONTACT' },
+    { id: 'blog', label: 'RESOURCES' },
+    { id: 'contact', label: 'CONTACT US' },
   ];
 
   return (
-    <nav className="w-full bg-white border-b border-slate-100 py-6 px-10 sticky top-0 z-50">
+    <nav className="w-full bg-white/80 border-b border-slate-200 py-6 px-10 sticky top-0 z-50 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
-        {/* Spacer to keep center items centered */}
-        <div className="w-24 hidden lg:block"></div>
+        {/* Logo/Branding Left */}
+        <div className="flex items-center gap-2 lg:w-48 cursor-pointer" onClick={() => setActiveTab('about')}>
+           <div className="w-2.5 h-6 bg-blue-600 rounded-full animate-pulse"></div>
+           <span className="text-xl font-black tracking-tighter text-slate-900 uppercase italic">IITGEE<span className="text-blue-600">PREP</span></span>
+        </div>
         
-        <div className="flex justify-center items-center gap-12 flex-1">
+        <div className="flex justify-center items-center gap-10 flex-1 hidden lg:flex">
           {menuItems.map((item) => (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`text-[13px] font-black tracking-[0.1em] transition-all hover:text-blue-600 ${
-                activeTab === item.id ? 'text-blue-600' : 'text-slate-500'
+              className={`text-[10px] font-black tracking-[0.25em] transition-all hover:text-blue-600 ${
+                activeTab === item.id ? 'text-blue-600' : 'text-slate-400'
               }`}
             >
               {item.label}
@@ -35,16 +38,16 @@ const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
           ))}
         </div>
 
-        <div className="w-24 flex justify-end">
+        <div className="lg:w-48 flex justify-end">
            <button 
             onClick={() => setActiveTab('login')}
-            className={`text-[13px] font-black tracking-[0.1em] px-6 py-2 rounded-full transition-all border-2 ${
+            className={`text-[10px] font-black tracking-[0.2em] px-8 py-3 rounded-xl transition-all border-2 ${
               activeTab === 'login' 
-              ? 'bg-blue-600 border-blue-600 text-white shadow-lg' 
-              : 'border-slate-200 text-slate-500 hover:border-blue-600 hover:text-blue-600'
+              ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-100' 
+              : 'border-slate-100 text-slate-500 hover:border-blue-600 hover:text-blue-600 hover:bg-blue-50/50'
             }`}
            >
-            LOGIN
+            LOGIN / JOIN
            </button>
         </div>
       </div>

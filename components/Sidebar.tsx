@@ -1,33 +1,11 @@
+
 import React, { useEffect } from 'react';
 import { UserRole } from '../types';
 import { 
-  LayoutDashboard, 
-  BookOpen, 
-  Bot, 
-  FileText, 
-  Brain, 
-  Timer, 
-  BarChart3, 
-  Calendar, 
-  RefreshCw, 
-  AlertCircle, 
-  Layers, 
-  ListChecks, 
-  Lightbulb, 
-  Heart, 
-  User,
-  ShieldCheck,
-  Users,
-  Inbox,
-  PenTool,
-  Activity,
-  Settings,
-  LogOut,
-  Info,
-  Sparkles,
-  Mail,
-  Target,
-  FileCode
+  LayoutDashboard, BookOpen, Bot, FileText, Brain, Timer, 
+  BarChart3, Calendar, RefreshCw, AlertCircle, Layers, 
+  ListChecks, Lightbulb, Heart, User, ShieldCheck,
+  Users, Inbox, PenTool, Settings, LogOut, Info, Sparkles, Mail, Target, FileCode
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -38,7 +16,7 @@ interface SidebarProps {
   handleLogout: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, setRole, handleLogout }) => {
+const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, handleLogout }) => {
   useEffect(() => {
     const handleTabChange = (e: any) => {
       if (e.detail) setActiveTab(e.detail);
@@ -68,44 +46,23 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, setRol
   const adminLinks = [
     { id: 'admin-overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'admin-users', label: 'User Management', icon: Users },
-    { id: 'admin-inbox', label: 'Inbox', icon: Inbox },
-    { id: 'admin-syllabus', label: 'Syllabus', icon: BookOpen },
+    { id: 'admin-syllabus', label: 'Syllabus Master', icon: BookOpen },
     { id: 'admin-questions', label: 'Question Bank', icon: FileCode },
-    { id: 'admin-tests', label: 'Tests', icon: FileText },
-    { id: 'admin-content', label: 'Learning Assets', icon: Layers },
-    { id: 'admin-blog', label: 'Blog', icon: PenTool },
-    { id: 'admin-analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'admin-system', label: 'System', icon: Settings },
-    { id: 'admin-profile', label: 'Profile', icon: User },
+    { id: 'admin-tests', label: 'Mock Tests', icon: FileText },
+    { id: 'admin-flashcards', label: 'Flashcards', icon: Layers },
+    { id: 'admin-hacks', label: 'Memory Hacks', icon: Lightbulb },
+    { id: 'admin-blogs', label: 'Blog Admin', icon: PenTool },
+    { id: 'admin-system', label: 'System Hub', icon: Settings },
   ];
 
   const parentLinks = [
-    { id: 'parent-status', label: 'Current Status', icon: Activity },
-    { id: 'parent-analytics', label: 'Student Analytics', icon: BarChart3 },
-    { id: 'parent-syllabus', label: 'Syllabus Progress', icon: BookOpen },
-    { id: 'parent-psychometric', label: 'Mental Wellbeing', icon: Brain },
-    { id: 'parent-connection', label: 'Family Connection', icon: Target },
-    { id: 'parent-profile', label: 'My Profile', icon: User },
-  ];
-
-  const resourceLinks = [
-    { id: 'examguide', label: 'Exam Matrix', icon: Target },
-    { id: 'blog', label: 'Articles', icon: PenTool },
-    { id: 'features', label: 'Platform Core', icon: Sparkles },
-    { id: 'about', label: 'About JEE-PRO', icon: Info },
-    { id: 'contact', label: 'Support Hub', icon: Mail },
+    { id: 'parent-status', label: 'Live Pulse', icon: Target },
+    { id: 'parent-analytics', label: 'Performance', icon: BarChart3 },
+    { id: 'parent-syllabus', label: 'Syllabus', icon: BookOpen },
+    { id: 'parent-psychometric', label: 'Mental State', icon: Brain },
   ];
 
   const currentLinks = role === UserRole.ADMIN ? adminLinks : role === UserRole.PARENT ? parentLinks : studentLinks;
-
-  const getVersion = (r: UserRole) => {
-    switch(r) {
-      case UserRole.STUDENT: return "v4.2.1-Stable";
-      case UserRole.PARENT: return "v2.1.0-LTS";
-      case UserRole.ADMIN: return "v5.0.0-Root";
-      default: return "";
-    }
-  };
 
   return (
     <div className="w-64 bg-[#0a1128] text-slate-300 flex flex-col hidden lg:flex border-r border-slate-800 shrink-0">
@@ -115,85 +72,39 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, setRol
             {role === UserRole.ADMIN ? <ShieldCheck className="w-5 h-5" /> : <Brain className="w-5 h-5" />}
           </div>
           <div>
-            <div className="leading-tight">{role === UserRole.ADMIN ? 'ADMIN-PANEL' : role === UserRole.PARENT ? 'FAMILY-PANEL' : 'JEE-PRO'}</div>
-            <div className="text-[8px] font-black tracking-widest text-indigo-400 uppercase">{getVersion(role)}</div>
+            <div className="leading-tight text-sm font-black tracking-tighter">
+              {role === UserRole.ADMIN ? 'ADMIN_ROOT' : role === UserRole.PARENT ? 'FAMILY_NODE' : 'IITGEEPREP'}
+            </div>
+            <div className="text-[7px] font-black tracking-[0.4em] text-indigo-400 uppercase">Operational v5.0</div>
           </div>
         </h1>
       </div>
 
-      <nav className="flex-1 overflow-y-auto custom-scrollbar px-3 space-y-4">
-        <div className="space-y-1">
-          {currentLinks.map((link) => (
-            <button
-              key={link.id}
-              onClick={() => setActiveTab(link.id)}
-              className={`w-full flex items-center gap-4 px-4 py-2.5 rounded-lg text-sm font-medium transition-all group ${
-                activeTab === link.id 
-                ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-600/20' 
-                : 'hover:bg-slate-800/50 hover:text-white'
-              }`}
-            >
-              <link.icon className={`w-5 h-5 ${activeTab === link.id ? 'text-indigo-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
-              {link.label}
-            </button>
-          ))}
-        </div>
-
-        {role === UserRole.STUDENT && (
-          <div className="space-y-1 pt-4 border-t border-slate-800/50">
-            <div className="text-[10px] font-black uppercase text-slate-600 tracking-widest px-4 mb-2">Resources</div>
-            {resourceLinks.map((link) => (
-              <button
-                key={link.id}
-                onClick={() => setActiveTab(link.id)}
-                className={`w-full flex items-center gap-4 px-4 py-2 rounded-lg text-xs font-medium transition-all group ${
-                  activeTab === link.id 
-                  ? 'bg-indigo-600/10 text-indigo-400' 
-                  : 'hover:bg-slate-800/50 hover:text-slate-200'
-                }`}
-              >
-                <link.icon className={`w-4 h-4 ${activeTab === link.id ? 'text-indigo-400' : 'text-slate-600 group-hover:text-slate-400'}`} />
-                {link.label}
-              </button>
-            ))}
-          </div>
-        )}
+      <nav className="flex-1 overflow-y-auto px-3 space-y-1">
+        {currentLinks.map((link) => (
+          <button
+            key={link.id}
+            onClick={() => setActiveTab(link.id)}
+            className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
+              activeTab === link.id 
+              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50 border border-indigo-500/50' 
+              : 'hover:bg-slate-800/50 hover:text-slate-100'
+            }`}
+          >
+            <link.icon className={`w-4 h-4 ${activeTab === link.id ? 'text-white' : 'text-slate-500'}`} />
+            {link.label}
+          </button>
+        ))}
       </nav>
 
-      <div className="p-4 space-y-4">
-        <div className="bg-slate-900/50 p-3 rounded-2xl border border-slate-800">
-          <div className="text-[10px] text-slate-500 mb-2 uppercase font-bold tracking-widest px-1">Active Context</div>
-          <div className="grid grid-cols-1 gap-1">
-            {Object.values(UserRole).map(r => (
-              <button 
-                  key={r}
-                  onClick={() => {
-                    setRole(r);
-                    setActiveTab(r === UserRole.ADMIN ? 'admin-overview' : r === UserRole.PARENT ? 'parent-status' : 'dashboard');
-                  }}
-                  className={`text-[9px] px-3 py-1.5 rounded-lg text-left transition-all font-black uppercase tracking-tighter flex justify-between items-center ${role === r ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
-              >
-                  <span>{r} Mode</span>
-                  <span className="opacity-50 text-[7px]">{getVersion(r).split('-')[0]}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-        
+      <div className="p-4 mt-auto">
         <button 
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all font-bold text-sm"
+          className="w-full flex items-center gap-3 px-6 py-4 bg-slate-900 text-rose-400 hover:bg-rose-500 hover:text-white rounded-2xl transition-all font-black text-xs uppercase tracking-widest border border-slate-800 shadow-2xl"
         >
-          <LogOut className="w-5 h-5" />
-          Sign Out
+          <LogOut className="w-4 h-4" /> Sign Out
         </button>
       </div>
-
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
-      `}</style>
     </div>
   );
 };

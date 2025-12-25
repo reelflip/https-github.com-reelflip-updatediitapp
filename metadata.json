@@ -1,5 +1,6 @@
 {
-  "name": "JEE-Prep Tracker: Intelligence & Wellbeing Platform",
-  "description": "A comprehensive full-stack IIT-JEE preparation tracker featuring academic progress tracking, spaced repetition, psychometric wellbeing monitoring, and a Smart Study Coach powered by Gemini API.",
+  "name": "IITGEEPREP: Stellar Node Prime",
+  "version": "5.3.0",
+  "description": "Premium IIT-JEE academic tracker featuring abstracted practice drills, high-stakes mock archive, automated topic question mapping, and robust SQL persistence.",
   "requestFramePermissions": []
 }
