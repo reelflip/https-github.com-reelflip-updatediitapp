@@ -4,7 +4,7 @@ import { StudentData, PsychometricScore } from '../types';
 import { 
   Brain, ChevronRight, ChevronLeft, Sparkles, Zap, Target, Clock, ShieldAlert,
   Loader2, HeartHandshake, Moon, Activity, UserCheck, Users, Layout, Trophy,
-  AlertTriangle, Lightbulb, CheckCircle2, Fingerprint, BarChart, LineChart
+  AlertTriangle, Lightbulb, CheckCircle2, Fingerprint
 } from 'lucide-react';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 
@@ -30,7 +30,6 @@ const PsychometricTest: React.FC<PsychometricTestProps> = ({ data, setData }) =>
     { id: 'examFear', title: 'Performance Anxiety', subtitle: 'Nervousness about the final JEE day.', low: 'Unfazed', high: 'Paralyzing', icon: Brain, color: 'violet' }
   ];
 
-  // Fixed: explicitly casting Object.entries values to number to satisfy arithmetic operation requirements
   const radarData = (Object.entries(scores) as [string, number][]).slice(0, 4).map(([k, v]) => ({
     subject: k.toUpperCase(),
     A: v * 10,
@@ -39,19 +38,29 @@ const PsychometricTest: React.FC<PsychometricTestProps> = ({ data, setData }) =>
 
   const handleFinish = async () => {
     setIsFinishing(true);
-    // Simulate Local Heuristic Calculation
-    await new Promise(r => setTimeout(r, 1500));
+    // Local Logic Engine - 100% Free / No API
+    await new Promise(r => setTimeout(r, 1200));
 
-    const riskLevel = scores.stress > 7 || scores.fatigue > 7 ? 'HIGH' : scores.stress > 4 ? 'MEDIUM' : 'LOW';
+    const avgStress = (scores.stress + scores.fatigue + scores.examFear) / 3;
+    const riskLevel = avgStress > 7 ? 'HIGH' : avgStress > 4 ? 'MEDIUM' : 'LOW';
     
     const localReport = {
-      profile: riskLevel === 'HIGH' ? "Burnout Buffer Mode" : "High Performance Flow",
-      archetype: riskLevel === 'HIGH' ? "Over-Exerted Strategist" : "Consistent Optimizer",
-      description: `Analysis shows a ${riskLevel.toLowerCase()} risk profile. Your focus scores indicate strong morning alertness but tapering evening stamina. Recommend shifting high-weightage math to morning slots.`,
-      tacticalActions: ["Implement 50/10 Pomodoro Cycles", "Limit digital screen time 1hr before sleep"],
-      mindsetShifts: ["Focus on inputs (hours), not outputs (test ranks)", "Celebrate small syllabus wins"],
-      parentSupport: "Encourage frequent short breaks and maintain a positive, pressure-free evening atmosphere.",
-      weeklyGoal: "Achieve 85% routine adherence without sacrificing sleep.",
+      profile: riskLevel === 'HIGH' ? "Burnout Warning Zone" : "Peak Performance State",
+      archetype: riskLevel === 'HIGH' ? "The Overwhelmed Strategist" : "The Focused Achiever",
+      description: riskLevel === 'HIGH' 
+        ? "Your current metrics indicate significant cognitive fatigue. Your stress and exam fear scores are creating a mental block. Recommend immediate reduction in study hours for 48 hours to reset your baseline."
+        : "You are in a healthy preparation flow. Your motivation levels are sustaining your focus. Maintain your current 50/10 Pomodoro rhythm.",
+      tacticalActions: [
+        "Switch to 'Active Recall' instead of reading new theory.",
+        "Implement a digital blackout 60 minutes before sleep.",
+        "Solve 15 easy-level MCQs to rebuild confidence if feeling stuck."
+      ],
+      mindsetShifts: [
+        "Process over Result: Focus on completing today's slots.",
+        "Comparison is the Thief of Joy: Ignore peer mock scores."
+      ],
+      parentSupport: "Student is managing well but requires a positive environment. Avoid discussing test ranks during meal times.",
+      weeklyGoal: "Achieve 8 hours of restorative sleep daily.",
       riskLevel: riskLevel
     };
 
