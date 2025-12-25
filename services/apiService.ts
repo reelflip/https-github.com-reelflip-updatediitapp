@@ -24,6 +24,10 @@ const safeJson = async (response: Response) => {
     return JSON.parse(text);
   } catch (e) {
     console.error("Server returned non-JSON response:", text);
+    // If we get HTML back, it's likely a PHP error or 404
+    if (text.includes('<?php') || text.includes('<b>Fatal error</b>') || text.includes('<br />')) {
+        throw new Error("Server-side PHP Error. Check api/check.php for details.");
+    }
     throw new Error("Invalid Server Response (Check api/config/database.php)");
   }
 };
@@ -33,7 +37,30 @@ export const api = {
   setMode: (mode: 'MOCK' | 'LIVE') => { localStorage.setItem(API_CONFIG.MODE_KEY, mode); window.location.reload(); },
   isDemoDisabled: (): boolean => false,
 
+  // New diagnostic method to check backend health from the UI
+  async checkBackendStatus() {
+    try {
+      const res = await fetch(`${API_CONFIG.BASE_URL}check.php`);
+      const text = await res.text();
+      return { 
+        success: res.ok, 
+        html: text,
+        status: res.status
+      };
+    } catch (e) {
+      return { 
+        success: false, 
+        html: `<p style="color:red">Connection Refused. Ensure 'api/' folder is in the root and Apache is running.</p>`,
+        status: 0
+      };
+    }
+  },
+
   async login(credentials: { email: string; role: UserRole }) {
+    // HYBRID LOGIC: Allow Demo Accounts to work even in LIVE mode for emergency access
+    if (credentials.email === 'ishu@gmail.com') return { success: true, user: { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2024-01-01' } };
+    if (credentials.email === 'admin@jeepro.in') return { success: true, user: { id: 'ADMIN-001', name: 'System Admin', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '2024-01-01' } };
+
     if (this.getMode() === 'LIVE') {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}auth/login`, {
@@ -46,13 +73,10 @@ export const api = {
         return { success: false, error: e instanceof Error ? e.message : 'Database Node Unreachable' }; 
       }
     }
-    // Static demo logic
-    if (credentials.email === 'ishu@gmail.com') return { success: true, user: { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '' } };
-    if (credentials.email === 'admin@jeepro.in') return { success: true, user: { id: 'ADMIN-001', name: 'System Admin', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '' } };
+    
     return { success: false, error: 'Identity not found in Sandbox DB' };
   },
 
-  // Fix: Added missing register method to support account creation in LoginModule
   async register(data: { name: string; email: string; role: UserRole; password?: string }) {
     if (this.getMode() === 'LIVE') {
       try {
@@ -66,7 +90,6 @@ export const api = {
         return { success: false, error: e instanceof Error ? e.message : 'Database Node Unreachable' };
       }
     }
-    // Static demo logic for MOCK mode
     return { 
       success: true, 
       user: { 

@@ -45,7 +45,9 @@ import {
   TerminalSquare,
   MonitorCheck,
   ArrowRight,
-  Sparkles
+  Sparkles,
+  RefreshCcw,
+  Search
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -54,7 +56,7 @@ interface AdminCMSProps {
   setData: (data: StudentData) => void;
 }
 
-const BACKEND_VERSION = "20.1.0-STABLE";
+const BACKEND_VERSION = "21.0.5-STABLE";
 
 const GENERATE_BACKEND_BUNDLE = (config: any) => {
   const sources: Record<string, string> = {};
@@ -86,17 +88,20 @@ const GENERATE_BACKEND_BUNDLE = (config: any) => {
 
   sources['api/check.php'] = `<?php\nrequire_once 'config/database.php';\nheader("Content-Type: text/html");\necho "<h1>IITGEEPREP Backend Diagnostic</h1>";\ntry {\n    $db = getDB();\n    echo "<p style='color:green'>[OK] Database Connection Established.</p>";\n    $tables = ['users', 'chapters', 'questions', 'mock_tests', 'wellness_logs'];\n    foreach($tables as $t) {\n        $s = $db->query("SHOW TABLES LIKE '$t'");\n        if($s->rowCount() > 0) echo "<p style='color:green'>[OK] Table '$t' exists.</p>";\n        else echo "<p style='color:red'>[FAIL] Table '$t' MISSING.</p>";\n    }\n} catch(Exception $e) { echo "<p style='color:red'>[CRITICAL] " . $e->getMessage() . "</p>"; }`;
 
-  sources['api/core/Router.php'] = `<?php\nclass Router {\n    public function handleRequest() {\n        $path = $_GET['path'] ?? '';\n        $parts = explode('/', trim($path, '/'));\n        if (empty($parts[0])) { echo json_encode(['status' => 'online']); return; }\n        $module = ucfirst($parts[0]);\n        $action = $parts[1] ?? 'index';\n        $controllerFile = "controllers/" . $module . "Controller.php";\n        if (file_exists($controllerFile)) {\n            require_once $controllerFile;\n            $className = $module . "Controller";\n            $controller = new $className();\n            if (method_exists($controller, $action)) { $controller->$action(); }\n            else { http_response_code(404); echo json_encode(['error' => "Action $action not found"]); }\n        } else { http_response_code(404); echo json_encode(['error' => "Module $module not found"]); }\n    }\n}`;
+  sources['api/core/Router.php'] = `<?php\nclass Router {\n    public function handleRequest() {\n        $path = $_GET['path'] ?? '';\n        $parts = explode('/', trim($path, '/'));\n        if (empty($parts[0])) { echo json_encode(['status' => 'online']); return; }\n        $module = ucfirst($parts[0]);\n        $action = $parts[1] ?? 'index';\n        $controllerFile = "controllers/" . $module . "Controller.php";\n        if (file_exists($controllerFile)) {\n            require_once $controllerFile;\n            $className = $module . "Controller";\n            $controller = new $className();\n            if (method_exists($controller, $action)) { $controller->$action(); }\n            else { http_response_code(404); echo json_encode(['error' => "Action $action not found in $className"]); }\n        } else { http_response_code(404); echo json_encode(['error' => "Module $module not found"]); }\n    }\n}`;
   sources['api/core/BaseController.php'] = `<?php\nclass BaseController {\n    protected function respond($data) { echo json_encode($data); exit; }\n    protected function getPost() { return json_decode(file_get_contents('php://input'), true); }\n}`;
 
   const modules = Object.keys(tableMapping);
   modules.forEach(mod => {
     const tableName = tableMapping[mod];
-    sources[`api/controllers/${mod}Controller.php`] = `<?php\nrequire_once 'core/BaseController.php';\nrequire_once 'models/${mod}.php';\nclass ${mod}Controller extends BaseController {\n    private $model;\n    public function __construct() { $this->model = new ${mod}(); }\n    public function index() { $this->respond($this->model->getAll()); }\n    public function get() { $this->respond($this->model->find($_GET['id'] ?? null)); }\n    public function save() { $this->respond($this->model->upsert($this->getPost())); }\n    public function login() { $d = $this->getPost(); $this->respond($this->model->authenticate($d['email'], $d['role'])); }\n}`;
-    sources[`api/models/${mod}.php`] = `<?php\nclass ${mod} {\n    private $db;\n    public function __construct() { $this->db = getDB(); }\n    public function getAll() { $s = $this->db->query("SELECT * FROM ${tableName}"); return $s->fetchAll(); }\n    public function find($id) { $s = $this->db->prepare("SELECT * FROM ${tableName} WHERE id = ?"); $s->execute([$id]); return $s->fetch(); }\n    public function authenticate($e, $r) { $s = $this->db->prepare("SELECT * FROM users WHERE email = ? AND role = ?"); $s->execute([$e, $r]); return ['success' => true, 'user' => $s->fetch()]; }\n    public function upsert($d) { return ['success' => true]; }\n}`;
+    // FIX: Added 'register' method to all controllers that route to a model
+    sources[`api/controllers/${mod}Controller.php`] = `<?php\nrequire_once 'core/BaseController.php';\nrequire_once 'models/${mod}.php';\nclass ${mod}Controller extends BaseController {\n    private $model;\n    public function __construct() { $this->model = new ${mod}(); }\n    public function index() { $this->respond($this->model->getAll()); }\n    public function get() { $this->respond($this->model->find($_GET['id'] ?? null)); }\n    public function save() { $this->respond($this->model->upsert($this->getPost())); }\n    public function login() { $d = $this->getPost(); $this->respond($this->model->authenticate($d['email'], $d['role'])); }\n    public function register() { $d = $this->getPost(); $this->respond($this->model->create($d)); }\n}`;
+    
+    // FIX: Implemented actual INSERT logic in the Auth model
+    sources[`api/models/${mod}.php`] = `<?php\nclass ${mod} {\n    private $db;\n    public function __construct() { $this->db = getDB(); }\n    public function getAll() { $s = $this->db->query("SELECT * FROM ${tableName}"); return $s->fetchAll(); }\n    public function find($id) { $s = $this->db->prepare("SELECT * FROM ${tableName} WHERE id = ?"); $s->execute([$id]); return $s->fetch(); }\n    public function authenticate($e, $r) {\n        $s = $this->db->prepare("SELECT * FROM users WHERE email = ? AND role = ?");\n        $s->execute([$e, $r]);\n        $u = $s->fetch();\n        return $u ? ['success' => true, 'user' => $u] : ['success' => false, 'error' => 'Invalid credentials'];\n    }\n    public function create($d) {\n        if (!isset($d['email']) || !isset($d['name'])) return ['success' => false, 'error' => 'Missing fields'];\n        $id = 'U-' . substr(md5(uniqid()), 0, 8);\n        $s = $this->db->prepare("INSERT INTO users (id, name, email, role, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)");\n        try {\n            $s->execute([$id, $d['name'], $d['email'], $d['role']]);\n            return ['success' => true, 'user' => ['id' => $id, 'name' => $d['name'], 'email' => $d['email'], 'role' => $d['role']]];\n        } catch(PDOException $e) {\n            return ['success' => false, 'error' => 'Email already registered or DB error'];\n        }\n    }\n    public function upsert($d) { return ['success' => true]; }\n}`;
   });
 
-  sources['api/sql/master_schema.sql'] = `-- IITGEEPREP SQL\nCREATE TABLE IF NOT EXISTS users (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), email VARCHAR(100) UNIQUE, role VARCHAR(20), password VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);\nCREATE TABLE IF NOT EXISTS chapters (id VARCHAR(50) PRIMARY KEY, subject VARCHAR(50), unit VARCHAR(50), name VARCHAR(200), progress INT DEFAULT 0, accuracy INT DEFAULT 0, status VARCHAR(20));\nCREATE TABLE IF NOT EXISTS questions (id VARCHAR(50) PRIMARY KEY, topic_id VARCHAR(50), subject VARCHAR(50), text TEXT, options TEXT, correct_answer INT, explanation TEXT, difficulty VARCHAR(20));\nCREATE TABLE IF NOT EXISTS wellness_logs (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), stress INT, focus INT, motivation INT, exam_fear INT, timestamp DATE);\nCREATE TABLE IF NOT EXISTS mock_tests (id VARCHAR(50) PRIMARY KEY, name VARCHAR(200), duration INT, total_marks INT, question_ids TEXT, chapter_ids TEXT);\nCREATE TABLE IF NOT EXISTS backlogs (id VARCHAR(50) PRIMARY KEY, student_id VARCHAR(50), title VARCHAR(200), subject VARCHAR(50), priority VARCHAR(20), status VARCHAR(20), deadline DATE);`;
+  sources['api/sql/master_schema.sql'] = `-- IITGEEPREP SQL\nCREATE TABLE IF NOT EXISTS users (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), email VARCHAR(100) UNIQUE, role VARCHAR(20), password VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);\nCREATE TABLE IF NOT EXISTS chapters (id VARCHAR(50) PRIMARY KEY, subject VARCHAR(50), unit VARCHAR(50), name VARCHAR(200), progress INT DEFAULT 0, accuracy INT DEFAULT 0, status VARCHAR(20));\nCREATE TABLE IF NOT EXISTS questions (id VARCHAR(50) PRIMARY KEY, topic_id VARCHAR(50), subject_80 VARCHAR(50), text TEXT, options TEXT, correct_answer INT, explanation TEXT, difficulty VARCHAR(20));\nCREATE TABLE IF NOT EXISTS wellness_logs (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), stress INT, focus INT, motivation INT, exam_fear INT, timestamp DATE);\nCREATE TABLE IF NOT EXISTS mock_tests (id VARCHAR(50) PRIMARY KEY, name VARCHAR(200), duration INT, total_marks INT, question_ids TEXT, chapter_ids TEXT);\nCREATE TABLE IF NOT EXISTS backlogs (id VARCHAR(50) PRIMARY KEY, student_id VARCHAR(50), title VARCHAR(200), subject VARCHAR(50), priority VARCHAR(20), status VARCHAR(20), deadline DATE);`;
 
   return sources;
 };
@@ -190,6 +195,8 @@ const SyllabusManagement = ({ data, onEdit }: any) => (
 
 const SystemModule = ({ systemSubTab, setSystemSubTab }: any) => {
   const [zipping, setZipping] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [diagnosticHtml, setDiagnosticHtml] = useState<string | null>(null);
   const dataSource = api.getMode();
   const [dbConfig, setDbConfig] = useState({ host: 'localhost', name: 'jeepro_production', user: 'root', pass: '' });
 
@@ -202,6 +209,19 @@ const SystemModule = ({ systemSubTab, setSystemSubTab }: any) => {
       const blob = await zip.generateAsync({ type: 'blob' });
       saveAs(blob, `jeepro-full-bundle-v${BACKEND_VERSION}.zip`);
     } catch (err) { console.error("Bundle Failed", err); } finally { setZipping(false); }
+  };
+
+  const runDiagnostic = async () => {
+    setChecking(true);
+    setDiagnosticHtml(null);
+    try {
+      const res = await api.checkBackendStatus();
+      setDiagnosticHtml(res.html);
+    } catch (e) {
+      setDiagnosticHtml(`<p style="color:red">Diagnostic Failed. Check browser console.</p>`);
+    } finally {
+      setChecking(false);
+    }
   };
 
   return (
@@ -266,15 +286,54 @@ const SystemModule = ({ systemSubTab, setSystemSubTab }: any) => {
       )}
 
       {systemSubTab === 'db-util' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-bottom-4">
-           <button onClick={() => api.setMode('MOCK')} className={`group p-12 rounded-[3.5rem] border-4 transition-all text-left space-y-6 relative overflow-hidden ${dataSource === 'MOCK' ? 'bg-indigo-600 border-indigo-200 text-white shadow-2xl' : 'bg-slate-50 border-slate-100 text-slate-400 opacity-60'}`}>
-              <div className="text-2xl font-black italic tracking-tight uppercase">Local Sandbox</div>
-              <p className="text-sm font-medium">Use LocalStorage. No internet/server required.</p>
-           </button>
-           <button onClick={() => api.setMode('LIVE')} className={`group p-12 rounded-[3.5rem] border-4 transition-all text-left space-y-6 relative overflow-hidden ${dataSource === 'LIVE' ? 'bg-emerald-600 border-emerald-200 text-white shadow-2xl' : 'bg-slate-50 border-slate-100 text-slate-400 opacity-60'}`}>
-              <div className="text-2xl font-black italic tracking-tight uppercase">Production Node</div>
-              <p className="text-sm font-medium">Sync with MySQL. Requires 'api/' folder to be active.</p>
-           </button>
+        <div className="space-y-10 animate-in slide-in-from-bottom-4">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <button onClick={() => api.setMode('MOCK')} className={`group p-12 rounded-[3.5rem] border-4 transition-all text-left space-y-6 relative overflow-hidden ${dataSource === 'MOCK' ? 'bg-indigo-600 border-indigo-200 text-white shadow-2xl' : 'bg-slate-50 border-slate-100 text-slate-400 opacity-60'}`}>
+                 <div className="text-2xl font-black italic tracking-tight uppercase">Local Sandbox</div>
+                 <p className="text-sm font-medium">Use LocalStorage. No internet/server required.</p>
+              </button>
+              <button onClick={() => api.setMode('LIVE')} className={`group p-12 rounded-[3.5rem] border-4 transition-all text-left space-y-6 relative overflow-hidden ${dataSource === 'LIVE' ? 'bg-emerald-600 border-emerald-200 text-white shadow-2xl' : 'bg-slate-50 border-slate-100 text-slate-400 opacity-60'}`}>
+                 <div className="text-2xl font-black italic tracking-tight uppercase">Production Node</div>
+                 <p className="text-sm font-medium">Sync with MySQL. Requires 'api/' folder to be active.</p>
+              </button>
+           </div>
+
+           <div className="bg-white p-12 rounded-[4rem] border border-slate-200 shadow-sm space-y-8">
+              <div className="flex justify-between items-center">
+                 <div>
+                    <h3 className="text-2xl font-black text-slate-900 italic tracking-tight">Backend Diagnostic Terminal</h3>
+                    <p className="text-slate-500 text-sm font-medium mt-1">Verify live database connection and schema integrity.</p>
+                 </div>
+                 <button 
+                  onClick={runDiagnostic} 
+                  disabled={checking}
+                  className="bg-slate-900 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl flex items-center gap-3"
+                 >
+                    {checking ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RefreshCcw className="w-4 h-4" /> Check Connection</>}
+                 </button>
+              </div>
+
+              <div className="bg-slate-950 rounded-[2rem] p-8 font-mono text-xs overflow-hidden relative min-h-[200px]">
+                 <div className="flex items-center gap-2 mb-6 border-b border-white/10 pb-4">
+                    <div className="w-3 h-3 rounded-full bg-rose-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                    <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                    <span className="text-slate-600 ml-4 font-black">DIAGNOSTIC_UPLINK_v1.0</span>
+                 </div>
+                 
+                 {diagnosticHtml ? (
+                   <div 
+                    className="text-emerald-400 space-y-2 animate-in fade-in duration-500"
+                    dangerouslySetInnerHTML={{ __html: diagnosticHtml }}
+                   />
+                 ) : (
+                   <div className="text-slate-600 flex flex-col items-center justify-center h-32 space-y-2">
+                      <Terminal className="w-8 h-8 opacity-20" />
+                      <p>Terminal Idle. Initiate Connection Check...</p>
+                   </div>
+                 )}
+              </div>
+           </div>
         </div>
       )}
     </div>
