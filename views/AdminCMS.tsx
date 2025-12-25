@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { StudentData, Question, MockTest, Chapter, Blog, Flashcard, MemoryHack, Subject, ChapterStatus, UserAccount, SystemEvent, UserRole } from '../types';
 import { api } from '../services/apiService';
@@ -24,7 +23,6 @@ import {
   Package,
   Brain,
   Download,
-  // Added RotateCw and Mail to fix missing icon errors
   RotateCw,
   Mail
 } from 'lucide-react';
@@ -473,20 +471,39 @@ const SystemModule = ({ systemSubTab, setSystemSubTab }: any) => {
   };
 
   const fileTree = [
-    { name: 'setup.sql', icon: Database, desc: 'Master Normalized Schema' },
-    { name: 'db_config.php', icon: Code, desc: 'Central PDO Configuration' },
-    { name: 'auth.php', icon: Lock, desc: 'Multi-Role Identity Handlers' },
-    { name: 'syllabus_manager.php', icon: BookOpen, desc: '94-Unit Tracking Service' },
-    { name: 'backlog_manager.php', icon: Target, desc: 'Operational Debt Logic' },
-    { name: 'flashcard_manager.php', icon: RotateCw, desc: 'Active Recall Logic' },
-    { name: 'hack_vault.php', icon: Zap, desc: 'Mnemonic Repository' },
-    { name: 'question_bank.php', icon: FileCode, desc: 'Intelligence Bank Service' },
-    { name: 'test_engine.php', icon: FileText, desc: 'JEE Assessment Simulator' },
-    { name: 'result_analytics.php', icon: Activity, desc: 'Mastery Trend Service' },
-    { name: 'psychometric_engine.php', icon: Brain, desc: 'Mental Profile Service' },
-    { name: 'cms_blog.php', icon: Monitor, desc: 'Intelligence Feed CMS' },
-    { name: 'message_hub.php', icon: Mail, desc: 'Transmission Gateway' }
+    { name: 'setup.sql', icon: Database, desc: 'Master Normalized Schema', path: 'deployment/setup.sql' },
+    { name: 'db_config.php', icon: Code, desc: 'Central PDO Configuration', path: 'deployment/db_config.php' },
+    { name: 'auth.php', icon: Lock, desc: 'Multi-Role Identity Handlers', path: 'deployment/auth.php' },
+    { name: 'syllabus_manager.php', icon: BookOpen, desc: '94-Unit Tracking Service', path: 'deployment/syllabus_manager.php' },
+    { name: 'backlog_manager.php', icon: Target, desc: 'Operational Debt Logic', path: 'deployment/backlog_manager.php' },
+    { name: 'flashcard_manager.php', icon: RotateCw, desc: 'Active Recall Logic', path: 'deployment/flashcard_manager.php' },
+    { name: 'hack_vault.php', icon: Zap, desc: 'Mnemonic Repository', path: 'deployment/hack_vault.php' },
+    { name: 'question_bank.php', icon: FileCode, desc: 'Intelligence Bank Service', path: 'deployment/question_bank.php' },
+    { name: 'test_engine.php', icon: FileText, desc: 'JEE Assessment Simulator', path: 'deployment/test_engine.php' },
+    { name: 'result_analytics.php', icon: Activity, desc: 'Mastery Trend Service', path: 'deployment/result_analytics.php' },
+    { name: 'psychometric_engine.php', icon: Brain, desc: 'Mental Profile Service', path: 'deployment/psychometric_engine.php' },
+    { name: 'cms_blog.php', icon: Monitor, desc: 'Intelligence Feed CMS', path: 'deployment/cms_blog.php' },
+    { name: 'message_hub.php', icon: Mail, desc: 'Transmission Gateway', path: 'deployment/message_hub.php' }
   ];
+
+  const triggerDownload = async (fileName: string) => {
+    try {
+      const response = await fetch(`/${fileName}`);
+      const text = await response.text();
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName.split('/').pop() || 'file';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error("Download failed:", err);
+      alert("Could not generate file for download. Please ensure you are viewing the live environment.");
+    }
+  };
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
@@ -513,12 +530,19 @@ const SystemModule = ({ systemSubTab, setSystemSubTab }: any) => {
                         </div>
                         <div className="space-y-2 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
                            {fileTree.map(f => (
-                             <div key={f.name} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-400 transition-all cursor-help">
+                             <div key={f.name} className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-indigo-400 transition-all">
                                 <f.icon className="w-5 h-5 text-slate-400 group-hover:text-indigo-600" />
-                                <div>
+                                <div className="flex-1">
                                     <div className="text-[10px] font-black text-slate-900">{f.name}</div>
                                     <div className="text-[8px] font-bold text-slate-400 uppercase">{f.desc}</div>
                                 </div>
+                                <button 
+                                  onClick={() => triggerDownload(f.path)}
+                                  className="p-2 bg-white text-slate-300 hover:text-indigo-600 hover:shadow-md rounded-lg transition-all"
+                                  title="Download Source"
+                                >
+                                    <Download className="w-4 h-4" />
+                                </button>
                              </div>
                            ))}
                         </div>
@@ -538,23 +562,27 @@ const SystemModule = ({ systemSubTab, setSystemSubTab }: any) => {
                             <div className="text-indigo-400 font-black uppercase text-xs tracking-widest flex items-center gap-3">
                                 <Activity className="w-4 h-4 animate-pulse" /> Production Backend Suite v1.0
                             </div>
-                            <button className="flex items-center gap-2 bg-white/10 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/10 hover:bg-white/20">
-                                <Download className="w-4 h-4" /> Export All
-                            </button>
+                            <div className="flex gap-3">
+                                <button className="flex items-center gap-2 bg-emerald-500/20 text-emerald-400 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
+                                    <CheckCircle className="w-4 h-4" /> Ready for Uplink
+                                </button>
+                            </div>
                         </div>
                         <pre className="text-[11px] font-mono text-emerald-400 leading-relaxed max-h-[500px] overflow-y-auto custom-scrollbar">
                            {deployActiveSub === 'guide' ? `
 DEPLOYMENT PROTOCOL:
 ====================
 1. START XAMPP: Ensure Apache and MySQL are running.
-2. DATABASE: Create 'jeepro_db' and import the 'Master SQL' provided.
+2. DATABASE: Create 'jeepro_db' and import the 'Master SQL' provided (Click icon on left).
 3. FOLDER: Create htdocs/api/
-4. FILES: Move all 12 micro-service PHP files from the 'deployment' folder into your api/ folder.
+4. FILES: Download all 12 micro-service PHP files from the tree on the left and save them to your api/ folder.
 5. UPLINK: Navigate to System -> Data Utility and enable "Production Server Mode".
 6. VERIFY: Try logging in with a new user to confirm MySQL connection.
+
+NOTE: These files are configured with CORS * headers for easy testing.
                            ` : deployActiveSub === 'sql' ? `
 -- MASTER DATABASE INITIALIZATION
--- Reference: deployment/setup.sql
+-- Download setup.sql from the tree to get the full script.
 CREATE DATABASE jeepro_db;
 USE jeepro_db;
 
@@ -570,20 +598,22 @@ CREATE TABLE psychometric_logs (...);
                            ` : `
 /* GRANULAR HANDLER ARCHITECTURE */
 Total Services: 12 Specialized Endpoints
-- auth.php
-- syllabus_manager.php
-- backlog_manager.php
-- flashcard_manager.php
-- hack_vault.php
-- question_bank.php
-- test_engine.php
-- result_analytics.php
-- psychometric_engine.php
-- cms_blog.php
-- message_hub.php
-- db_config.php
 
-All files are located in the /deployment project root.
+All files are ready. Use the DOWNLOAD icons on the left panel to save the
+actual production code for each service.
+
+1. auth.php
+2. syllabus_manager.php
+3. backlog_manager.php
+4. flashcard_manager.php
+5. hack_vault.php
+6. question_bank.php
+7. test_engine.php
+8. result_analytics.php
+9. psychometric_engine.php
+10. cms_blog.php
+11. message_hub.php
+12. db_config.php
                            `}
                         </pre>
                     </div>
