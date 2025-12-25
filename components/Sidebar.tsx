@@ -75,7 +75,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, handle
             <div className="leading-tight text-sm font-black tracking-tighter">
               {role === UserRole.ADMIN ? 'ADMIN_HUB' : role === UserRole.PARENT ? 'FAMILY_HUB' : 'IITGEEPREP'}
             </div>
-            <div className="text-[7px] font-black tracking-[0.4em] text-indigo-400 uppercase">Operational v5.6.0</div>
+            <div className="text-[7px] font-black tracking-[0.4em] text-indigo-400 uppercase">Operational v5.6.1</div>
           </div>
         </h1>
       </div>

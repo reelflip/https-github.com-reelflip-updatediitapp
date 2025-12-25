@@ -1,6 +1,6 @@
 {
   "name": "IITGEEPREP: Solaris Hub",
-  "version": "5.6.0",
+  "version": "5.6.1",
   "description": "High-performance IIT-JEE academic tracker with unified PHP/PDO gateway, verified cross-role handshake, and robust SQL persistence.",
   "requestFramePermissions": []
 }
