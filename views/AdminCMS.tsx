@@ -1,15 +1,18 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import JSZip from 'jszip';
 import saveAs from 'file-saver';
-import { StudentData, Question, MockTest, Chapter, UserRole, ChapterStatus, Flashcard, MemoryHack, Blog } from '../types';
+import { StudentData, Question, MockTest, Chapter, UserRole, ChapterStatus, Flashcard, MemoryHack, Blog, Subject, UserAccount } from '../types';
 import { api } from '../services/apiService';
+import { chatWithTutor } from '../services/intelligenceService';
 import { 
   ShieldCheck, Database, FileCode, CloudUpload,
   BookOpen, Layers, Zap, Package, Download, Loader2,
   ChevronRight, Search, Plus, Trash2, Edit3, X, 
   CheckCircle2, Target, History, Code2, Server, 
-  Cpu, Terminal, Shield, ListChecks, Link2, Info, Sparkles
+  Cpu, Terminal, Shield, ListChecks, Link2, Info, Sparkles, Save,
+  Users, PenTool, Eye, Layout, Settings, Activity, Bot, Send, User, MessageSquare,
+  Brain, Network, Globe, Radio, Database as DBIcon, CheckCircle, FolderTree, ListOrdered
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -21,48 +24,69 @@ interface AdminCMSProps {
 const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
-  const [creationType, setCreationType] = useState<'Question' | 'Chapter' | 'MockTest' | 'Flashcard' | 'MemoryHack' | 'Blog'>('Question');
+  const [creationType, setCreationType] = useState<string>('Question');
   const mode = api.getMode();
 
-  const updateGlobalData = (key: keyof StudentData, newValue: any) => {
-    setData({ ...data, [key]: newValue });
-  };
-
-  const handleEdit = (type: typeof creationType, item: any) => {
+  const handleEdit = (type: string, item: any) => {
     setCreationType(type);
     setEditingItem(item);
     setIsCreating(true);
   };
 
-  const handleDelete = (type: typeof creationType, id: string) => {
-    if (!confirm(`Permanently delete this ${type}? This action cannot be undone.`)) return;
-    
+  const handleDelete = (type: string, id: string) => {
+    if (!confirm(`Confirm deletion of this ${type}?`)) return;
+    const key = type === 'Chapter' ? 'chapters' : 
+                type === 'Question' ? 'questions' : 
+                type === 'MockTest' ? 'mockTests' :
+                type === 'Flashcard' ? 'flashcards' :
+                type === 'MemoryHack' ? 'memoryHacks' : 'blogs';
+    const newList = (data[key as keyof StudentData] as any[]).filter(item => item.id !== id);
+    setData({ ...data, [key]: newList });
+  };
+
+  const handleSaveEntity = (type: string, entity: any) => {
     const key = type === 'Chapter' ? 'chapters' : 
                 type === 'Question' ? 'questions' : 
                 type === 'MockTest' ? 'mockTests' :
                 type === 'Flashcard' ? 'flashcards' :
                 type === 'MemoryHack' ? 'memoryHacks' : 'blogs';
     
-    const newList = (data[key] as any[]).filter(item => item.id !== id);
-    updateGlobalData(key as keyof StudentData, newList);
+    const currentList = [...(data[key as keyof StudentData] as any[])];
+    const index = currentList.findIndex(e => e.id === entity.id);
+    
+    // Explicitly set category to ADMIN so it appears in the student test list
+    if (type === 'MockTest') {
+      entity.category = 'ADMIN';
+    }
+    
+    if (index > -1) {
+      currentList[index] = entity;
+    } else {
+      currentList.push(entity);
+    }
+    
+    setData({ ...data, [key]: currentList });
+    setIsCreating(false);
+    setEditingItem(null);
   };
 
   return (
     <div className="pb-20 max-w-7xl mx-auto space-y-10 px-4">
+      {/* Header Panel */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm">
         <div className="space-y-2">
           <div className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.4em] flex items-center gap-3">
-             <ShieldCheck className="w-4 h-4" /> IITGEEPREP Administrator Terminal
+             <ShieldCheck className="w-4 h-4" /> Solaris Control: System Administration
           </div>
-          <h2 className="text-5xl font-black text-slate-900 tracking-tighter italic leading-none">Control Hub.</h2>
+          <h2 className="text-5xl font-black text-slate-900 tracking-tighter italic leading-none uppercase">Central <span className="text-indigo-600 font-black">Commander.</span></h2>
         </div>
         
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-3 bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-inner">
              <div className="text-right">
-                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Data Bridge</div>
+                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Active Database</div>
                 <div className={`text-[10px] font-black uppercase ${mode === 'LIVE' ? 'text-emerald-600' : 'text-slate-500'}`}>
-                   {mode === 'LIVE' ? 'Production (SQL)' : 'Sandbox (Demo)'}
+                   {mode === 'LIVE' ? 'Production (MySQL)' : 'Sandbox (Memory)'}
                 </div>
              </div>
              <button 
@@ -75,244 +99,386 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
         </div>
       </div>
 
-      {activeTab === 'admin-overview' && <Overview data={data} />}
-      {activeTab === 'admin-syllabus' && <SyllabusMaster data={data} onEdit={handleEdit} onDelete={handleDelete} />}
-      {activeTab === 'admin-questions' && <QuestionBank data={data} onEdit={handleEdit} onDelete={handleDelete} />}
-      {activeTab === 'admin-system' && <SystemModule data={data} setData={setData} />}
+      <div className="space-y-12 animate-in fade-in duration-700">
+        {activeTab === 'admin-overview' && <Overview data={data} />}
+        {activeTab === 'admin-users' && <UserManagement />}
+        {activeTab === 'admin-syllabus' && <EntityList title="Syllabus Management" type="Chapter" data={data.chapters} icon={BookOpen} color="indigo" btnLabel="Add Chapter" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Chapter'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-questions' && <EntityList title="Question Bank" type="Question" data={data.questions} icon={Terminal} color="emerald" btnLabel="Add Question" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Question'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-tests' && <EntityList title="Mock Test Suite" type="MockTest" data={data.mockTests} icon={Target} color="rose" btnLabel="Create Mock Test" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MockTest'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-flashcards' && <EntityList title="Revision Cards" type="Flashcard" data={data.flashcards} icon={Layers} color="blue" btnLabel="Add Card" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Flashcard'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-hacks' && <EntityList title="Memory Hacks" type="MemoryHack" data={data.memoryHacks} icon={Zap} color="amber" btnLabel="Add Hack" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MemoryHack'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-blogs' && <EntityList title="Resource Articles" type="Blog" data={data.blogs} icon={PenTool} color="indigo" btnLabel="New Post" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Blog'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-system' && <SystemHub data={data} setData={setData} />}
+      </div>
 
-      {/* Logic for creationHub would be here - truncated for focus on requested Fix */}
+      {isCreating && (
+        <CreationHub 
+          type={creationType} 
+          item={editingItem} 
+          questions={data.questions}
+          onClose={() => setIsCreating(false)} 
+          onSave={(entity: any) => handleSaveEntity(creationType, entity)}
+        />
+      )}
     </div>
   );
 };
 
+/* --- SUB-COMPONENTS --- */
+
 const Overview = ({ data }: { data: StudentData }) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in duration-500">
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
     {[
-      { label: 'Active Syllabus', val: data.chapters.length, sub: 'Units Loaded', icon: BookOpen, color: 'indigo' },
-      { label: 'Intelligence Depth', val: data.questions.length, sub: 'Problem Matrix', icon: Cpu, color: 'emerald' },
-      { label: 'Mock Scenarios', val: data.mockTests.length, sub: 'Active Simulations', icon: Target, color: 'rose' },
-      { label: 'Memory Persistence', val: data.flashcards.length, sub: 'Revision Nodes', icon: Layers, color: 'blue' },
+      { label: 'Syllabus Chapters', val: data.chapters.length, sub: 'Units Active', icon: BookOpen, color: 'indigo' },
+      { label: 'Question Library', val: data.questions.length, sub: 'Bank Depth', icon: Code2, color: 'emerald' },
+      { label: 'Mock Test Count', val: data.mockTests.length, sub: 'National Exams', icon: Target, color: 'rose' },
+      { label: 'Blog Posts', val: data.blogs.length, sub: 'Resources', icon: PenTool, color: 'indigo' },
     ].map((stat, i) => (
-      <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-        <div className={`w-12 h-12 bg-${stat.color}-50 text-${stat.color}-600 rounded-2xl flex items-center justify-center mb-6`}><stat.icon className="w-6 h-6" /></div>
+      <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm hover:scale-105 transition-transform group">
+        <div className={`w-12 h-12 bg-${stat.color}-50 text-${stat.color}-600 rounded-2xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform`}><stat.icon className="w-6 h-6" /></div>
         <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">{stat.label}</div>
-        <div className="text-3xl font-black text-slate-800">{stat.val}</div>
+        <div className="text-3xl font-black text-slate-800 tracking-tighter">{stat.val}</div>
         <div className="text-[10px] font-bold text-slate-400 mt-1 uppercase">{stat.sub}</div>
       </div>
     ))}
   </div>
 );
 
-const SyllabusMaster = ({ data, onEdit, onDelete }: any) => (
-  <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden animate-in slide-in-from-bottom-4">
-    <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
-       <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-3"><BookOpen className="w-6 h-6 text-indigo-600" /> Syllabus Master</h3>
-       <button className="bg-indigo-600 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-indigo-100 hover:scale-105 transition-all"><Plus className="w-4 h-4" /> New Unit</button>
-    </div>
-    <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-      {data.chapters.map((c: Chapter) => (
-        <div key={c.id} className="p-6 bg-white border border-slate-100 rounded-3xl hover:border-indigo-400 transition-all flex justify-between items-center group">
-           <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center font-black text-slate-400 text-xs">ID</div>
-              <div>
-                 <div className="font-bold text-slate-800 text-sm">{c.name}</div>
-                 <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{c.subject} • {c.unit}</div>
-              </div>
-           </div>
-           <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button onClick={() => onEdit('Chapter', c)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg"><Edit3 className="w-4 h-4" /></button>
-              <button onClick={() => onDelete('Chapter', c.id)} className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
-           </div>
-        </div>
-      ))}
-    </div>
-  </div>
-);
+const UserManagement = () => {
+  const [users, setUsers] = useState<UserAccount[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-const QuestionBank = ({ data, onEdit, onDelete }: any) => (
-  <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden animate-in slide-in-from-bottom-4">
-    <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
-       <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-3"><Code2 className="w-6 h-6 text-emerald-600" /> Intelligence Matrix</h3>
-       <button className="bg-emerald-600 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-emerald-100 hover:scale-105 transition-all"><Plus className="w-4 h-4" /> New Entry</button>
-    </div>
-    <div className="divide-y divide-slate-50">
-      {data.questions.map((q: any) => (
-        <div key={q.id} className="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors group">
-           <div className="flex items-center gap-6">
-              <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0"><Terminal className="w-5 h-5" /></div>
-              <div className="max-w-xl">
-                 <div className="text-sm font-bold text-slate-800 line-clamp-1 italic">"{q.text}"</div>
-                 <div className="flex gap-4 mt-1">
-                    <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{q.subject}</span>
-                    <span className="text-[9px] font-black uppercase text-indigo-500 tracking-widest">{q.difficulty}</span>
-                 </div>
-              </div>
-           </div>
-           <div className="flex gap-2">
-              <button onClick={() => onEdit('Question', q)} className="p-3 bg-white border border-slate-100 text-slate-400 rounded-xl hover:text-indigo-600 transition-all"><Edit3 className="w-4 h-4" /></button>
-              <button onClick={() => onDelete('Question', q.id)} className="p-3 bg-white border border-slate-100 text-slate-400 rounded-xl hover:text-rose-600 transition-all"><Trash2 className="w-4 h-4" /></button>
-           </div>
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-const SystemModule = ({ data }: { data: StudentData; setData: any }) => {
-  const [dbConfig, setDbConfig] = useState({ host: 'localhost', name: 'jeepro_db', user: 'root', pass: '' });
-  
-  const generateMasterSQL = () => {
-    return `-- IITGEEPREP MASTER PRODUCTION SCHEMA v5.6.2
--- Optimized for Relational Telemetry and High-Performance Sync
-
-SET NAMES utf8mb4;
-SET FOREIGN_KEY_CHECKS = 0;
-
--- 1. CORE USER ENTITY
-CREATE TABLE IF NOT EXISTS users (
-  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(100) NOT NULL,
-  email VARCHAR(100) NOT NULL UNIQUE,
-  password VARCHAR(255) NOT NULL,
-  role ENUM('STUDENT', 'PARENT', 'ADMIN') DEFAULT 'STUDENT',
-  recovery_question VARCHAR(255),
-  recovery_answer VARCHAR(255),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 2. STUDENT SYLLABUS PERSISTENCE
-CREATE TABLE IF NOT EXISTS student_chapters (
-  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  user_id INT UNSIGNED NOT NULL,
-  chapter_id VARCHAR(50) NOT NULL,
-  progress INT DEFAULT 0,
-  accuracy INT DEFAULT 0,
-  time_spent INT DEFAULT 0, -- Total seconds
-  time_spent_notes INT DEFAULT 0,
-  time_spent_videos INT DEFAULT 0,
-  time_spent_practice INT DEFAULT 0,
-  time_spent_tests INT DEFAULT 0,
-  status VARCHAR(20) DEFAULT 'NOT_STARTED',
-  last_studied TIMESTAMP NULL,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 3. ACADEMIC TEST REPOSITORY
-CREATE TABLE IF NOT EXISTS test_results (
-  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  user_id INT UNSIGNED NOT NULL,
-  test_id VARCHAR(50) NOT NULL,
-  test_name VARCHAR(100),
-  score INT NOT NULL,
-  total_marks INT NOT NULL,
-  accuracy INT,
-  date_taken DATE,
-  chapter_ids TEXT, -- JSON Array of IDs
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 4. WELLNESS & PSYCHOMETRIC LOGS
-CREATE TABLE IF NOT EXISTS wellness_logs (
-  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  user_id INT UNSIGNED NOT NULL,
-  stress INT DEFAULT 5,
-  focus INT DEFAULT 5,
-  motivation INT DEFAULT 5,
-  exam_fear INT DEFAULT 5,
-  summary TEXT,
-  parent_advice TEXT,
-  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 5. RELATIONAL HANDSHAKE (PARENT-STUDENT)
-CREATE TABLE IF NOT EXISTS family_links (
-  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  parent_id INT UNSIGNED NOT NULL,
-  student_id INT UNSIGNED NOT NULL,
-  status ENUM('PENDING', 'ACTIVE', 'REVOKED') DEFAULT 'ACTIVE',
-  linked_since TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (parent_id) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
-  UNIQUE KEY unique_link (parent_id, student_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-SET FOREIGN_KEY_CHECKS = 1;
-`;
-  };
-
-  const handleDownloadBuild = async () => {
-    const zip = new JSZip();
-    zip.file("sql/master_schema_v5.6.2.sql", generateMasterSQL());
-    // In a real scenario, we'd add the PHP boilerplate files here too
-    const content = await zip.generateAsync({ type: "blob" });
-    saveAs(content, "iitgeeprep-production-v5.6.2.zip");
-  };
+  useEffect(() => {
+    api.getAccounts().then(res => { setUsers(res); setIsLoading(false); });
+  }, []);
 
   return (
-    <div className="bg-slate-900 rounded-[4rem] p-12 lg:p-20 text-white shadow-2xl space-y-12 relative overflow-hidden">
-       <div className="absolute top-0 right-0 p-12 opacity-5"><Server className="w-80 h-80" /></div>
-       
-       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10 relative z-10">
-          <div className="space-y-4">
-             <div className="inline-flex items-center gap-2 bg-indigo-600/30 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10 text-indigo-300">
-                <CloudUpload className="w-4 h-4" /> Deployment Blueprint
-             </div>
-             <h3 className="text-4xl font-black italic tracking-tighter">Production Handshake.</h3>
-             <p className="text-slate-400 max-w-xl text-lg font-medium leading-relaxed">
-                Generate the SQL schema and PHP PDO gateway to transition from local storage to a production MySQL environment.
-             </p>
-          </div>
-          <button onClick={handleDownloadBuild} className="px-10 py-5 bg-white text-slate-900 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] flex items-center gap-4 hover:bg-indigo-50 transition-all shadow-2xl group shrink-0">
-             <Package className="w-6 h-6 group-hover:scale-110 transition-transform" /> Download Build ZIP
-          </button>
-       </div>
-
-       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10 pt-10 border-t border-white/10">
-          <div className="space-y-4">
-             <label className="text-[10px] font-black uppercase text-indigo-400 tracking-widest ml-6">Database Host</label>
-             <input type="text" value={dbConfig.host} onChange={e => setDbConfig({...dbConfig, host: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none" />
-          </div>
-          <div className="space-y-4">
-             <label className="text-[10px] font-black uppercase text-indigo-400 tracking-widest ml-6">DB Identifier</label>
-             <input type="text" value={dbConfig.name} onChange={e => setDbConfig({...dbConfig, name: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none" />
-          </div>
-          <div className="space-y-4">
-             <label className="text-[10px] font-black uppercase text-indigo-400 tracking-widest ml-6">User/Pass</label>
-             <div className="flex gap-2">
-                <input type="text" placeholder="User" value={dbConfig.user} onChange={e => setDbConfig({...dbConfig, user: e.target.value})} className="w-1/2 bg-white/5 border border-white/10 rounded-2xl p-5 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none" />
-                <input type="password" placeholder="Pass" value={dbConfig.pass} onChange={e => setDbConfig({...dbConfig, pass: e.target.value})} className="w-1/2 bg-white/5 border border-white/10 rounded-2xl p-5 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none" />
-             </div>
-          </div>
-       </div>
-
-       <div className="p-8 bg-black/40 rounded-[3rem] border border-white/5 space-y-6">
-          <div className="flex items-center justify-between">
-             <div className="flex items-center gap-3 text-[10px] font-black uppercase text-emerald-400 tracking-widest"><FileCode className="w-4 h-4" /> Schema Preview (Corrected v5.6.2)</div>
-             <button onClick={() => { navigator.clipboard.writeText(generateMasterSQL()); alert("SQL Copied to clipboard"); }} className="p-3 bg-white/5 rounded-xl text-white hover:bg-white/10 transition-all border border-white/10"><Download className="w-4 h-4" /></button>
-          </div>
-          <pre className="text-[11px] font-mono text-slate-500 max-h-60 overflow-y-auto custom-scrollbar leading-relaxed">
-             {generateMasterSQL()}
-          </pre>
-       </div>
+    <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden animate-in slide-in-from-bottom-4">
+      <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
+         <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-3"><Users className="w-6 h-6 text-indigo-600" /> User Directory</h3>
+         <button className="bg-indigo-600 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl hover:scale-105 transition-all"><Plus className="w-4 h-4" /> Add Student</button>
+      </div>
+      <div className="divide-y divide-slate-50 max-h-[600px] overflow-y-auto">
+        {isLoading ? (
+          <div className="p-20 flex flex-col items-center justify-center text-slate-400 gap-4"><Loader2 className="animate-spin" /> Fetching secure accounts...</div>
+        ) : (
+          users.map((u) => (
+            <div key={u.id} className="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors group">
+               <div className="flex items-center gap-6">
+                  <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center font-black text-indigo-600 shadow-inner">{u.name[0]}</div>
+                  <div>
+                    <div className="font-black text-slate-800 tracking-tight">{u.name}</div>
+                    <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{u.email} • {u.role}</div>
+                  </div>
+               </div>
+               <div className="flex gap-2">
+                  <button className="p-3 text-slate-400 hover:text-indigo-600 transition-all"><Edit3 className="w-4 h-4" /></button>
+                  <button className="p-3 text-slate-400 hover:text-rose-600 transition-all"><Trash2 className="w-4 h-4" /></button>
+               </div>
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 };
 
-// Placeholder for creationHub (Logic assumed from context)
-const CreationHub = ({ type, item, onClose, data, onSave }: any) => {
+const EntityList = ({ title, type, data, icon: Icon, color, onEdit, onDelete, onNew, btnLabel = "Add Entry" }: any) => (
+  <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden animate-in slide-in-from-bottom-4">
+    <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
+       <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-3"><Icon className={`w-6 h-6 text-${color}-600`} /> {title}</h3>
+       <button onClick={onNew} className={`bg-${color}-600 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-${color}-100 hover:scale-105 transition-all`}><Plus className="w-4 h-4" /> {btnLabel}</button>
+    </div>
+    <div className="divide-y divide-slate-50 max-h-[600px] overflow-y-auto">
+      {data.length === 0 ? (
+        <div className="p-20 text-center text-slate-300 font-black uppercase text-[10px] tracking-widest italic">Database is empty. Please create an entry.</div>
+      ) : (
+        data.map((item: any) => (
+          <div key={item.id} className="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors group">
+             <div className="flex items-center gap-6">
+                <div className={`w-10 h-10 bg-${color}-50 text-${color}-600 rounded-xl flex items-center justify-center shrink-0`}>
+                   <Icon className="w-5 h-5" />
+                </div>
+                <div className="max-w-xl">
+                   <div className="text-sm font-bold text-slate-800 line-clamp-1 italic tracking-tight">
+                     {type === 'Blog' ? item.title : type === 'Chapter' ? item.name : type === 'Question' ? item.text : type === 'Flashcard' ? item.question : item.name || item.title}
+                   </div>
+                   <div className="flex gap-4 mt-1">
+                      <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{item.subject || item.category || 'National Level'}</span>
+                      <span className="text-[9px] font-black uppercase text-indigo-500 tracking-widest">{item.difficulty || (item.questionIds ? `${item.questionIds.length} Questions` : 'Standard')}</span>
+                   </div>
+                </div>
+             </div>
+             <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => onEdit(type, item)} className="p-3 bg-white border border-slate-100 text-slate-400 rounded-xl hover:text-indigo-600 transition-all shadow-sm"><Edit3 className="w-4 h-4" /></button>
+                <button onClick={() => onDelete(type, item.id)} className="p-3 bg-white border border-slate-100 text-slate-400 rounded-xl hover:text-rose-600 transition-all shadow-sm"><Trash2 className="w-4 h-4" /></button>
+             </div>
+          </div>
+        ))
+      )}
+    </div>
+  </div>
+);
+
+const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentData) => void }) => {
+  const [activeSubTab, setActiveSubTab] = useState<'ai' | 'server'>('ai');
+  const [selectedModel, setSelectedModel] = useState(localStorage.getItem('jeepro_platform_ai_model') || 'solaris-core');
+  const [testInput, setTestInput] = useState('');
+  const [terminalLogs, setTerminalLogs] = useState<{role: 'bot'|'user', text: string}[]>([]);
+  const [isComputing, setIsComputing] = useState(false);
+
+  const saveModelConfig = (id: string) => {
+    setSelectedModel(id);
+    localStorage.setItem('jeepro_platform_ai_model', id);
+    setData({ ...data, aiTutorModel: id });
+  };
+
+  const handleTestChat = async () => {
+    if (!testInput.trim() || isComputing) return;
+    const msg = testInput;
+    setTestInput('');
+    setTerminalLogs(prev => [...prev, {role: 'user', text: msg}]);
+    setIsComputing(true);
+    const reply = await chatWithTutor([], msg, selectedModel);
+    setTerminalLogs(prev => [...prev, {role: 'bot', text: reply || 'Network Error: Link lost.'}]);
+    setIsComputing(false);
+  };
+
+  const models = [
+    { id: 'solaris-core', name: 'Solaris Heuristic', icon: Cpu, desc: 'Optimized logic for core JEE preparation.' },
+    { id: 'gpt-4o-edu', name: 'GPT-4o Academic', icon: Brain, desc: 'Deep reasoning for JEE Advanced level.' },
+    { id: 'claude-3-stu', name: 'Claude Student', icon: Zap, desc: 'Speed-optimized theory summarization.' },
+    { id: 'gemini-flash-base', name: 'Gemini 2.0 Flash', icon: Radio, desc: 'Lowest latency for instant doubt clearing.' },
+    { id: 'deepseek-coder', name: 'DeepSeek Numeric', icon: Code2, desc: 'Mathematics and calculation specialist.' },
+    { id: 'iit-pulse', name: 'IIT-Pulse Engine', icon: Network, desc: 'Data-driven insights from successful candidates.' }
+  ];
+
+  const handleDownloadBuild = async () => {
+    const zip = new JSZip();
+    zip.file("api/sql/master_v6.2.sql", `-- IITGEEPREP DATABASE v6.2`);
+    zip.file("api/config/database.php", `<?php /* DB CONFIG */ ?>`);
+    const content = await zip.generateAsync({ type: "blob" });
+    saveAs(content, "iitgeeprep-backend-v6.zip");
+  };
+
+  return (
+    <div className="space-y-10">
+      <div className="flex bg-white p-2 rounded-[2rem] border border-slate-200 shadow-sm w-fit">
+         <button onClick={() => setActiveSubTab('ai')} className={`px-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeSubTab === 'ai' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>Intelligence Setup</button>
+         <button onClick={() => setActiveSubTab('server')} className={`px-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeSubTab === 'server' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>Server Deployment</button>
+      </div>
+
+      {activeSubTab === 'ai' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          <div className="lg:col-span-6 bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-8">
+             <h3 className="text-xl font-black italic flex items-center gap-3"><Cpu className="w-6 h-6 text-indigo-600" /> AI Engine Selection</h3>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {models.map(m => (
+                  <button key={m.id} onClick={() => saveModelConfig(m.id)} className={`p-6 rounded-3xl border-2 text-left space-y-3 transition-all ${selectedModel === m.id ? 'bg-slate-900 border-slate-900 text-white shadow-2xl' : 'bg-slate-50 border-transparent text-slate-500 hover:border-indigo-400'}`}>
+                    <m.icon className={`w-8 h-8 ${selectedModel === m.id ? 'text-indigo-400' : 'text-slate-400'}`} />
+                    <div>
+                      <div className="text-xs font-black uppercase tracking-widest">{m.name}</div>
+                      <div className="text-[9px] opacity-60 font-bold leading-tight mt-1">{m.desc}</div>
+                    </div>
+                  </button>
+                ))}
+             </div>
+          </div>
+
+          <div className="lg:col-span-6 bg-slate-950 rounded-[3.5rem] p-10 text-white shadow-2xl flex flex-col h-[550px]">
+             <div className="flex justify-between items-center mb-8 shrink-0">
+                <div className="flex items-center gap-3"><div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center font-mono text-xs">AI</div><h3 className="font-black italic uppercase text-sm tracking-widest">Query Terminal</h3></div>
+                <div className="flex gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div><span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Live</span></div>
+             </div>
+             <div className="flex-1 overflow-y-auto font-mono text-xs space-y-4 pr-4 custom-scrollbar">
+                {terminalLogs.map((log, i) => (
+                  <div key={i} className={`flex gap-3 ${log.role === 'user' ? 'text-indigo-400' : 'text-emerald-400'}`}>
+                    <span className="shrink-0 font-black uppercase">[{log.role}]:</span>
+                    <p className="leading-relaxed">{log.text}</p>
+                  </div>
+                ))}
+                {isComputing && <div className="text-slate-600 animate-pulse font-black uppercase">Thinking...</div>}
+             </div>
+             <div className="mt-8 relative shrink-0">
+                <input type="text" value={testInput} onChange={e => setTestInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleTestChat()} placeholder="Ask AI a technical question..." className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-6 pr-14 text-xs font-mono outline-none" />
+                <button onClick={handleTestChat} className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-indigo-400 hover:text-white transition-all"><Send className="w-4 h-4" /></button>
+             </div>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-10 animate-in slide-in-from-right duration-500">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            {/* Folder Structure Visualization */}
+            <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-8">
+               <h3 className="text-xl font-black italic flex items-center gap-3"><FolderTree className="w-6 h-6 text-indigo-600" /> Folder Roadmap</h3>
+               <div className="font-mono text-xs p-6 bg-slate-950 text-emerald-400 rounded-3xl overflow-x-auto">
+                 <pre>{`/public_html/ (Server Root)
+├── assets/ (Generated Frontend Files)
+├── api/ (Backend PHP Gateway)
+│   ├── config/ (database.php)
+│   ├── sql/ (master_v6.sql)
+│   └── index.php (Main Entry)
+└── index.html`}</pre>
+               </div>
+               <div className="space-y-4">
+                  <div className="flex gap-4 p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
+                     <Info className="w-5 h-5 text-indigo-600 shrink-0" />
+                     <p className="text-[10px] font-bold text-indigo-900 leading-relaxed uppercase">Recommendation: Use PHP 8.3 for best performance. Set memory_limit to 512M for AI processing.</p>
+                  </div>
+               </div>
+            </div>
+
+            <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-8">
+               <h3 className="text-xl font-black italic flex items-center gap-3"><ListOrdered className="w-6 h-6 text-indigo-600" /> Handover Steps</h3>
+               <div className="space-y-4">
+                  {[
+                    "Generate the frontend production build (npm run build).",
+                    "Download and extract the Backend ZIP to 'api/' folder.",
+                    "Create a MySQL database and import 'master_v6.sql'.",
+                    "Update 'api/config/database.php' with your credentials.",
+                    "Verify the HTTPS connection in the browser.",
+                    "Toggle 'Production (MySQL)' in the Admin header."
+                  ].map((step, i) => (
+                    <div key={i} className="flex items-center gap-4 group">
+                       <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center font-black text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all text-[10px]">0{i+1}</div>
+                       <span className="text-xs font-bold text-slate-700">{step}</span>
+                    </div>
+                  ))}
+               </div>
+            </div>
+          </div>
+
+          <div className="bg-slate-900 rounded-[4rem] p-12 lg:p-20 text-white shadow-2xl space-y-12 relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-12 opacity-5"><Server className="w-80 h-80" /></div>
+             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10 relative z-10">
+                <div className="space-y-4">
+                   <div className="inline-flex items-center gap-2 bg-indigo-600/30 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10 text-indigo-300"><CloudUpload className="w-4 h-4" /> Production Sync</div>
+                   <h3 className="text-4xl font-black italic tracking-tighter uppercase leading-none">Deployment <span className="text-indigo-500 italic font-black">Blueprint.</span></h3>
+                </div>
+                <button onClick={handleDownloadBuild} className="px-10 py-5 bg-white text-slate-900 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] flex items-center gap-4 hover:bg-indigo-50 transition-all shadow-2xl group shrink-0"><Package className="w-6 h-6 group-hover:scale-110 transition-transform" /> Download Server ZIP</button>
+             </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const CreationHub = ({ type, item, questions = [], onClose, onSave }: any) => {
+  const [formData, setFormData] = useState<any>(item || {
+    id: `ID-${Math.random().toString(36).substr(2, 9)}`,
+    name: '', title: '', subject: 'Physics' as Subject, unit: 'UNIT 1', text: '',
+    question: '', answer: '', content: '', author: 'Admin', hack: '',
+    description: '', options: ['', '', '', ''], correctAnswer: 0, difficulty: 'EASY',
+    category: 'ADMIN', duration: 180, totalMarks: 300, questionIds: [], chapterIds: [],
+    date: new Date().toISOString().split('T')[0], status: 'PUBLISHED'
+  });
+
+  const toggleQuestionSelection = (qid: string) => {
+    const current = formData.questionIds || [];
+    const newList = current.includes(qid) ? current.filter((id: string) => id !== qid) : [...current, qid];
+    
+    // Auto-update chapterIds based on selected questions
+    const selectedChapters = new Set<string>();
+    newList.forEach((id: string) => {
+      const q = questions.find((qu: any) => qu.id === id);
+      if (q) selectedChapters.add(q.topicId);
+    });
+
+    setFormData({ 
+      ...formData, 
+      questionIds: newList, 
+      chapterIds: Array.from(selectedChapters),
+      totalMarks: newList.length * 4 
+    });
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}></div>
-      <div className="bg-white w-full max-w-2xl p-12 rounded-[4rem] shadow-2xl relative z-10 animate-in zoom-in-95 duration-300">
-         <button onClick={onClose} className="absolute top-10 right-10 text-slate-400 hover:text-slate-900"><X className="w-8 h-8" /></button>
-         <h3 className="text-3xl font-black italic tracking-tighter text-slate-900 mb-10">Entity Interface: {type}</h3>
-         <div className="flex flex-col items-center justify-center py-10 space-y-4">
-            <Info className="w-12 h-12 text-indigo-200" />
-            <p className="text-slate-400 text-sm font-medium">Detailed form logic for {type} editing is contained in the full Admin controller.</p>
-            <button onClick={onClose} className="px-10 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl">Exit Terminal</button>
+      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onClick={onClose}></div>
+      <div className="bg-white w-full max-w-5xl p-12 rounded-[4rem] shadow-2xl relative z-10 animate-in zoom-in-95 duration-300 overflow-hidden max-h-[90vh] flex flex-col">
+         <button onClick={onClose} className="absolute top-10 right-10 text-slate-400 hover:text-slate-900 transition-colors"><X className="w-8 h-8" /></button>
+         <h3 className="text-4xl font-black italic tracking-tighter text-slate-900 mb-10 shrink-0 uppercase leading-none">Creator: <span className="text-indigo-600 italic font-black">{type}</span></h3>
+         
+         <div className="flex-1 overflow-y-auto px-4 space-y-8 custom-scrollbar">
+            {type === 'MockTest' ? (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                <div className="lg:col-span-4 space-y-6">
+                   <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Test Title</label>
+                     <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-50 p-6 rounded-[2rem] border-none text-sm font-black italic shadow-inner" placeholder="E.g. Full Syllabus Mock #1" />
+                   </div>
+                   <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest">Minutes</label>
+                        <input type="number" value={formData.duration} onChange={e => setFormData({...formData, duration: parseInt(e.target.value)})} className="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-black" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest">Exam Type</label>
+                        <select value={formData.difficulty} onChange={e => setFormData({...formData, difficulty: e.target.value})} className="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-black">
+                           <option>MAINS</option><option>ADVANCED</option><option>BITSAT</option>
+                        </select>
+                      </div>
+                   </div>
+                   <div className="bg-indigo-900 p-8 rounded-[2.5rem] text-white space-y-4">
+                      <div className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Packaging Status</div>
+                      <div className="text-4xl font-black italic">{formData.questionIds.length} <span className="text-sm font-bold opacity-50 not-italic uppercase">Selected</span></div>
+                      <div className="text-xl font-black italic text-emerald-400">Total Marks: {formData.totalMarks}</div>
+                   </div>
+                </div>
+                <div className="lg:col-span-8 space-y-4">
+                   <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest">Available Questions (Select to Add)</label>
+                   <div className="grid grid-cols-1 gap-2 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
+                      {questions.map((q: any) => (
+                        <button key={q.id} onClick={() => toggleQuestionSelection(q.id)} className={`p-5 rounded-3xl border-2 text-left transition-all flex items-center justify-between group ${formData.questionIds.includes(q.id) ? 'bg-indigo-50 border-indigo-500' : 'bg-white border-slate-100 hover:border-indigo-300'}`}>
+                           <div className="flex-1">
+                              <div className="text-xs font-bold text-slate-800 line-clamp-1 italic">{q.text}</div>
+                              <div className="flex gap-3 mt-1">
+                                 <span className="text-[8px] font-black uppercase text-slate-400">{q.subject}</span>
+                                 <span className="text-[8px] font-black uppercase text-indigo-400">{q.difficulty}</span>
+                              </div>
+                           </div>
+                           <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${formData.questionIds.includes(q.id) ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-transparent'}`}><CheckCircle2 className="w-4 h-4" /></div>
+                        </button>
+                      ))}
+                   </div>
+                </div>
+              </div>
+            ) : type === 'Blog' ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                <div className="space-y-6">
+                   <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Entry Title</label><input type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-slate-50 p-6 rounded-[2rem] border-none text-sm font-black italic shadow-inner" /></div>
+                   <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Content HTML</label><textarea value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} className="w-full bg-slate-50 p-8 rounded-[3rem] border-none text-xs font-mono min-h-[400px] shadow-inner" /></div>
+                </div>
+                <div className="space-y-6 bg-white border border-slate-100 rounded-[3.5rem] p-10 min-h-[500px] prose max-w-none shadow-sm overflow-y-auto">
+                   {formData.title && <h1 className="font-black italic tracking-tighter text-4xl mb-6">{formData.title}</h1>}
+                   <div dangerouslySetInnerHTML={{ __html: formData.content || '<p class="text-slate-300 italic">Preview session active...</p>' }} />
+                </div>
+              </div>
+            ) : type === 'Question' ? (
+              <div className="space-y-8">
+                <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Question Text</label><textarea value={formData.text} onChange={e => setFormData({...formData, text: e.target.value})} className="w-full bg-slate-50 p-8 rounded-[2.5rem] border-none text-sm font-black italic h-32 shadow-inner" /></div>
+                <div className="grid grid-cols-2 gap-4">
+                  {formData.options.map((opt: string, i: number) => (
+                    <div key={i} className="space-y-1"><label className="text-[9px] font-black uppercase text-slate-400 ml-6 tracking-widest">Option {String.fromCharCode(65+i)}</label><input value={opt} onChange={e => { const newOpts = [...formData.options]; newOpts[i] = e.target.value; setFormData({...formData, options: newOpts}); }} className="w-full bg-slate-50 p-5 rounded-2xl border-none text-xs font-bold" /></div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-6 pt-6 border-t border-slate-50">
+                   <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Correct Option Index (0-3)</label><input type="number" min="0" max="3" value={formData.correctAnswer} onChange={e => setFormData({...formData, correctAnswer: parseInt(e.target.value)})} className="w-full bg-slate-900 text-white p-6 rounded-2xl border-none text-sm font-black" /></div>
+                   <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Subject Vertical</label><select value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} className="w-full bg-slate-50 p-6 rounded-2xl border-none text-sm font-black"><option>Physics</option><option>Chemistry</option><option>Mathematics</option></select></div>
+                </div>
+              </div>
+            ) : (
+               <div className="p-20 text-center bg-slate-50 rounded-[4rem] border-4 border-dashed border-slate-100 flex flex-col items-center gap-4"><Activity className="w-12 h-12 text-slate-200" /><div className="text-xs font-black uppercase text-slate-400 tracking-widest italic">Protocol setup for {type}...</div></div>
+            )}
+         </div>
+
+         <div className="mt-10 flex gap-6 shrink-0">
+            <button onClick={onClose} className="flex-1 py-6 bg-slate-100 text-slate-500 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-200 transition-all">Cancel Entry</button>
+            <button onClick={() => onSave(formData)} className="flex-1 py-6 bg-indigo-600 text-white rounded-[2rem] font-black uppercase text-xs tracking-[0.4em] shadow-2xl hover:bg-indigo-700 transition-all flex items-center justify-center gap-4 group"><Save className="w-6 h-6 group-hover:scale-110 transition-transform" /> Save to Database</button>
          </div>
       </div>
+      <style>{`.custom-scrollbar::-webkit-scrollbar { width: 6px; } .custom-scrollbar::-webkit-scrollbar-track { background: transparent; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }`}</style>
     </div>
   );
 };

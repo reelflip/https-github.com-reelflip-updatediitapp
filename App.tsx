@@ -42,22 +42,14 @@ const App: React.FC = () => {
     try {
       const savedUser = localStorage.getItem('jeepro_user');
       const savedData = localStorage.getItem('jeepro_student_data');
-      
       if (savedUser) {
         const parsedUser = JSON.parse(savedUser);
-        if (parsedUser && parsedUser.id) {
-          setUser(parsedUser);
-          setRole(parsedUser.role);
-          
-          if (savedData) {
-            setStudentData(JSON.parse(savedData));
-          } else {
-            loadUserData(parsedUser);
-          }
-        }
+        setUser(parsedUser);
+        setRole(parsedUser.role);
+        if (savedData) setStudentData(JSON.parse(savedData));
+        else loadUserData(parsedUser);
       }
     } catch (e) {
-      console.error("Session corrupted, clearing...", e);
       localStorage.removeItem('jeepro_user');
       localStorage.removeItem('jeepro_student_data');
     }
@@ -69,14 +61,9 @@ const App: React.FC = () => {
         const data = await api.getStudentData(currentUser.id);
         setStudentData(data);
         localStorage.setItem('jeepro_student_data', JSON.stringify(data));
-        setActiveTab('dashboard');
-      } else if (currentUser.role === UserRole.PARENT) {
-        setActiveTab('parent-status');
-      } else if (currentUser.role === UserRole.ADMIN) {
-        setActiveTab('admin-overview');
       }
     } catch (err) {
-      console.error("Failed to load user data context", err);
+      console.error("Failed to load student context", err);
     }
   };
 
@@ -85,6 +72,7 @@ const App: React.FC = () => {
     setRole(authenticatedUser.role);
     localStorage.setItem('jeepro_user', JSON.stringify(authenticatedUser));
     loadUserData(authenticatedUser);
+    setActiveTab(authenticatedUser.role === UserRole.ADMIN ? 'admin-overview' : authenticatedUser.role === UserRole.PARENT ? 'parent-status' : 'dashboard');
   };
 
   const handleLogout = () => {
@@ -104,12 +92,8 @@ const App: React.FC = () => {
 
   if (user) {
     const renderPrivateContent = () => {
-      if (role === UserRole.PARENT || activeTab.startsWith('parent-')) {
-        return <ParentDashboard data={studentData} externalActiveTab={activeTab} />;
-      }
-      if (role === UserRole.ADMIN || activeTab.startsWith('admin-')) {
-        return <AdminCMS activeTab={activeTab} data={studentData} setData={syncStudentData} />;
-      }
+      if (role === UserRole.PARENT || activeTab.startsWith('parent-')) return <ParentDashboard data={studentData} externalActiveTab={activeTab} />;
+      if (role === UserRole.ADMIN || activeTab.startsWith('admin-')) return <AdminCMS activeTab={activeTab} data={studentData} setData={syncStudentData} />;
       switch (activeTab) {
         case 'dashboard': return <StudentDashboard data={studentData} />;
         case 'learn': return <LearnModule data={studentData} setData={syncStudentData} />;
@@ -127,10 +111,6 @@ const App: React.FC = () => {
         case 'focus': return <FocusTimer />;
         case 'profile': return <ProfileModule data={studentData} setData={syncStudentData} />;
         case 'blog': return <BlogModule data={studentData} />;
-        case 'about': return <AboutModule />;
-        case 'features': return <FeaturesModule />;
-        case 'examguide': return <ExamGuideModule />;
-        case 'contact': return <ContactModule data={studentData} />;
         default: return <StudentDashboard data={studentData} />;
       }
     };
@@ -150,7 +130,6 @@ const App: React.FC = () => {
 
   const renderPublicContent = () => {
     switch (activeTab) {
-      case 'about': return <LandingPage onLogin={() => setActiveTab('login')} studentData={studentData} setStudentData={syncStudentData} />;
       case 'features': return <FeaturesModule />;
       case 'examguide': return <ExamGuideModule />;
       case 'blog': return <BlogModule data={studentData} />;
@@ -170,11 +149,9 @@ const App: React.FC = () => {
          <div className="max-w-7xl mx-auto px-6 text-center space-y-6">
             <div className="flex items-center justify-center gap-2 opacity-50">
                <TrendingUp className="w-5 h-5 text-blue-600" />
-               <span className="font-black tracking-tighter text-xl uppercase">IITGEEPREP</span>
+               <span className="font-black tracking-tighter text-xl uppercase italic text-slate-900">IITGEE<span className="text-indigo-600">PREP</span></span>
             </div>
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
-               &copy; 2025 IITGEEPREP Intelligence Hub.
-            </p>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">&copy; 2025 Solaris Hub Intelligence.</p>
          </div>
       </footer>
     </div>

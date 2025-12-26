@@ -24,7 +24,6 @@ export const api = {
   
   setMode: (mode: 'MOCK' | 'LIVE') => { 
     localStorage.setItem(API_CONFIG.MODE_KEY, mode); 
-    // Clear existing session to prevent role leakage between modes
     localStorage.removeItem('jeepro_user');
     localStorage.removeItem('jeepro_student_data');
     window.location.reload(); 
@@ -32,24 +31,15 @@ export const api = {
   
   isDemoDisabled: (): boolean => (window as any).DISABLE_DEMO_LOGINS === true,
 
-  async checkBackendStatus() {
-    try {
-      const res = await fetch(`${API_CONFIG.BASE_URL}check.php`, { cache: 'no-store' });
-      const text = await res.text();
-      return { success: res.ok, html: text, status: res.status };
-    } catch (e) {
-      return { success: false, html: "Node Offline: API gateway at ./api/check.php was not reachable.", status: 0 };
-    }
-  },
-
   async login(credentials: { email: string; role: UserRole }) {
+    // 1. Check Demo Nodes first
     if (!this.isDemoDisabled()) {
-      // Demo Credentials Mapping
       if (credentials.email === 'ishu@gmail.com') return { success: true, user: { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2024-01-01' } };
       if (credentials.email === 'admin@jeepro.in') return { success: true, user: { id: 'ADMIN-001', name: 'System Admin', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '2024-01-01' } };
       if (credentials.email === 'parent@jeepro.in') return { success: true, user: { id: 'P-4402', name: 'Ramesh Sharma', email: 'parent@jeepro.in', role: UserRole.PARENT, createdAt: '2024-01-01' } };
     }
 
+    // 2. Production Handshake
     if (this.getMode() === 'LIVE') {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}auth/login`, {
@@ -60,7 +50,14 @@ export const api = {
         return await safeJson(res);
       } catch(e) { return { success: false, error: 'Production Node Unreachable' }; }
     }
-    return { success: false, error: 'Demo Credentials Not Recognized. Use: ishu@gmail.com, admin@jeepro.in, or parent@jeepro.in' };
+
+    // 3. Sandbox Fallback for unregistered custom emails
+    // If they just registered a custom email in MOCK mode, we simulate success
+    if (credentials.email.includes('@')) {
+       return { success: true, user: { id: `MOCK-${Date.now()}`, name: credentials.email.split('@')[0], email: credentials.email, role: credentials.role, createdAt: new Date().toISOString() } };
+    }
+
+    return { success: false, error: 'Authentication Denied. Use standard demo keys or register a new profile.' };
   },
 
   async register(data: { name: string; email: string; role: UserRole; password?: string; recoveryQuestion?: string; recoveryAnswer?: string }) {
@@ -74,8 +71,18 @@ export const api = {
         return await safeJson(res);
       } catch (e) { return { success: false, error: 'Database Node Unreachable' }; }
     }
-    // Simulation for Sandbox Mode
-    return { success: true, user: { id: `REG-${Date.now()}`, name: data.name, email: data.email, role: data.role, createdAt: new Date().toISOString() } };
+    
+    // Sandbox Registration Success
+    return { 
+      success: true, 
+      user: { 
+        id: `REG-${Math.floor(Math.random() * 100000)}`, 
+        name: data.name, 
+        email: data.email, 
+        role: data.role, 
+        createdAt: new Date().toISOString() 
+      } 
+    };
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
