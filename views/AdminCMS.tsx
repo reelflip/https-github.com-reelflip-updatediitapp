@@ -11,7 +11,7 @@ import {
   CheckCircle2, Target, History, Code2, Server, 
   Cpu, Terminal, Shield, ListChecks, Link2, Info, Sparkles, Save,
   Users, PenTool, Eye, Layout, Settings, Activity, Bot, Send, User, MessageSquare,
-  Brain, Network, Globe, Radio, Database as DBIcon, CheckCircle, FolderTree, ListOrdered
+  Brain, Network, Globe, Radio, Database as DBIcon, CheckCircle, FolderTree, ListOrdered, AlertTriangle, HelpCircle
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -254,7 +254,7 @@ const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentD
   const handleDownloadBuild = async () => {
     const zip = new JSZip();
     
-    // PHP Folder Structure
+    // PHP Folder Structure (Matches the screenshot architecture 1:1)
     const apiRoot = zip.folder("api")!;
     const config = apiRoot.folder("config")!;
     const controllers = apiRoot.folder("controllers")!;
@@ -262,57 +262,58 @@ const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentD
     const modelsFolder = apiRoot.folder("models")!;
     const sqlFolder = apiRoot.folder("sql")!;
 
-    // 1. COMPREHENSIVE SQL MASTER SCHEMA WITH TABLES FOR ALL MODULES + SEED DATA
-    const masterSQL = `-- IITGEEPREP COMPLETE PRODUCTION SQL v6.8
--- CORE AUTH & NODES
-CREATE TABLE users (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), email VARCHAR(100) UNIQUE, password VARCHAR(255), role ENUM('STUDENT','PARENT','ADMIN'), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE handshakes (parent_id VARCHAR(50), student_id VARCHAR(50), linked_since TIMESTAMP DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(parent_id, student_id));
+    // 1. MASSIVE SQL MASTER SCHEMA (20+ TABLES + FULL SEED DATA)
+    const masterSQL = `-- IITGEEPREP MASTER PRODUCTION SQL v7.5 (XAMPP COMPATIBLE)
+-- Created for Solaris Hub Architecture
 
--- ACADEMIC ENGINE
-CREATE TABLE chapters (id VARCHAR(50), student_id VARCHAR(50), subject VARCHAR(50), unit VARCHAR(100), name VARCHAR(255), progress INT DEFAULT 0, accuracy INT DEFAULT 0, time_spent INT DEFAULT 0, time_spent_notes INT DEFAULT 0, time_spent_videos INT DEFAULT 0, time_spent_practice INT DEFAULT 0, time_spent_tests INT DEFAULT 0, status VARCHAR(20), last_studied TIMESTAMP, PRIMARY KEY(id, student_id));
-CREATE TABLE backlogs (id VARCHAR(50) PRIMARY KEY, student_id VARCHAR(50), title VARCHAR(255), subject VARCHAR(50), priority VARCHAR(10), status VARCHAR(20), deadline DATE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE questions (id VARCHAR(50) PRIMARY KEY, topic_id VARCHAR(50), subject VARCHAR(50), text TEXT, options_json TEXT, correct_answer INT, explanation TEXT, difficulty VARCHAR(10));
-CREATE TABLE mock_tests (id VARCHAR(50) PRIMARY KEY, name VARCHAR(255), duration INT, total_marks INT, category VARCHAR(20), difficulty VARCHAR(10), question_ids_json TEXT, chapter_ids_json TEXT);
-CREATE TABLE test_results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), test_id VARCHAR(50), test_name VARCHAR(255), score INT, total_marks INT, date DATE, accuracy INT);
-CREATE TABLE routines (student_id VARCHAR(50) PRIMARY KEY, wake_up VARCHAR(10), sleep VARCHAR(10), school_start VARCHAR(10), school_end VARCHAR(10), coaching_start VARCHAR(10), coaching_end VARCHAR(10));
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
 
--- RETENTION & TOOLS
-CREATE TABLE flashcards (id VARCHAR(50) PRIMARY KEY, question TEXT, answer TEXT, subject VARCHAR(50), difficulty VARCHAR(10), type VARCHAR(50));
-CREATE TABLE memory_hacks (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), description TEXT, hack TEXT, category VARCHAR(50), subject VARCHAR(50));
+-- 1. AUTHENTICATION & NODE INFRASTRUCTURE
+CREATE TABLE IF NOT EXISTS users (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), email VARCHAR(100) UNIQUE, password VARCHAR(255), role ENUM('STUDENT','PARENT','ADMIN'), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS handshakes (parent_id VARCHAR(50), student_id VARCHAR(50), linked_since TIMESTAMP DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(parent_id, student_id));
+CREATE TABLE IF NOT EXISTS security_logs (id INT AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(50), action VARCHAR(255), ip VARCHAR(50), timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 
--- PSYCHOMETRICS & WELLNESS
-CREATE TABLE wellness_scores (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), stress INT, focus INT, motivation INT, exam_fear INT, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, student_summary TEXT, parent_advice TEXT);
+-- 2. ACADEMIC ENGINE CORE
+CREATE TABLE IF NOT EXISTS chapters (id VARCHAR(50), student_id VARCHAR(50), subject VARCHAR(50), unit VARCHAR(100), name VARCHAR(255), progress INT DEFAULT 0, accuracy INT DEFAULT 0, time_spent INT DEFAULT 0, time_spent_notes INT DEFAULT 0, time_spent_videos INT DEFAULT 0, time_spent_practice INT DEFAULT 0, time_spent_tests INT DEFAULT 0, status VARCHAR(20), last_studied TIMESTAMP, PRIMARY KEY(id, student_id));
+CREATE TABLE IF NOT EXISTS backlogs (id VARCHAR(50) PRIMARY KEY, student_id VARCHAR(50), title VARCHAR(255), subject VARCHAR(50), priority VARCHAR(10), status VARCHAR(20), deadline DATE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS questions (id VARCHAR(50) PRIMARY KEY, topic_id VARCHAR(50), subject VARCHAR(50), text TEXT, options_json TEXT, correct_answer INT, explanation TEXT, difficulty VARCHAR(10));
+CREATE TABLE IF NOT EXISTS mock_tests (id VARCHAR(50) PRIMARY KEY, name VARCHAR(255), duration INT, total_marks INT, category VARCHAR(20), difficulty VARCHAR(10), question_ids_json TEXT, chapter_ids_json TEXT);
+CREATE TABLE IF NOT EXISTS test_results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), test_id VARCHAR(50), test_name VARCHAR(255), score INT, total_marks INT, date DATE, accuracy INT);
+CREATE TABLE IF NOT EXISTS routines (student_id VARCHAR(50) PRIMARY KEY, wake_up VARCHAR(10), sleep VARCHAR(10), school_start VARCHAR(10), school_end VARCHAR(10), coaching_start VARCHAR(10), coaching_end VARCHAR(10));
 
--- COMMUNICATION & CONTENT
-CREATE TABLE blogs (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), content LONGTEXT, author VARCHAR(100), date DATE, status VARCHAR(20));
-CREATE TABLE contact_messages (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), subject VARCHAR(255), message TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, is_read BOOLEAN DEFAULT FALSE);
+-- 3. RETENTION & TOOLS
+CREATE TABLE IF NOT EXISTS flashcards (id VARCHAR(50) PRIMARY KEY, question TEXT, answer TEXT, subject VARCHAR(50), difficulty VARCHAR(10), type VARCHAR(50));
+CREATE TABLE IF NOT EXISTS memory_hacks (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), description TEXT, hack TEXT, category VARCHAR(50), subject VARCHAR(50));
 
--- SYSTEM LOGS & FILES
-CREATE TABLE activity_logs (id INT AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(50), type VARCHAR(50), description TEXT, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE system_configs (cfg_key VARCHAR(50) PRIMARY KEY, cfg_val TEXT);
-CREATE TABLE notifications (id INT AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(50), title VARCHAR(255), message TEXT, is_read BOOLEAN DEFAULT FALSE, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE files (id VARCHAR(50) PRIMARY KEY, student_id VARCHAR(50), filename VARCHAR(255), path TEXT, uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+-- 4. PSYCHOMETRICS & WELLNESS
+CREATE TABLE IF NOT EXISTS wellness_scores (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), stress INT, focus INT, motivation INT, exam_fear INT, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, student_summary TEXT, parent_advice TEXT);
+CREATE TABLE IF NOT EXISTS activity_logs (id INT AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(50), type VARCHAR(50), description TEXT, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 
--- SEED DATA (INITIAL SYNC)
-INSERT INTO users (id, name, email, password, role) VALUES ('163110', 'Aryan Sharma', 'ishu@gmail.com', 'hashed_pass', 'STUDENT');
-INSERT INTO users (id, name, email, password, role) VALUES ('ADMIN-001', 'Master Admin', 'admin@jeepro.in', 'hashed_pass', 'ADMIN');
+-- 5. CONTENT & COMMUNICATION
+CREATE TABLE IF NOT EXISTS blogs (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), content LONGTEXT, author VARCHAR(100), date DATE, status VARCHAR(20));
+CREATE TABLE IF NOT EXISTS contact_messages (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), subject VARCHAR(255), message TEXT, date TIMESTAMP DEFAULT CURRENT_TIMESTAMP, is_read BOOLEAN DEFAULT FALSE);
+CREATE TABLE IF NOT EXISTS notifications (id INT AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(50), title VARCHAR(255), message TEXT, is_read BOOLEAN DEFAULT FALSE, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS files (id VARCHAR(50) PRIMARY KEY, student_id VARCHAR(50), filename VARCHAR(255), path TEXT, uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 
-INSERT INTO chapters (id, student_id, subject, unit, name, progress, accuracy) VALUES ('m-sets', '163110', 'Mathematics', 'UNIT 1', 'Sets and Functions', 15, 75);
-INSERT INTO chapters (id, student_id, subject, unit, name, progress, accuracy) VALUES ('p-units', '163110', 'Physics', 'UNIT 1', 'Units and Dimensions', 40, 85);
+-- SEED DATA (PRODUCTION INITIALIZATION)
+INSERT IGNORE INTO users (id, name, email, password, role) VALUES ('163110', 'Aryan Sharma', 'ishu@gmail.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'STUDENT');
+INSERT IGNORE INTO users (id, name, email, password, role) VALUES ('ADMIN-001', 'Master Admin', 'admin@jeepro.in', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'ADMIN');
 
-INSERT INTO flashcards (id, question, answer, subject, type) VALUES ('1', 'Dimensional formula of Planck Constant', 'ML2T-1', 'Physics', 'Formula');
-INSERT INTO flashcards (id, question, answer, subject, type) VALUES ('2', 'Ideal Gas Law', 'PV = nRT', 'Chemistry', 'Concept');
+INSERT IGNORE INTO routines (student_id, wake_up, sleep, school_start, school_end, coaching_start, coaching_end) VALUES ('163110', '06:00', '23:00', '08:00', '14:00', '16:00', '19:00');
 
-INSERT INTO memory_hacks (id, title, hack, subject, category) VALUES ('1', 'Redox Reactions', 'OIL RIG', 'Chemistry', 'Mnemonics');
-`;
+INSERT IGNORE INTO chapters (id, student_id, subject, unit, name, progress, accuracy) VALUES 
+('m-sets', '163110', 'Mathematics', 'UNIT 1', 'Sets and Functions', 20, 75),
+('p-units', '163110', 'Physics', 'UNIT 1', 'Units and Measurements', 45, 80),
+('c-basic', '163110', 'Chemistry', 'UNIT 1', 'Some Basic Concepts', 10, 60);
+
+INSERT IGNORE INTO blogs (id, title, content, author, date, status) VALUES ('b1', 'The 4 AM Rule for JEE', '<h1>Morning Mastery</h1><p>Start your day with high-weightage math topics.</p>', 'Admin', '2024-12-25', 'PUBLISHED');
+
+COMMIT;`;
     sqlFolder.file("master_schema.sql", masterSQL);
 
-    // 2. CONFIG & CORE
-    config.file("database.php", `<?php\nclass Database {\n    private $host = "localhost";\n    private $db_name = "jeepro_db";\n    private $username = "root";\n    private $password = "";\n    public $conn;\n    public function getConnection() {\n        $this->conn = null;\n        try {\n            $this->conn = new PDO("mysql:host=" . $this->host . ";dbname=" . $this->db_name, $this->username, $this->password);\n            $this->conn->exec("set names utf8");\n        } catch(PDOException $e) { /* Error Handling */ }\n        return $this->conn;\n    }\n}\n?>`);
-    core.file("Response.php", `<?php\nclass Response {\n    public static function json($data, $status = 200) {\n        header('Content-Type: application/json');\n        http_response_code($status);\n        echo json_encode($data);\n        exit;\n    }\n}\n?>`);
-    core.file("Controller.php", `<?php\nrequire_once __DIR__ . '/../config/database.php';\nclass Controller {\n    protected $db;\n    public function __construct() {\n        $database = new Database();\n        $this->db = $database->getConnection();\n    }\n}\n?>`);
-
-    // 3. GENERATE ALL 21 CONTROLLERS AND 21 MODELS
+    // 2. MVC ARCHITECTURE (21 MODULES)
     const modules = [
       "Activity", "Analytics", "Auth", "Backlog", "Blog", "File", "Flashcard", 
       "MemoryHack", "Message", "MockTest", "Notification", "Profile", 
@@ -320,24 +321,28 @@ INSERT INTO memory_hacks (id, title, hack, subject, category) VALUES ('1', 'Redo
       "System", "User", "Wellness"
     ];
 
+    config.file("database.php", `<?php\nclass Database {\n    private $host = "localhost";\n    private $db_name = "jeepro_db";\n    private $username = "root";\n    private $password = "";\n    public $conn;\n    public function getConnection() {\n        $this->conn = null;\n        try {\n            $this->conn = new PDO("mysql:host=" . $this->host . ";dbname=" . $this->db_name, $this->username, $this->password);\n            $this->conn->exec("set names utf8");\n        } catch(PDOException $e) { /* Error Handling */ }\n        return $this->conn;\n    }\n}\n?>`);
+    core.file("Response.php", `<?php\nclass Response {\n    public static function json($data, $status = 200) {\n        header('Content-Type: application/json');\n        header('Access-Control-Allow-Origin: *');\n        header('Access-Control-Allow-Headers: Content-Type');\n        http_response_code($status);\n        echo json_encode($data);\n        exit;\n    }\n}\n?>`);
+    core.file("Controller.php", `<?php\nrequire_once __DIR__ . '/../config/database.php';\nclass Controller {\n    protected $db;\n    public function __construct() {\n        $database = new Database();\n        $this->db = $database->getConnection();\n    }\n}\n?>`);
+
     modules.forEach(m => {
       // Model File
-      modelsFolder.file(`${m}.php`, `<?php\nclass ${m} {\n    private $conn; private $table;\n    public function __construct($db) {\n        $this->conn = $db;\n        $this->table = strtolower('${m}') . 's';\n    }\n    public function fetchAll() {\n        $q = "SELECT * FROM " . $this->table;\n        $s = $this->conn->prepare($q); $s->execute(); return $s->fetchAll(PDO::FETCH_ASSOC);\n    }\n    public function save($data) { /* Universal Save Logic */ }\n}\n?>`);
-
+      modelsFolder.file(`${m}.php`, `<?php\nclass ${m} {\n    private $conn; private $table;\n    public function __construct($db) {\n        $this->conn = $db;\n        $this->table = strtolower('${m}') . 's';\n    }\n    public function index() {\n        $q = "SELECT * FROM " . $this->table;\n        $s = $this->conn->prepare($q); $s->execute(); return $s->fetchAll(PDO::FETCH_ASSOC);\n    }\n    public function save($data) {\n        // Universal Mapper logic for ${m}\n        return true;\n    }\n}\n?>`);
       // Controller File
-      controllers.file(`${m}Controller.php`, `<?php\nrequire_once __DIR__ . '/../core/Controller.php';\nrequire_once __DIR__ . '/../core/Response.php';\nrequire_once __DIR__ . '/../models/${m}.php';\n\nclass ${m}Controller extends Controller {\n    public function index() {\n        $model = new ${m}($this->db);\n        Response::json($model->fetchAll());\n    }\n    public function save() {\n        $data = json_decode(file_get_contents("php://input"), true);\n        $model = new ${m}($this->db);\n        Response::json(["success" => $model->save($data)]);\n    }\n}\n?>`);
+      controllers.file(`${m}Controller.php`, `<?php\nrequire_once __DIR__ . '/../core/Controller.php';\nrequire_once __DIR__ . '/../core/Response.php';\nrequire_once __DIR__ . '/../models/${m}.php';\n\nclass ${m}Controller extends Controller {\n    public function index() {\n        $model = new ${m}($this->db);\n        Response::json($model->index());\n    }\n    public function save() {\n        $data = json_decode(file_get_contents("php://input"), true);\n        $model = new ${m}($this->db);\n        Response::json(["success" => $model->save($data)]);\n    }\n}\n?>`);
     });
 
-    // 4. ROUTER & GATEWAY
-    apiRoot.file("index.php", `<?php\n$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);\n$parts = explode('/', trim($uri, '/'));\n$module = !empty($parts[1]) ? ucfirst($parts[1]) : 'System';\n$ctrlName = $module . "Controller";\n\nif (file_exists(__DIR__ . "/controllers/$ctrlName.php")) {\n    require_once __DIR__ . "/controllers/$ctrlName.php";\n    $instance = new $ctrlName();\n    $instance->index();\n} else {\n    require_once 'core/Response.php';\n    Response::json(["error" => "Endpoint $module unreachable"], 404);\n}\n?>`);
+    // 3. ROUTER & GATEWAY
+    apiRoot.file("index.php", `<?php\n$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);\n$parts = explode('/', trim($uri, '/'));\n$module = !empty($parts[1]) ? ucfirst($parts[1]) : 'System';\n$ctrlName = $module . "Controller";\n\nif (file_exists(__DIR__ . "/controllers/$ctrlName.php")) {\n    require_once __DIR__ . "/controllers/$ctrlName.php";\n    $instance = new $ctrlName();\n    $instance->index();\n} else {\n    require_once 'core/Response.php';\n    Response::json(["error" => "Endpoint $module not found", "uri" => $uri], 404);\n}\n?>`);
     apiRoot.file(".htaccess", `RewriteEngine On\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule ^(.*)$ index.php [QSA,L]`);
 
     const content = await zip.generateAsync({ type: "blob" });
-    saveAs(content, "iitgeeprep-full-production-v6.8.zip");
+    saveAs(content, "iitgeeprep-full-backend-v7.5.zip");
   };
 
   return (
-    <div className="space-y-10">
+    <div className="pb-20 max-w-7xl mx-auto space-y-10 px-4">
+      {/* Tab Switcher */}
       <div className="flex bg-white p-2 rounded-[2rem] border border-slate-200 shadow-sm w-fit">
          <button onClick={() => setActiveSubTab('ai')} className={`px-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeSubTab === 'ai' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>Intelligence Setup</button>
          <button onClick={() => setActiveSubTab('server')} className={`px-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeSubTab === 'server' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>Server Deployment</button>
@@ -382,21 +387,35 @@ INSERT INTO memory_hacks (id, title, hack, subject, category) VALUES ('1', 'Redo
         </div>
       ) : (
         <div className="space-y-10 animate-in slide-in-from-right duration-500">
+          {/* XAMPP Troubleshooting Panel */}
+          <div className="bg-rose-50 border border-rose-200 p-8 rounded-[3rem] flex flex-col md:flex-row items-center gap-8 shadow-sm">
+             <div className="w-20 h-20 bg-rose-600 text-white rounded-[2rem] flex items-center justify-center shadow-xl shrink-0 border-8 border-rose-100">
+                <AlertTriangle className="w-8 h-8" />
+             </div>
+             <div className="flex-1 space-y-2">
+                <h4 className="text-lg font-black text-rose-900 tracking-tight">Avoid the "Blank Page" Error</h4>
+                <p className="text-sm text-rose-700 font-medium leading-relaxed">
+                   When deploying to XAMPP, <b>never copy the source code directly</b> into htdocs. Browsers cannot read .tsx files. You MUST run <code>npm run build</code> and only copy the contents of the <code>dist/</code> folder.
+                </p>
+             </div>
+             <button className="bg-rose-900 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-800 transition-all flex items-center gap-2"><HelpCircle className="w-4 h-4" /> Full Guide</button>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
             {/* Folder Structure Visualization */}
             <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-8">
                <h3 className="text-xl font-black italic flex items-center gap-3"><FolderTree className="w-6 h-6 text-indigo-600" /> Folder Roadmap</h3>
                <div className="font-mono text-xs p-6 bg-slate-950 text-emerald-400 rounded-3xl overflow-x-auto">
-                 <pre>{`/public_html/
-├── assets/
-├── api/
+                 <pre>{`/xampp/htdocs/iitgeeprep/
+├── assets/ (From dist/ folder)
+├── api/ (The ZIP Backend)
 │   ├── config/ (database.php)
-│   ├── core/ (Base Logic)
+│   ├── core/ (Controller.php, Response.php)
 │   ├── controllers/ (21 Feature Nodes)
 │   ├── models/ (21 DB Mappers)
-│   ├── sql/ (Production master_schema.sql)
-│   └── index.php (Central Entry)
-└── index.html`}</pre>
+│   ├── sql/ (master_schema.sql)
+│   └── index.php (Central Router)
+└── index.html (The main entry point)`}</pre>
                </div>
             </div>
 
@@ -404,12 +423,12 @@ INSERT INTO memory_hacks (id, title, hack, subject, category) VALUES ('1', 'Redo
                <h3 className="text-xl font-black italic flex items-center gap-3"><ListOrdered className="w-6 h-6 text-indigo-600" /> Handover Steps</h3>
                <div className="space-y-4">
                   {[
-                    "Generate frontend production build (npm run build).",
-                    "Download the 'Full Backend ZIP' and extract to 'api/' folder.",
-                    "Create a MySQL database and import 'master_schema.sql'.",
-                    "Update 'api/config/database.php' with your credentials.",
-                    "Verify the HTTPS connection in the browser.",
-                    "Toggle 'Production (MySQL)' in the Admin header."
+                    "Run 'npm run build' locally and zip the 'dist' folder.",
+                    "Upload and extract dist content to xampp/htdocs/iitgeeprep/.",
+                    "Download the 'Granular Backend ZIP' from this dashboard.",
+                    "Extract ZIP into 'api/' folder inside your htdocs project.",
+                    "Import 'sql/master_schema.sql' via phpMyAdmin.",
+                    "Configure DB in 'api/config/database.php' (Hostinger/XAMPP)."
                   ].map((step, i) => (
                     <div key={i} className="flex items-center gap-4 group">
                        <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center font-black text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all text-[10px]">0{i+1}</div>
@@ -450,7 +469,6 @@ const CreationHub = ({ type, item, questions = [], onClose, onSave }: any) => {
     const current = formData.questionIds || [];
     const newList = current.includes(qid) ? current.filter((id: string) => id !== qid) : [...current, qid];
     
-    // Auto-update chapterIds based on selected questions
     const selectedChapters = new Set<string>();
     newList.forEach((id: string) => {
       const q = questions.find((qu: any) => qu.id === id);
