@@ -4,9 +4,6 @@ import App from './App';
 
 const rootElement = document.getElementById('root');
 
-// Signal Deployment Sentinel that we are ready
-(window as any).APP_LOADED = true;
-
 if (!rootElement) {
   document.body.innerHTML = `
     <div style="padding: 40px; text-align: center; font-family: sans-serif; background: #0f172a; color: white; min-height: 100vh;">
