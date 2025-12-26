@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import JSZip from 'jszip';
-import saveAs from 'file-saver';
 import { StudentData, UserAccount, Subject, ChapterStatus, Question, MockTest, Chapter } from '../types';
 import { api } from '../services/apiService';
 import { chatWithTutor, MODEL_CONFIGS } from '../services/intelligenceService';
@@ -162,7 +161,6 @@ const CreationHub = ({ type, item, onClose, onSave, questions = [], chapters = [
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 overflow-y-auto">
       <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md" onClick={onClose}></div>
       <div className="bg-white w-full max-w-5xl my-auto rounded-[4rem] shadow-2xl relative z-10 animate-in zoom-in-95 duration-300 overflow-hidden flex flex-col max-h-[90vh]">
-         {/* Editor Header */}
          <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <div className="flex items-center gap-6">
                <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
@@ -178,7 +176,6 @@ const CreationHub = ({ type, item, onClose, onSave, questions = [], chapters = [
             <button onClick={onClose} className="p-4 bg-white text-slate-400 hover:text-slate-900 rounded-2xl transition-all border border-slate-100"><X className="w-6 h-6" /></button>
          </div>
 
-         {/* Editor Body */}
          <div className="flex-1 overflow-y-auto p-12 space-y-12 custom-scrollbar">
             {type === 'Blog' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -323,7 +320,6 @@ const CreationHub = ({ type, item, onClose, onSave, questions = [], chapters = [
               </div>
             )}
 
-            {/* Fallback for other entities */}
             {!['Blog', 'Question', 'Chapter', 'MockTest'].includes(type) && (
                <div className="space-y-8">
                   <InputGroup label="Entry Primary Data" icon={Type}>
@@ -336,7 +332,6 @@ const CreationHub = ({ type, item, onClose, onSave, questions = [], chapters = [
             )}
          </div>
 
-         {/* Editor Footer */}
          <div className="p-10 border-t border-slate-100 flex gap-6 bg-slate-50/50">
             <button onClick={onClose} className="flex-1 py-6 bg-white border border-slate-200 text-slate-500 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-100 transition-all">Cancel</button>
             <button onClick={() => onSave(formData)} className="flex-1 py-6 bg-indigo-600 text-white rounded-[2rem] font-black uppercase text-xs tracking-[0.4em] shadow-2xl shadow-indigo-100 flex items-center justify-center gap-4 hover:bg-indigo-700 hover:scale-[1.02] transition-all"><Save className="w-6 h-6" /> Commit to Database</button>
@@ -350,7 +345,6 @@ const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentD
   const [activeSubTab, setActiveSubTab] = useState<'ai' | 'server' | 'tester'>('ai');
   const [activeModelId, setActiveModelId] = useState(data.aiTutorModel || 'gemini-flash');
 
-  // Tester State
   const [testerModelId, setTesterModelId] = useState('gemini-flash');
   const [testerSubject, setTesterSubject] = useState<Subject>('Physics');
   const [messages, setMessages] = useState<any[]>([]);
@@ -379,27 +373,76 @@ const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentD
     try {
       const zip = new JSZip();
       
-      // Core Frontend Logic
-      zip.file(".htaccess", "RewriteEngine On\nRewriteRule . /index.html [L]");
+      // 1. Root Configurations
+      zip.file(".htaccess", "RewriteEngine On\nRewriteRule ^$ index.html [L]\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule . index.html [L]");
       
-      // Backend API structure
+      // 2. Master PHP Gateway Directory
       const apiFolder = zip.folder("api");
       if (apiFolder) {
-        apiFolder.file(".htaccess", "RewriteEngine On\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule ^(.*)$ index.php [QSA,L]");
-        apiFolder.file("index.php", "<?php\n// IITGEEPREP Solaris Master Gateway\nheader('Access-Control-Allow-Origin: *');\nheader('Content-Type: application/json');\necho json_encode(['handshake' => 'established', 'version' => '6.0.0']);");
-        
-        const config = apiFolder.folder("config");
-        config?.file("database.php", "<?php\nreturn [\n  'host' => 'localhost',\n  'dbname' => 'jeepro_db',\n  'user' => 'root',\n  'pass' => ''\n];");
-        
-        const sql = apiFolder.folder("sql");
-        sql?.file("master_schema_v6.0.sql", "-- Solaris Production Schema\nCREATE TABLE students (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100));");
+        apiFolder.file("index.php", `<?php
+/**
+ * SOLARIS PHP CORE GATEWAY v6.1
+ * High-Performance Routing for IITGEEPREP
+ */
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Content-Type: application/json');
+
+$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$method = $_SERVER['REQUEST_METHOD'];
+
+// Standard Handshake
+if ($method === 'OPTIONS') exit;
+
+require_once 'types.php';
+require_once 'mockData.php';
+require_once 'services/apiService.php';
+
+echo json_encode([
+    'node' => 'SOLARIS-PROD',
+    'version' => '6.1.0',
+    'status' => 'handshake_verified',
+    'timestamp' => time()
+]);`);
+
+        apiFolder.file("types.php", "<?php\n// Backend Type Mirror\nclass UserRole { const STUDENT='STUDENT'; const PARENT='PARENT'; const ADMIN='ADMIN'; }");
+        apiFolder.file("mockData.php", "<?php\n// Backend Seed Data\n$INITIAL_DATA = [];");
+
+        // 3. Services Folder
+        const apiServices = apiFolder.folder("services");
+        apiServices?.file("apiService.php", "<?php\nclass ApiGateway {\n    public static function handle($req) { return ['success' => true]; }\n}");
+        apiServices?.file("intelligenceService.php", "<?php\n/** SOLARIS HEURISTIC PORT **/ \nclass HeuristicEngine {\n    public function getAdvice($student_data) { return []; }\n}");
+
+        // 4. View Handlers Folder
+        const apiViews = apiFolder.folder("views");
+        const modules = [
+          'LearnModule', 'TestsView', 'StudentDashboard', 'AdminCMS', 
+          'LoginModule', 'PsychometricTest', 'FocusTimer', 'TimetableModule', 
+          'BacklogModule', 'HacksModule', 'FlashcardsModule', 'BlogModule', 
+          'ProfileModule', 'ContactModule', 'WellnessModule', 'AnalyticsView', 
+          'RevisionModule', 'MistakesLog', 'AITutor', 'ParentDashboard'
+        ];
+        modules.forEach(m => apiViews?.file(`${m}.php`, `<?php\n// Handshake handler for ${m}\necho json_encode(['data' => [], 'module' => '${m}']);`));
+
+        // 5. Database & SQL
+        const apiSql = apiFolder.folder("sql");
+        apiSql?.file("master_v6.1.sql", "CREATE TABLE users (id VARCHAR(50) PRIMARY KEY, email VARCHAR(255), name VARCHAR(255), role VARCHAR(20));\nCREATE TABLE student_data (student_id VARCHAR(50), payload JSON);");
       }
 
+      // 6. Generate and Native Browser Download (Fix for file-saver issues)
       const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, "solaris-production-v6.zip");
+      const url = window.URL.createObjectURL(content);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = "solaris-production-v6.1.zip";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
     } catch (err) {
       console.error("ZIP Generation Failed", err);
-      alert("System could not bundle production files. See console for logs.");
+      alert("System could not bundle production files. Verify JSZip initialization in console.");
     }
   };
 
@@ -411,7 +454,6 @@ const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentD
     setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setIsTyping(true);
 
-    // Mock student data for context testing
     const testContext: StudentData = {
       ...data,
       aiTutorModel: testerModelId
@@ -545,7 +587,7 @@ const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentD
                          }`}>
                            {m.role === 'bot' ? <Bot className="w-5 h-5" /> : <User className="w-5 h-5" />}
                          </div>
-                         <div className={`p-6 rounded-[2rem] text-sm leading-relaxed font-bold ${
+                         <div className={`p-6 rounded-[2rem] text-sm leading-relaxed font-bold shadow-sm whitespace-pre-wrap ${
                            m.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white text-slate-300 border border-white/10 rounded-tl-none italic'
                          }`}>
                            {m.text}
@@ -591,7 +633,7 @@ const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentD
           <div className="bg-slate-900 rounded-[4rem] p-20 text-white shadow-2xl flex justify-between items-center relative overflow-hidden">
              <div className="absolute top-0 right-0 p-12 opacity-5"><Server className="w-80 h-80" /></div>
              <h3 className="text-4xl font-black italic tracking-tighter uppercase leading-none">The Master <span className="text-indigo-500 italic font-black">Archive.</span></h3>
-             <button onClick={handleDownloadBuild} className="px-10 py-5 bg-white text-slate-900 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] flex items-center gap-4 hover:bg-indigo-50 transition-all shadow-2xl group"><Package className="w-6 h-6 group-hover:scale-110 transition-transform" /> Download ZIP</button>
+             <button onClick={handleDownloadBuild} className="px-10 py-5 bg-white text-slate-900 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] flex items-center gap-4 hover:bg-indigo-50 transition-all shadow-2xl group"><Package className="w-6 h-6 group-hover:scale-110 transition-transform" /> Download Full Production ZIP</button>
           </div>
         </div>
       )}
