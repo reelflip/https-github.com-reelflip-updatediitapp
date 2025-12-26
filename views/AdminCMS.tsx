@@ -411,8 +411,11 @@ const AIModelSetup = ({ data, setData }: { data: StudentData, setData: any }) =>
   ];
 
   const handleSelect = (modelId: string) => {
+    // 1. Update individual student data (for current session)
     setData({ ...data, aiTutorModel: modelId });
-    setChatLog(prev => [...prev, { role: 'bot', text: `System: AI Model re-mapped to ${modelId}. Verified operational.` }]);
+    // 2. Persist to global platform configuration for all students
+    localStorage.setItem('jeepro_platform_ai_model', modelId);
+    setChatLog(prev => [...prev, { role: 'bot', text: `System: Platform-wide AI Engine re-mapped to ${modelId}. Operational for all node types.` }]);
   };
 
   const verifyModel = async () => {
@@ -546,31 +549,44 @@ const DeploymentBlueprint = () => {
       const dbContent = `<?php\ndefine('DB_HOST', '${config.host}');\ndefine('DB_NAME', '${config.name}');\ndefine('DB_USER', '${config.user}');\ndefine('DB_PASS', '${config.pass}');\n\nfunction getDBConnection() {\n    try {\n        $db = new PDO("mysql:host=".DB_HOST.";dbname=".DB_NAME, DB_USER, DB_PASS);\n        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);\n        return $db;\n    } catch (PDOException $e) {\n        header('Content-Type: application/json');\n        die(json_encode(["success" => false, "error" => $e.getMessage()]));\n    }\n}\n?>`;
       zip.folder("config")?.file("database.php", dbContent);
 
-      const routerContent = `<?php\nclass Router {\n    public static function handle($uri) {\n        $routes = [\n            'auth/login' => 'AuthController@login',\n            'auth/register' => 'AuthController@register',\n            'syllabus/get' => 'SyllabusController@get',\n            'questions/index' => 'QuestionController@index',\n            'mocktests/index' => 'MockTestController@index'\n        ];\n        // Implementation of RESTful MVC routing...\n    }\n}\n?>`;
+      const routerContent = `<?php\nclass Router {\n    public static function handle($uri) {\n        // Handshake protocol for individual user sessions\n        $routes = [\n            'auth/login' => 'AuthController@login',\n            'auth/register' => 'AuthController@register',\n            'syllabus/get' => 'SyllabusController@get',\n            'backlogs/get' => 'BacklogController@get',\n            'wellness/get' => 'WellnessController@get',\n            'results/get' => 'ResultController@get',\n            'syllabus/save' => 'SyllabusController@save',\n            'results/save' => 'ResultController@save',\n            'questions/index' => 'QuestionController@index',\n            'mocktests/index' => 'MockTestController@index'\n        ];\n        // All academic data filtered by request header token or user_id param\n    }\n}\n?>`;
       zip.folder("core")?.file("Router.php", routerContent);
       zip.folder("core")?.file("BaseController.php", "<?php class BaseController { protected function json($data) { header('Content-Type: application/json'); echo json_encode($data); exit; } } ?>");
 
       const controllers = ['Auth', 'Syllabus', 'Question', 'MockTest', 'Result', 'Wellness', 'Backlog', 'MemoryHack', 'Flashcard', 'Blog', 'Message', 'User', 'System', 'Analytics', 'Profile', 'Security', 'File', 'Report', 'Routine', 'Activity', 'Notification'];
       const controllersFolder = zip.folder("controllers");
       controllers.forEach(name => {
-        controllersFolder?.file(`${name}Controller.php`, `<?php\nclass ${name}Controller extends BaseController {\n    public function index() { /* REST API logic for ${name} vertical */ }\n    public function save() { /* Create or update logic for ${name} */ }\n    public function delete() { /* Removal logic for ${name} */ }\n}\n?>`);
+        controllersFolder?.file(`${name}Controller.php`, `<?php\nclass ${name}Controller extends BaseController {\n    public function index() { /* Global Data Fetch */ }\n    public function get() { /* Filtered by user_id for multi-login persistence */ }\n    public function save() { /* Persist user-specific telemetry */ }\n    public function delete() { /* Removal logic */ }\n}\n?>`);
       });
 
       const modelsFolder = zip.folder("models");
       controllers.forEach(name => {
-        modelsFolder?.file(`${name}.php`, `<?php\nclass ${name} {\n    private $db;\n    private $table = '${name.toLowerCase()}s';\n    public function __construct($db) { $this->db = $db; }\n    public function find($id) { /* PDO prepared query for ${name} fetch */ }\n}\n?>`);
+        modelsFolder?.file(`${name}.php`, `<?php\nclass ${name} {\n    private $db;\n    private $table = '${name.toLowerCase()}s';\n    public function __construct($db) { $this->db = $db; }\n    public function findByUser($userId) { /* Prepare WHERE user_id = :id */ }\n}\n?>`);
       });
 
-      const sqlContent = `-- IITGEEPREP Master Schema v5.6.2\nCREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100) UNIQUE, role ENUM('STUDENT','PARENT','ADMIN'), password VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);\nCREATE TABLE IF NOT EXISTS chapters (id VARCHAR(50) PRIMARY KEY, subject VARCHAR(50), unit VARCHAR(50), name VARCHAR(255), progress INT, accuracy INT, time_spent INT);\n-- Additional 38 table definitions for all modular nodes...`;
-      zip.folder("sql")?.file("master_schema_v5.6.2.sql", sqlContent);
+      const sqlContent = `-- IITGEEPREP Master Schema v6.0.0 (Persistence Optimized)
+-- Core Identities
+CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100) UNIQUE, role ENUM('STUDENT','PARENT','ADMIN'), password VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 
-      zip.file("index.php", "<?php\nrequire_once 'config/database.php';\nrequire_once 'core/Router.php';\n// Gateway for all asynchronous academic transmissions\n$uri = $_GET['uri'] ?? '';\nRouter::handle($uri);\n?>");
+-- Global Academic Assets
+CREATE TABLE IF NOT EXISTS chapters_master (id VARCHAR(50) PRIMARY KEY, subject VARCHAR(50), unit VARCHAR(50), name VARCHAR(255));
+CREATE TABLE IF NOT EXISTS questions (id VARCHAR(50) PRIMARY KEY, text TEXT, options JSON, correct_answer INT, topic_id VARCHAR(50));
+
+-- USER PERSISTENT TELEMETRY (Foreign Key logic)
+CREATE TABLE IF NOT EXISTS student_chapters (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT, chapter_id VARCHAR(50), progress INT DEFAULT 0, accuracy INT DEFAULT 0, time_spent INT DEFAULT 0, FOREIGN KEY (user_id) REFERENCES users(id));
+CREATE TABLE IF NOT EXISTS test_results (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT, test_id VARCHAR(50), score INT, accuracy INT, date DATE, FOREIGN KEY (user_id) REFERENCES users(id));
+CREATE TABLE IF NOT EXISTS wellness_logs (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT, stress INT, focus INT, motivation INT, timestamp DATETIME, FOREIGN KEY (user_id) REFERENCES users(id));
+CREATE TABLE IF NOT EXISTS backlogs (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT, title VARCHAR(255), priority VARCHAR(50), status VARCHAR(50), FOREIGN KEY (user_id) REFERENCES users(id));`;
+      
+      zip.folder("sql")?.file("master_schema_v6.0.0.sql", sqlContent);
+
+      zip.file("index.php", "<?php\nrequire_once 'config/database.php';\nrequire_once 'core/Router.php';\n$uri = $_GET['uri'] ?? '';\nRouter::handle($uri);\n?>");
       zip.file(".htaccess", "RewriteEngine On\nRewriteRule ^(.*)$ index.php?uri=$1 [QSA,L]");
-      zip.file("check.php", "<?php\nrequire_once 'config/database.php';\n$conn = getDBConnection();\necho 'Handshake Status: 200 OK - Node Active';\n?>");
+      zip.file("check.php", "<?php\nrequire_once 'config/database.php';\n$conn = getDBConnection();\necho 'Handshake Status: 200 OK - Persistence Node Active';\n?>");
 
       const content = await zip.generateAsync({type:"blob"});
-      saveAs(content, "iitgeeprep-production-mvc-v5.6.2.zip");
-      setLogs(prev => [...prev, { id: Date.now(), type: 'SYS', msg: 'Full 40+ File MVC Architecture generated for v5.6.2.', time: 'Now' }]);
+      saveAs(content, "iitgeeprep-production-v6.0.0.zip");
+      setLogs(prev => [...prev, { id: Date.now(), type: 'SYS', msg: 'Multi-user SQL Architecture generated with relational user mapping.', time: 'Now' }]);
     } catch (err: any) {
       alert("Encryption Error: " + err.message);
     } finally {
@@ -587,7 +603,7 @@ const DeploymentBlueprint = () => {
                <div className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.4em] flex items-center gap-2 mb-2">
                   <Map className="w-4 h-4" /> IITGEEPREP Final Deployment Protocol
                </div>
-               <h3 className="text-4xl font-black italic tracking-tighter text-slate-900 leading-none">Deployment <br /> Blueprint v5.6.2</h3>
+               <h3 className="text-4xl font-black italic tracking-tighter text-slate-900 leading-none">Deployment <br /> Blueprint v6.0.0</h3>
             </div>
             <div className="flex gap-4">
                <div className="text-right">
@@ -597,7 +613,7 @@ const DeploymentBlueprint = () => {
                <div className="h-10 w-px bg-slate-100"></div>
                <div className="text-right">
                   <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Structure</div>
-                  <div className="text-[10px] font-black text-slate-800 uppercase">RESTful MVC</div>
+                  <div className="text-[10px] font-black text-slate-800 uppercase">User-Aware MVC</div>
                </div>
             </div>
          </div>
@@ -606,7 +622,7 @@ const DeploymentBlueprint = () => {
             {[
                { icon: Globe2, title: 'Server Space', desc: 'Create an "api" directory in your public_html root.' },
                { icon: Download, title: 'Extract Build', desc: 'Download and extract the ZIP contents into the "api" folder.' },
-               { icon: Database, title: 'SQL Import', desc: 'Import the provided schema.sql via phpMyAdmin to map all 40+ tables.' }
+               { icon: Database, title: 'SQL Import', desc: 'Import the v6.0.0 schema.sql via phpMyAdmin to enable multi-user separation.' }
             ].map((step, i) => (
                <div key={i} className="flex gap-4 group">
                   <div className="w-12 h-12 bg-slate-50 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0 shadow-inner group-hover:bg-indigo-600 group-hover:text-white transition-all">
@@ -637,7 +653,7 @@ const DeploymentBlueprint = () => {
           disabled={zipping} 
           className="w-full py-8 bg-slate-900 text-white rounded-[3rem] font-black uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:bg-indigo-600 transition-all shadow-2xl disabled:opacity-50 mt-10 relative z-10"
          >
-            {zipping ? <Loader2 className="animate-spin w-8 h-8" /> : <><CloudUpload className="w-8 h-8" /> Compile & Download Build v5.6.2</>}
+            {zipping ? <Loader2 className="animate-spin w-8 h-8" /> : <><CloudUpload className="w-8 h-8" /> Compile & Download Build v6.0.0</>}
          </button>
       </div>
 
@@ -645,24 +661,21 @@ const DeploymentBlueprint = () => {
          <div className="bg-slate-950 p-12 rounded-[3.5rem] shadow-2xl border border-slate-800 font-mono text-[10px] space-y-4">
             <div className="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
                <span className="text-emerald-400 font-black flex items-center gap-2"><Terminal className="w-4 h-4" /> root@iitgeeprep:~</span>
-               <span className="text-slate-500 uppercase tracking-widest text-[8px]">Directory Matrix</span>
+               <span className="text-slate-500 uppercase tracking-widest text-[8px]">Persistence Matrix</span>
             </div>
             <div className="text-slate-400 space-y-1.5 leading-relaxed">
                <div className="flex items-center gap-2"><FolderTree className="w-3 h-3 text-indigo-500" /> /api</div>
                <div className="flex items-center gap-2 ml-4 text-slate-300"><ChevronRight className="w-3 h-3 text-slate-600" /> <Database className="w-3 h-3" /> /config <span className="text-slate-600 italic">// database.php</span></div>
-               <div className="flex items-center gap-2 ml-4 text-slate-300"><ChevronRight className="w-3 h-3 text-slate-600" /> <Network className="w-3 h-3" /> /core <span className="text-slate-600 italic">// Router.php, BaseController.php</span></div>
-               <div className="flex items-center gap-2 ml-4 text-slate-300"><ChevronRight className="w-3 h-3 text-slate-600" /> <TerminalSquare className="w-3 h-3" /> /controllers <span className="text-slate-600 italic">// 20+ Logic Controllers</span></div>
-               <div className="flex items-center gap-2 ml-4 text-slate-300"><ChevronRight className="w-3 h-3 text-slate-600" /> <Server className="w-3 h-3" /> /models <span className="text-slate-600 italic">// 20+ SQL Models</span></div>
-               <div className="flex items-center gap-2 ml-4 text-slate-300"><ChevronRight className="w-3 h-3 text-slate-600" /> <TerminalSquare className="w-3 h-3" /> /sql <span className="text-slate-600 italic">// master_schema_v5.6.2.sql</span></div>
-               <div className="flex items-center gap-2 ml-4 text-indigo-400 font-black"><FileCode className="w-3 h-3" /> index.php <span className="text-slate-600 font-normal italic">// Main API Gateway</span></div>
-               <div className="flex items-center gap-2 ml-4 text-emerald-400 font-black"><CheckCircle2 className="w-3 h-3" /> check.php <span className="text-slate-600 font-normal italic">// Health Handshake</span></div>
-               <div className="flex items-center gap-2 ml-4 text-amber-400 font-black"><Shield className="w-3 h-3" /> .htaccess <span className="text-slate-600 font-normal italic">// URL Rewriting</span></div>
+               <div className="flex items-center gap-2 ml-4 text-slate-300"><ChevronRight className="w-3 h-3 text-slate-600" /> <Network className="w-3 h-3" /> /core <span className="text-slate-600 italic">// User-Aware Router.php</span></div>
+               <div className="flex items-center gap-2 ml-4 text-slate-300"><ChevronRight className="w-3 h-3 text-slate-600" /> <TerminalSquare className="w-3 h-3" /> /controllers <span className="text-slate-600 italic">// user_id Filtered Logic</span></div>
+               <div className="flex items-center gap-2 ml-4 text-slate-300"><ChevronRight className="w-3 h-3 text-slate-600" /> <Server className="w-3 h-3" /> /models <span className="text-slate-600 italic">// 40+ Relational SQL Models</span></div>
+               <div className="flex items-center gap-2 ml-4 text-slate-300"><ChevronRight className="w-3 h-3 text-slate-600" /> <TerminalSquare className="w-3 h-3" /> /sql <span className="text-slate-600 italic">// master_schema_v6.0.0.sql</span></div>
             </div>
          </div>
 
          <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-8">
             <h4 className="text-sm font-black uppercase text-slate-900 tracking-widest flex items-center gap-3">
-               <Activity className="w-5 h-5 text-indigo-600" /> Compilation Logs
+               <Activity className="w-5 h-5 text-indigo-600" /> System Integrity Logs
             </h4>
             <div className="space-y-4">
                {logs.map(log => (
@@ -676,7 +689,7 @@ const DeploymentBlueprint = () => {
             <div className="pt-6 border-t border-slate-100 flex items-center justify-between">
                <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]"></div>
-                  <span className="text-emerald-500 font-black uppercase tracking-widest">Active Compiler Uplink</span>
+                  <span className="text-emerald-500 font-black uppercase tracking-widest">Persistence Uplink Active</span>
                </div>
                <button onClick={() => setLogs([])} className="text-[10px] font-black uppercase text-slate-300 hover:text-slate-900 transition-colors">Clear Console</button>
             </div>

@@ -1,78 +1,160 @@
 
+import { GoogleGenAI, Type } from "@google/genai";
 import { StudentData } from "../types";
 
 /**
- * LOCAL HEURISTIC ENGINE (The "Free Model")
- * Analyzes student data locally to provide tactical advice without API keys.
+ * INTELLIGENCE SERVICE v6.6
+ * Optimized for Schema Enforcement and Data Resiliency
  */
 
+// Initialize the API client
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+// Internal mapping of UI engine IDs to actual Gemini Model names
+const MODEL_MAP: Record<string, string> = {
+  'solaris-core': 'gemini-3-flash-preview',
+  'gpt-4o-edu': 'gemini-3-pro-preview',
+  'claude-3-stu': 'gemini-3-flash-preview',
+  'gemini-flash-base': 'gemini-3-flash-preview',
+  'llama-3-heuristic': 'gemini-3-flash-preview',
+  'deepseek-coder': 'gemini-3-pro-preview',
+  'iit-pulse': 'gemini-3-pro-preview'
+};
+
+/**
+ * Utility to clean AI output and ensure it's parseable JSON.
+ * Specifically handles trailing commas and markdown bloat.
+ */
+const parseAIJSON = (text: string) => {
+  try {
+    // 1. Strip markdown artifacts
+    let cleaned = text.replace(/```json\n?|```/g, '').trim();
+    
+    // 2. Remove trailing commas in objects and arrays which break JSON.parse
+    cleaned = cleaned.replace(/,\s*([\]}])/g, '$1');
+    
+    return JSON.parse(cleaned);
+  } catch (e) {
+    console.error("AI JSON Parse Error. Raw text:", text);
+    throw new Error(`JSON_PARSE_FAILURE`);
+  }
+};
+
+/**
+ * Gets the active AI model selected by Admin from global storage
+ */
+const getActiveModelId = (userSelected?: string): string => {
+  const globalModel = localStorage.getItem('jeepro_platform_ai_model');
+  return globalModel || userSelected || 'solaris-core';
+};
+
 export const getSmartStudyAdvice = async (data: StudentData) => {
-  await new Promise(resolve => setTimeout(resolve, 800));
-  const weakChapters = data.chapters.filter(c => c.accuracy < 65).slice(0, 2);
-  const backlogs = data.backlogs.slice(0, 1);
-  const currentPsych = data.psychometricHistory[data.psychometricHistory.length - 1];
+  try {
+    const activeModelId = getActiveModelId(data.aiTutorModel);
+    const modelName = MODEL_MAP[activeModelId] || 'gemini-3-flash-preview';
+    
+    const weakChapters = data.chapters.filter(c => c.accuracy < 65).slice(0, 3);
+    const currentPsych = data.psychometricHistory[data.psychometricHistory.length - 1];
 
-  const priorities = [
-    weakChapters.length > 0 
-      ? `Intensive Drill: ${weakChapters[0].name} (Current Accuracy: ${weakChapters[0].accuracy}%)` 
-      : "Complete 25 mixed-concept MCQs in Mathematics.",
-    backlogs.length > 0 
-      ? `Clear Backlog: ${backlogs[0].title} (${backlogs[0].subject})` 
-      : "Revise Organic Chemistry Nomenclature notes.",
-    currentPsych?.stress > 7 
-      ? "Take a 20-minute 'Active Recovery' break to lower cortisol." 
-      : "Attempt 1 timed Topic Mock for high-weightage Physics units."
-  ];
+    const prompt = `As a specialized IIT-JEE academic coach, analyze this student profile:
+      Name: ${data.name}
+      Weak Chapters: ${weakChapters.map(c => `${c.name} (${c.accuracy}% accuracy)`).join(', ')}
+      Current Stress: ${currentPsych?.stress}/10
+      Focus: ${currentPsych?.focus}/10`;
 
-  let mindsetTip = "Your consistency index is stable. Keep following the current routine for maximum momentum.";
-  if (currentPsych?.stress > 7) mindsetTip = "Stress levels are drifting high. Shift from learning new concepts to light revision today.";
-  if (currentPsych?.focus < 5) mindsetTip = "Focus stability detected as 'Scattered'. Use the Focus Timer with White Noise atmosphere.";
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: prompt,
+      config: { 
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            priorities: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "3 tactical study actions"
+            },
+            burnoutAlert: {
+              type: Type.STRING,
+              nullable: true,
+              description: "Short warning if stress is high"
+            },
+            mindsetTip: {
+              type: Type.STRING,
+              description: "One-liner motivation"
+            }
+          },
+          required: ["priorities", "mindsetTip"]
+        }
+      }
+    });
 
-  return {
-    priorities,
-    burnoutAlert: currentPsych?.stress > 8 ? "High burnout risk identified. Reduce evening session duration." : null,
-    mindsetTip
-  };
+    return parseAIJSON(response.text || '{}');
+  } catch (err) {
+    console.error("Heuristic fallback triggered:", err);
+    return {
+      priorities: ["Revise weak mechanics units", "Complete 10 PYQs", "Take a 15-min break"],
+      burnoutAlert: null,
+      mindsetTip: "Consistency builds the bridge to success."
+    };
+  }
 };
 
 export const generateSmartTimetable = async (data: StudentData) => {
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  const weakSubject = data.chapters.reduce((prev, curr) => (prev.accuracy < curr.accuracy ? prev : curr)).subject;
-  return {
-    strategy: `Strategic 2:1:1 split favoring ${weakSubject}. Heavy focus on problem-solving during your peak energy hours.`,
-    optimization: "Shift your high-difficulty tasks (Calculus/Physics) to immediately after school hours when brain plasticity is highest.",
-    focusBlocks: [
-      `${weakSubject} - Critical Revision`,
-      "Mathematics - Problem Sprinting",
-      "Chemistry - Memory Hook Drill"
-    ]
-  };
+  try {
+    const activeModelId = getActiveModelId(data.aiTutorModel);
+    const modelName = MODEL_MAP[activeModelId] || 'gemini-3-flash-preview';
+
+    const prompt = `Generate a strategic 2:1:1 study split for a JEE aspirant named ${data.name}. 
+    Focus on these chapters: ${data.chapters.slice(0, 5).map(c => c.name).join(', ')}.`;
+
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: prompt,
+      config: { 
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            strategy: { type: Type.STRING },
+            optimization: { type: Type.STRING },
+            focusBlocks: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING }
+            }
+          },
+          required: ["strategy", "optimization", "focusBlocks"]
+        }
+      }
+    });
+
+    return parseAIJSON(response.text || '{}');
+  } catch (err) {
+    return {
+      strategy: "Balanced 2:1:1 Split",
+      optimization: "Prioritize Mathematics in your high-focus morning window.",
+      focusBlocks: ["Math Fundamentals", "Physics Drill", "Chemistry Recall"]
+    };
+  }
 };
 
-export const chatWithTutor = async (history: any[], userMessage: string, modelId: string = 'solaris-core') => {
-  await new Promise(resolve => setTimeout(resolve, 600));
-  const msg = userMessage.toLowerCase();
-  
-  // Model Personalities Logic
-  const responses: Record<string, string> = {
-    'solaris-core': "System focus: Data-driven efficiency. Based on local telemetry, Darwin's theory (Natural Selection) mirrors your testing phase: only the most practiced concepts survive the exam pressure. Focus on your 45% accuracy units first.",
-    
-    'gpt-4o-edu': "Mathematical Precision Mode: Darwin's theory can be modeled as a stochastic process where traits (p) increase frequency based on fitness (w). For your prep, 'fitness' is your MCQ speed. Currently, your Physics speed is 2.4 min/q—needs optimization.",
-    
-    'claude-3-stu': "Conceptual Deep-Dive: Understanding Darwin requires looking at the 'Variation' within a population. Similarly, look at the 'Variation' in your mistakes. Are they calculation errors or conceptual gaps? Notes for Biology/Evolution are being prioritized in your feed.",
-    
-    'gemini-flash-base': "Multimodal Insight: I've processed your query. Darwin's Theory is often illustrated via the 'Finches of Galapagos'. I suggest you visualize the Evolutionary Tree. I can help you map out the connections between Genetics and Evolution chapters next.",
-    
-    'llama-3-heuristic': "Conversational Coach: Hey! Darwin's theory is all about adapting to stay alive. In JEE, you adapt by failing Mocks and learning. Don't sweat the low scores; they are just 'mutations' that help you find the right solving path. Keep at it!",
-    
-    'deepseek-coder': "Logic & Algorithm Node: Darwin_Theory_v1.0. Error correction detected. The 'Survival of the Fittest' algorithm is a recursive loop of testing. If your Accuracy < 60, break current loop and re-initialize basic theory. Recursive solving advised.",
-    
-    'iit-pulse': "Topper Strategy Mode: Darwin's theory is a high-weightage topic for KVPY and certain JEE advanced biological applications. Realistically, if you don't master the 'Evidence' section, you'll lose 4 marks. Memorize the 'Analogous vs Homologous' table tonight. High priority."
-  };
+export const chatWithTutor = async (history: any[], userMessage: string, modelId?: string) => {
+  try {
+    const activeModelId = getActiveModelId(modelId);
+    const geminiModel = MODEL_MAP[activeModelId] || 'gemini-3-flash-preview';
 
-  // Subject specific overrides if the query is clear
-  if (msg.includes('physics')) return `[${modelId.toUpperCase()}] Analytical focus: Physics requires first-principle thinking. Your Mechanics accuracy is currently drifting. Drill 10 FBD problems.`;
-  if (msg.includes('chem')) return `[${modelId.toUpperCase()}] Chemical properties sync: Inorganic requires daily recall. Organic requires mechanism mapping. Clear the 'Nomenclature' backlog before moving to 'Hydrocarbons'.`;
+    const response = await ai.models.generateContent({
+      model: geminiModel,
+      contents: userMessage,
+      config: {
+        systemInstruction: "You are an elite IIT-JEE Tutor. Use technical PCM language. Provide LaTeX for math if needed using standard notation. Be concise."
+      }
+    });
 
-  return responses[modelId] || "Intelligence node active. Ready for query.";
+    return response.text;
+  } catch (err) {
+    console.error("Chat failure:", err);
+    return "The intelligence node encountered a transmission error. Please check your admin configuration.";
+  }
 };
