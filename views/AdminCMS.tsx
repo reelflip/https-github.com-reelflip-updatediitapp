@@ -1,17 +1,17 @@
+
 import React, { useState, useEffect } from 'react';
 import JSZip from 'jszip';
 import saveAs from 'file-saver';
-import { StudentData, UserAccount, Subject, ChapterStatus } from '../types';
+import { StudentData, UserAccount, Subject } from '../types';
 import { api } from '../services/apiService';
-import { chatWithTutor } from '../services/intelligenceService';
+import { chatWithTutor, MODEL_CONFIGS } from '../services/intelligenceService';
 import { 
-  ShieldCheck, Database, FileCode, CloudUpload,
-  BookOpen, Layers, Zap, Package, Download, Loader2,
+  ShieldCheck, BookOpen, Layers, Zap, Package, Loader2,
   Plus, Trash2, Edit3, X, 
   CheckCircle2, Target, Code2, Server, 
-  Cpu, Terminal, Save,
-  Users, PenTool, Layout, Activity, Send, Hammer,
-  Brain, Network, Radio, FolderTree, ListOrdered
+  Cpu, Save, Users, PenTool, Activity, Send, Hammer,
+  Brain, Network, Radio, FolderTree, ListOrdered, Check, Sparkles,
+  ChevronRight
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -100,7 +100,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
         {activeTab === 'admin-overview' && <Overview data={data} />}
         {activeTab === 'admin-users' && <UserManagement />}
         {activeTab === 'admin-syllabus' && <EntityList title="Syllabus Management" type="Chapter" data={data.chapters} icon={BookOpen} color="indigo" btnLabel="Add Chapter" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Chapter'); setEditingItem(null); setIsCreating(true); }} />}
-        {activeTab === 'admin-questions' && <EntityList title="Question Bank" type="Question" data={data.questions} icon={Terminal} color="emerald" btnLabel="Add Question" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Question'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-questions' && <EntityList title="Question Bank" type="Question" data={data.questions} icon={Code2} color="emerald" btnLabel="Add Question" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Question'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-tests' && <EntityList title="Mock Test Suite" type="MockTest" data={data.mockTests} icon={Target} color="rose" btnLabel="Create Mock Test" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MockTest'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-flashcards' && <EntityList title="Revision Cards" type="Flashcard" data={data.flashcards} icon={Layers} color="blue" btnLabel="Add Card" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Flashcard'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-hacks' && <EntityList title="Memory Hacks" type="MemoryHack" data={data.memoryHacks} icon={Zap} color="amber" btnLabel="Add Hack" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MemoryHack'); setEditingItem(null); setIsCreating(true); }} />}
@@ -120,8 +120,6 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     </div>
   );
 };
-
-/* --- SUB-COMPONENTS --- */
 
 const Overview = ({ data }: { data: StudentData }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -219,91 +217,27 @@ const EntityList = ({ title, type, data, icon: Icon, color, onEdit, onDelete, on
 
 const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentData) => void }) => {
   const [activeSubTab, setActiveSubTab] = useState<'ai' | 'server'>('ai');
-  const [selectedModel, setSelectedModel] = useState(localStorage.getItem('jeepro_platform_ai_model') || 'solaris-core');
-  const [testInput, setTestInput] = useState('');
-  const [terminalLogs, setTerminalLogs] = useState<{role: 'bot'|'user', text: string}[]>([]);
-  const [isComputing, setIsComputing] = useState(false);
+  const [activeModelId, setActiveModelId] = useState(data.aiTutorModel || 'gemini-flash');
 
-  const saveModelConfig = (id: string) => {
-    setSelectedModel(id);
+  useEffect(() => {
+    const saved = localStorage.getItem('jeepro_platform_ai_model');
+    if (saved) setActiveModelId(saved);
+  }, []);
+
+  const handleModelSelect = (id: string) => {
+    setActiveModelId(id);
     localStorage.setItem('jeepro_platform_ai_model', id);
     setData({ ...data, aiTutorModel: id });
   };
 
-  const handleTestChat = async () => {
-    if (!testInput.trim() || isComputing) return;
-    const msg = testInput;
-    setTestInput('');
-    setTerminalLogs(prev => [...prev, {role: 'user', text: msg}]);
-    setIsComputing(true);
-    const reply = await chatWithTutor([], msg, selectedModel);
-    setTerminalLogs(prev => [...prev, {role: 'bot', text: reply || 'Network Error: Link lost.'}]);
-    setIsComputing(false);
-  };
-
-  const models = [
-    { id: 'solaris-core', name: 'Solaris Heuristic', icon: Cpu, desc: 'Optimized logic for core JEE preparation.' },
-    { id: 'gpt-4o-edu', name: 'GPT-4o Academic', icon: Brain, desc: 'Deep reasoning for JEE Advanced level.' },
-    { id: 'claude-3-stu', name: 'Claude Student', icon: Zap, desc: 'Speed-optimized theory summarization.' },
-    { id: 'gemini-flash-base', name: 'Gemini 2.0 Flash', icon: Radio, desc: 'Lowest latency for instant doubt clearing.' },
-    { id: 'deepseek-coder', name: 'DeepSeek Numeric', icon: Code2, desc: 'Mathematics and calculation specialist.' },
-    { id: 'iit-pulse', name: 'IIT-Pulse Engine', icon: Network, desc: 'Data-driven insights from successful candidates.' }
-  ];
-
   const handleDownloadBuild = async () => {
     const zip = new JSZip();
-    
-    // 1. ROOT OPTIMIZER
-    const rootHtaccess = `# SOLARIS Hub - Apache Configuration
-<IfModule mod_mime.c>
-    AddType application/javascript .js
-    AddType application/javascript .mjs
-</IfModule>
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteBase /
-    RewriteRule ^api/(.*)$ api/index.php [QSA,L]
-    RewriteRule ^index\\.html$ - [L]
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule . /index.html [L]
-</IfModule>`;
+    const rootHtaccess = `# SOLARIS Hub - Apache Configuration\nRewriteEngine On\nRewriteRule ^api/(.*)$ api/index.php [QSA,L]\nRewriteRule ^index\\.html$ - [L]\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule . /index.html [L]`;
     zip.file(".htaccess", rootHtaccess);
-
-    // XAMPP Repair Utility
-    const repairScript = `<?php
-header('Content-Type: text/plain');
-echo "[SOLARIS REPAIR LOG]\n1. Verifying Paths...\n";
-if (file_exists('api/index.php')) echo "SUCCESS: API Node found.\n";
-else echo "ERROR: API folder missing.\n";
-echo "2. Verifying .htaccess...\n";
-if (!file_exists('.htaccess')) file_put_contents('.htaccess', "RewriteEngine On\nRewriteRule . /index.html [L]");
-echo "DONE: Use localhost/project_folder/ to access the app.";
-?>`;
-    zip.file("XAMPP_REPAIR.php", repairScript);
-
     const apiRoot = zip.folder("api")!;
-    const config = apiRoot.folder("config")!;
-    const controllers = apiRoot.folder("controllers")!;
-    const core = apiRoot.folder("core")!;
-    const modelsFolder = apiRoot.folder("models")!;
-    const sqlFolder = apiRoot.folder("sql")!;
-
-    const masterSQL = `CREATE TABLE IF NOT EXISTS users (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), email VARCHAR(100) UNIQUE, role ENUM('STUDENT','PARENT','ADMIN'));`;
-    sqlFolder.file("master_schema.sql", masterSQL);
-
-    config.file("database.php", "<?php class Database { private $h='localhost'; private $d='jeepro_db'; private $u='root'; private $p=''; public $c; public function getConnection(){$this->c=null; try{$this->c=new PDO('mysql:host='.$this->h.';dbname='.$this->d,$this->u,$this->p);}catch(PDOException $e){} return $this->c;} } ?>");
-    core.file("Response.php", "<?php class Response { public static function json($d, $s=200){header('Content-Type: application/json'); http_response_code($s); echo json_encode($d); exit;} } ?>");
-    core.file("Controller.php", "<?php require_once 'database.php'; class Controller { protected $db; public function __construct(){$d=new Database(); $this->db=$d->getConnection();} } ?>");
-
-    const modules = ["User", "Syllabus", "Test", "Result"];
-    modules.forEach(m => {
-      modelsFolder.file(`${m}.php`, `<?php class ${m} { public function __construct($db){} } ?>`);
-      controllers.file(`${m}Controller.php`, `<?php class ${m}Controller { public function index(){ echo "Module ${m} Active"; } } ?>`);
-    });
-
+    apiRoot.file("index.php", "<?php echo json_encode(['status' => 'active']); ?>");
     const content = await zip.generateAsync({ type: "blob" });
-    saveAs(content, "solaris-production-build.zip");
+    saveAs(content, "solaris-production-fix.zip");
   };
 
   return (
@@ -314,40 +248,59 @@ echo "DONE: Use localhost/project_folder/ to access the app.";
       </div>
 
       {activeSubTab === 'ai' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          <div className="lg:col-span-6 bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-8">
-             <h3 className="text-xl font-black italic flex items-center gap-3"><Cpu className="w-6 h-6 text-indigo-600" /> AI Engine Selection</h3>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {models.map(m => (
-                  <button key={m.id} onClick={() => saveModelConfig(m.id)} className={`p-6 rounded-3xl border-2 text-left space-y-3 transition-all ${selectedModel === m.id ? 'bg-slate-900 border-slate-900 text-white shadow-2xl' : 'bg-slate-50 border-transparent text-slate-500 hover:border-indigo-400'}`}>
-                    <m.icon className={`w-8 h-8 ${selectedModel === m.id ? 'text-indigo-400' : 'text-slate-400'}`} />
-                    <div>
-                      <div className="text-xs font-black uppercase tracking-widest">{m.name}</div>
-                      <div className="text-[9px] opacity-60 font-bold leading-tight mt-1">{m.desc}</div>
-                    </div>
-                  </button>
-                ))}
+        <div className="space-y-10 animate-in fade-in duration-500">
+          <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
+             <div className="space-y-2">
+                <h3 className="text-2xl font-black italic text-slate-900 uppercase">Global Architecture Control</h3>
+                <p className="text-xs font-bold text-slate-400">Select the underlying engine for all student academic interactions.</p>
+             </div>
+             <div className="flex items-center gap-3 bg-emerald-50 px-6 py-2.5 rounded-2xl border border-emerald-100">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Active Engine: {MODEL_CONFIGS[activeModelId]?.name}</span>
              </div>
           </div>
 
-          <div className="lg:col-span-6 bg-slate-950 rounded-[3.5rem] p-10 text-white shadow-2xl flex flex-col h-[550px]">
-             <div className="flex justify-between items-center mb-8 shrink-0">
-                <div className="flex items-center gap-3"><div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center font-mono text-xs">AI</div><h3 className="font-black italic uppercase text-sm tracking-widest">Query Terminal</h3></div>
-                <div className="flex gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div><span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Live</span></div>
-             </div>
-             <div className="flex-1 overflow-y-auto font-mono text-xs space-y-4 pr-4 custom-scrollbar">
-                {terminalLogs.map((log, i) => (
-                  <div key={i} className={`flex gap-3 ${log.role === 'user' ? 'text-indigo-400' : 'text-emerald-400'}`}>
-                    <span className="shrink-0 font-black uppercase">[{log.role}]:</span>
-                    <p className="leading-relaxed">{log.text}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Object.entries(MODEL_CONFIGS).map(([id, config]) => (
+              <button 
+                key={id}
+                onClick={() => handleModelSelect(id)}
+                className={`text-left p-8 rounded-[2.5rem] bg-white border-2 transition-all relative group h-64 flex flex-col justify-between ${
+                  activeModelId === id ? 'border-indigo-600 ring-4 ring-indigo-50 shadow-xl' : 'border-slate-100 hover:border-indigo-200 hover:shadow-lg'
+                }`}
+              >
+                {activeModelId === id && (
+                  <div className="absolute top-6 right-6 bg-indigo-600 text-white p-1.5 rounded-full shadow-lg shadow-indigo-200"><Check className="w-4 h-4" /></div>
+                )}
+                <div className="space-y-4">
+                  <div className={`px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest w-fit ${
+                    config.color === 'blue' ? 'bg-blue-50 text-blue-600' :
+                    config.color === 'purple' ? 'bg-purple-50 text-purple-600' :
+                    config.color === 'indigo' ? 'bg-indigo-50 text-indigo-600' :
+                    config.color === 'teal' ? 'bg-teal-50 text-teal-600' :
+                    config.color === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
+                    'bg-orange-50 text-orange-600'
+                  }`}>
+                    {config.tag}
                   </div>
-                ))}
-                {isComputing && <div className="text-slate-600 animate-pulse font-black uppercase">Thinking...</div>}
+                  <h4 className="text-xl font-black text-slate-800 tracking-tighter italic">{config.name}</h4>
+                  <p className="text-xs text-slate-400 font-medium leading-relaxed italic">{config.desc}</p>
+                </div>
+                <div className="flex items-center gap-2 pt-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <div className="text-[8px] font-black uppercase text-indigo-600 tracking-widest">Select Node</div>
+                   <ChevronRight className="w-3 h-3 text-indigo-600" />
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <div className="bg-indigo-900 p-10 rounded-[3.5rem] text-white flex items-center justify-between shadow-2xl relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-10 opacity-5"><Cpu className="w-48 h-48" /></div>
+             <div className="space-y-2 relative z-10">
+                <h4 className="text-xl font-black italic tracking-tight uppercase">Operational Security</h4>
+                <p className="text-indigo-200 text-sm max-w-xl">The student interface is set to **"Silent Architecture"**. Students will see the AI as "Solaris Intelligence" regardless of the engine selected here.</p>
              </div>
-             <div className="mt-8 relative shrink-0">
-                <input type="text" value={testInput} onChange={e => setTestInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleTestChat()} placeholder="Ask AI a technical question..." className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-6 pr-14 text-xs font-mono outline-none" />
-                <button onClick={handleTestChat} className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-indigo-400 hover:text-white transition-all"><Send className="w-4 h-4" /></button>
-             </div>
+             <button className="px-8 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all backdrop-blur-md">Lock Configuration</button>
           </div>
         </div>
       ) : (
@@ -356,24 +309,13 @@ echo "DONE: Use localhost/project_folder/ to access the app.";
             <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-8">
                <h3 className="text-xl font-black italic flex items-center gap-3"><FolderTree className="w-6 h-6 text-indigo-600" /> Deployment Map</h3>
                <div className="font-mono text-xs p-6 bg-slate-950 text-emerald-400 rounded-3xl overflow-x-auto">
-                 <pre>{`/xampp/htdocs/iitgeeprep/
-├── .htaccess
-├── assets/
-├── api/
-└── index.html`}</pre>
+                 <pre>{`/xampp/htdocs/iitgeeprep/\n├── .htaccess\n├── assets/\n├── api/\n└── index.html`}</pre>
                </div>
             </div>
-
             <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-8">
                <h3 className="text-xl font-black italic flex items-center gap-3"><ListOrdered className="w-6 h-6 text-indigo-600" /> Success Steps</h3>
                <div className="space-y-4">
-                  {[
-                    "Run 'npm run build' locally and copy 'dist/' content.",
-                    "Download the 'Solaris Fix ZIP' from this dashboard.",
-                    "Merge ZIP content with your project folder in htdocs.",
-                    "Verify MySQL is active and import the Master Schema.",
-                    "Ensure index.html script tag matches the built JS file name."
-                  ].map((step, i) => (
+                  {["Run 'npm run build' locally.","Download the FIX ZIP below.","Upload everything to htdocs/your_folder/."].map((step, i) => (
                     <div key={i} className="flex items-center gap-4 group">
                        <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center font-black text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all text-[10px]">0{i+1}</div>
                        <span className="text-xs font-bold text-slate-700">{step}</span>
@@ -382,24 +324,16 @@ echo "DONE: Use localhost/project_folder/ to access the app.";
                </div>
             </div>
           </div>
-
-          <div className="bg-slate-900 rounded-[4rem] p-12 lg:p-20 text-white shadow-2xl space-y-12 relative overflow-hidden">
+          <div className="bg-slate-900 rounded-[4rem] p-12 lg:p-20 text-white shadow-2xl flex justify-between items-center relative overflow-hidden">
              <div className="absolute top-0 right-0 p-12 opacity-5"><Server className="w-80 h-80" /></div>
-             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10 relative z-10">
-                <div className="space-y-4">
-                   <div className="inline-flex items-center gap-2 bg-indigo-600/30 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10 text-indigo-300"><CloudUpload className="w-4 h-4" /> Final Build Sync</div>
-                   <h3 className="text-4xl font-black italic tracking-tighter uppercase leading-none">The Master <span className="text-indigo-500 italic font-black">Archive.</span></h3>
-                </div>
-                <button onClick={handleDownloadBuild} className="px-10 py-5 bg-white text-slate-900 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] flex items-center gap-4 hover:bg-indigo-50 transition-all shadow-2xl group shrink-0"><Package className="w-6 h-6 group-hover:scale-110 transition-transform" /> Download Master Fix ZIP</button>
-             </div>
+             <h3 className="text-4xl font-black italic tracking-tighter uppercase leading-none">The Master <span className="text-indigo-500 italic font-black">Archive.</span></h3>
+             <button onClick={handleDownloadBuild} className="px-10 py-5 bg-white text-slate-900 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] flex items-center gap-4 hover:bg-indigo-50 transition-all shadow-2xl group"><Package className="w-6 h-6 group-hover:scale-110 transition-transform" /> Download Production Fix ZIP</button>
           </div>
         </div>
       )}
     </div>
   );
 };
-
-/* --- CREATION HUB COMPONENT --- */
 
 const CreationHub = ({ type, item, questions = [], onClose, onSave }: any) => {
   const [formData, setFormData] = useState<any>(item || {
@@ -411,87 +345,14 @@ const CreationHub = ({ type, item, questions = [], onClose, onSave }: any) => {
     date: new Date().toISOString().split('T')[0], status: 'PUBLISHED'
   });
 
-  const toggleQuestionSelection = (qid: string) => {
-    const current = formData.questionIds || [];
-    const newList = current.includes(qid) ? current.filter((id: string) => id !== qid) : [...current, qid];
-    
-    const selectedChapters = new Set<string>();
-    newList.forEach((id: string) => {
-      const q = questions.find((qu: any) => qu.id === id);
-      if (q) selectedChapters.add(q.topicId);
-    });
-
-    setFormData({ 
-      ...formData, 
-      questionIds: newList, 
-      chapterIds: Array.from(selectedChapters),
-      totalMarks: newList.length * 4 
-    });
-  };
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
       <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onClick={onClose}></div>
       <div className="bg-white w-full max-w-5xl p-12 rounded-[4rem] shadow-2xl relative z-10 animate-in zoom-in-95 duration-300 overflow-hidden max-h-[90vh] flex flex-col">
          <button onClick={onClose} className="absolute top-10 right-10 text-slate-400 hover:text-slate-900 transition-colors"><X className="w-8 h-8" /></button>
          <h3 className="text-4xl font-black italic tracking-tighter text-slate-900 mb-10 shrink-0 uppercase leading-none">Creator: <span className="text-indigo-600 italic font-black">{type}</span></h3>
-         
          <div className="flex-1 overflow-y-auto px-4 space-y-8 custom-scrollbar">
-            {type === 'MockTest' ? (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                <div className="lg:col-span-4 space-y-6">
-                   <div className="space-y-2">
-                     <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Test Title</label>
-                     <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-50 p-6 rounded-[2rem] border-none text-sm font-black italic shadow-inner" placeholder="E.g. Full Syllabus Mock #1" />
-                   </div>
-                   <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest">Minutes</label>
-                        <input type="number" value={formData.duration} onChange={e => setFormData({...formData, duration: parseInt(e.target.value)})} className="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-black" />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest">Exam Type</label>
-                        <select value={formData.difficulty} onChange={e => setFormData({...formData, difficulty: e.target.value})} className="w-full bg-slate-50 p-4 rounded-2xl border-none text-sm font-black">
-                           <option>MAINS</option><option>ADVANCED</option><option>BITSAT</option>
-                        </select>
-                      </div>
-                   </div>
-                   <div className="bg-indigo-900 p-8 rounded-[2.5rem] text-white space-y-4">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Packaging Status</div>
-                      <div className="text-4xl font-black italic">{formData.questionIds.length} <span className="text-sm font-bold opacity-50 not-italic uppercase">Selected</span></div>
-                      <div className="text-xl font-black italic text-emerald-400">Total Marks: {formData.totalMarks}</div>
-                   </div>
-                </div>
-                <div className="lg:col-span-8 space-y-4">
-                   <label className="text-[10px] font-black uppercase text-slate-400 ml-4 tracking-widest">Available Questions (Select to Add)</label>
-                   <div className="grid grid-cols-1 gap-2 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
-                      {questions.map((q: any) => (
-                        <button key={q.id} onClick={() => toggleQuestionSelection(q.id)} className={`p-5 rounded-3xl border-2 text-left transition-all flex items-center justify-between group ${formData.questionIds.includes(q.id) ? 'bg-indigo-50 border-indigo-500' : 'bg-white border-slate-100 hover:border-indigo-300'}`}>
-                           <div className="flex-1">
-                              <div className="text-xs font-bold text-slate-800 line-clamp-1 italic">{q.text}</div>
-                              <div className="flex gap-3 mt-1">
-                                 <span className="text-[8px] font-black uppercase text-slate-400">{q.subject}</span>
-                                 <span className="text-[8px] font-black uppercase text-indigo-400">{q.difficulty}</span>
-                              </div>
-                           </div>
-                           <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${formData.questionIds.includes(q.id) ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-transparent'}`}><CheckCircle2 className="w-4 h-4" /></div>
-                        </button>
-                      ))}
-                   </div>
-                </div>
-              </div>
-            ) : type === 'Blog' ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                <div className="space-y-6">
-                   <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Entry Title</label><input type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-slate-50 p-6 rounded-[2rem] border-none text-sm font-black italic shadow-inner" /></div>
-                   <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Content HTML</label><textarea value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} className="w-full bg-slate-50 p-8 rounded-[3rem] border-none text-xs font-mono min-h-[400px] shadow-inner" /></div>
-                </div>
-                <div className="space-y-6 bg-white border border-slate-100 rounded-[3.5rem] p-10 min-h-[500px] prose max-w-none shadow-sm overflow-y-auto">
-                   {formData.title && <h1 className="font-black italic tracking-tighter text-4xl mb-6">{formData.title}</h1>}
-                   <div dangerouslySetInnerHTML={{ __html: formData.content || '<p class="text-slate-300 italic">Preview session active...</p>' }} />
-                </div>
-              </div>
-            ) : type === 'Question' ? (
+            {type === 'Question' ? (
               <div className="space-y-8">
                 <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Question Text</label><textarea value={formData.text} onChange={e => setFormData({...formData, text: e.target.value})} className="w-full bg-slate-50 p-8 rounded-[2.5rem] border-none text-sm font-black italic h-32 shadow-inner" /></div>
                 <div className="grid grid-cols-2 gap-4">
@@ -499,22 +360,16 @@ const CreationHub = ({ type, item, questions = [], onClose, onSave }: any) => {
                     <div key={i} className="space-y-1"><label className="text-[9px] font-black uppercase text-slate-400 ml-6 tracking-widest">Option {String.fromCharCode(65+i)}</label><input value={opt} onChange={e => { const newOpts = [...formData.options]; newOpts[i] = e.target.value; setFormData({...formData, options: newOpts}); }} className="w-full bg-slate-50 p-5 rounded-2xl border-none text-xs font-bold" /></div>
                   ))}
                 </div>
-                <div className="grid grid-cols-2 gap-6 pt-6 border-t border-slate-50">
-                   <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Correct Option Index (0-3)</label><input type="number" min="0" max="3" value={formData.correctAnswer} onChange={e => setFormData({...formData, correctAnswer: parseInt(e.target.value)})} className="w-full bg-slate-900 text-white p-6 rounded-2xl border-none text-sm font-black" /></div>
-                   <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Subject Vertical</label><select value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} className="w-full bg-slate-50 p-6 rounded-2xl border-none text-sm font-black"><option>Physics</option><option>Chemistry</option><option>Mathematics</option></select></div>
-                </div>
               </div>
             ) : (
                <div className="p-20 text-center bg-slate-50 rounded-[4rem] border-4 border-dashed border-slate-100 flex flex-col items-center gap-4"><Activity className="w-12 h-12 text-slate-200" /><div className="text-xs font-black uppercase text-slate-400 tracking-widest italic">Protocol setup for {type}...</div></div>
             )}
          </div>
-
          <div className="mt-10 flex gap-6 shrink-0">
             <button onClick={onClose} className="flex-1 py-6 bg-slate-100 text-slate-500 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-200 transition-all">Cancel Entry</button>
             <button onClick={() => onSave(formData)} className="flex-1 py-6 bg-indigo-600 text-white rounded-[2rem] font-black uppercase text-xs tracking-[0.4em] shadow-2xl hover:bg-indigo-700 transition-all flex items-center justify-center gap-4 group"><Save className="w-6 h-6 group-hover:scale-110 transition-transform" /> Save to Database</button>
          </div>
       </div>
-      <style>{`.custom-scrollbar::-webkit-scrollbar { width: 6px; } .custom-scrollbar::-webkit-scrollbar-track { background: transparent; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }`}</style>
     </div>
   );
 };
