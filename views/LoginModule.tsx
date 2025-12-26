@@ -80,7 +80,6 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
 
     let result;
     if (isAuthMode === 'login') {
-      // For demo purposes, we infer role from email if it's a demo account, else default to student
       let finalRole = targetRole;
       if (email === 'admin@jeepro.in') finalRole = UserRole.ADMIN;
       if (email === 'parent@jeepro.in') finalRole = UserRole.PARENT;
@@ -152,7 +151,7 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
           </div>
 
           <form onSubmit={handleAuth} className="space-y-6 relative z-10">
-            {/* ROLE SELECTION - ONLY VISIBLE DURING REGISTRATION */}
+            {/* ROLE SELECTION */}
             {isAuthMode === 'register' && (
               <div className="space-y-3 animate-in slide-in-from-top-4 duration-500">
                 <div className="flex items-center justify-between px-2">

@@ -7,7 +7,14 @@ import { StudentData } from "../types";
  * Optimized for Schema Enforcement and Data Resiliency
  */
 
-// Initialize the API client
+// Fix for TypeScript environment error in browser-based ESM context
+declare var process: {
+  env: {
+    API_KEY: string;
+  };
+};
+
+// Initialize the API client strictly from process.env as per requirements
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // Internal mapping of UI engine IDs to actual Gemini Model names

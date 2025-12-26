@@ -20,8 +20,8 @@ const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         {/* Logo/Branding Left */}
         <div className="flex items-center gap-2 lg:w-48 cursor-pointer" onClick={() => setActiveTab('about')}>
-           <div className="w-2.5 h-6 bg-blue-600 rounded-full animate-pulse"></div>
-           <span className="text-xl font-black tracking-tighter text-slate-900 uppercase italic">IITGEE<span className="text-blue-600">PREP</span></span>
+           <div className="w-2.5 h-6 bg-indigo-600 rounded-full animate-pulse"></div>
+           <span className="text-xl font-black tracking-tighter text-slate-900 uppercase italic">IITGEE<span className="text-indigo-600">PREP</span></span>
         </div>
         
         <div className="flex justify-center items-center gap-10 flex-1 hidden lg:flex">
@@ -29,8 +29,8 @@ const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`text-[10px] font-black tracking-[0.25em] transition-all hover:text-blue-600 ${
-                activeTab === item.id ? 'text-blue-600' : 'text-slate-400'
+              className={`text-[10px] font-black tracking-[0.25em] transition-all hover:text-indigo-600 ${
+                activeTab === item.id ? 'text-indigo-600' : 'text-slate-400'
               }`}
             >
               {item.label}
@@ -43,8 +43,8 @@ const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
             onClick={() => setActiveTab('login')}
             className={`text-[10px] font-black tracking-[0.2em] px-8 py-3 rounded-xl transition-all border-2 ${
               activeTab === 'login' 
-              ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-100' 
-              : 'border-slate-100 text-slate-500 hover:border-blue-600 hover:text-blue-600 hover:bg-blue-50/50'
+              ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl shadow-indigo-100' 
+              : 'border-slate-100 text-slate-500 hover:border-indigo-600 hover:text-indigo-600 hover:bg-indigo-50/50'
             }`}
            >
             LOGIN / JOIN
