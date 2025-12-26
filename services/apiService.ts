@@ -1,5 +1,5 @@
 
-import { StudentData, UserRole, UserAccount, Chapter, TestResult, BacklogItem, Question, MockTest } from '../types';
+import { StudentData, UserRole, UserAccount, Chapter, TestResult, BacklogItem, Question, MockTest, RoutineConfig } from '../types';
 import { INITIAL_STUDENT_DATA } from '../mockData';
 
 const API_CONFIG = {
@@ -32,14 +32,11 @@ export const api = {
   isDemoDisabled: (): boolean => (window as any).DISABLE_DEMO_LOGINS === true,
 
   async login(credentials: { email: string; role: UserRole }) {
-    // 1. Check Demo Nodes first
     if (!this.isDemoDisabled()) {
       if (credentials.email === 'ishu@gmail.com') return { success: true, user: { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2024-01-01' } };
       if (credentials.email === 'admin@jeepro.in') return { success: true, user: { id: 'ADMIN-001', name: 'System Admin', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '2024-01-01' } };
-      if (credentials.email === 'parent@jeepro.in') return { success: true, user: { id: 'P-4402', name: 'Ramesh Sharma', email: 'parent@jeepro.in', role: UserRole.PARENT, createdAt: '2024-01-01' } };
     }
 
-    // 2. Production Handshake
     if (this.getMode() === 'LIVE') {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}auth/login`, {
@@ -50,17 +47,11 @@ export const api = {
         return await safeJson(res);
       } catch(e) { return { success: false, error: 'Production Node Unreachable' }; }
     }
-
-    // 3. Sandbox Fallback for unregistered custom emails
-    // If they just registered a custom email in MOCK mode, we simulate success
-    if (credentials.email.includes('@')) {
-       return { success: true, user: { id: `MOCK-${Date.now()}`, name: credentials.email.split('@')[0], email: credentials.email, role: credentials.role, createdAt: new Date().toISOString() } };
-    }
-
-    return { success: false, error: 'Authentication Denied. Use standard demo keys or register a new profile.' };
+    return { success: false, error: 'Sandbox Mode: Registration required.' };
   },
 
-  async register(data: { name: string; email: string; role: UserRole; password?: string; recoveryQuestion?: string; recoveryAnswer?: string }) {
+  // Added register method to fix "Property 'register' does not exist" error in LoginModule
+  async register(data: any) {
     if (this.getMode() === 'LIVE') {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}auth/register`, {
@@ -69,14 +60,13 @@ export const api = {
           body: JSON.stringify(data)
         });
         return await safeJson(res);
-      } catch (e) { return { success: false, error: 'Database Node Unreachable' }; }
+      } catch(e) { return { success: false, error: 'Production Node Unreachable' }; }
     }
-    
-    // Sandbox Registration Success
+    // Sandbox registration simulation
     return { 
       success: true, 
       user: { 
-        id: `REG-${Math.floor(Math.random() * 100000)}`, 
+        id: `DEMO-${Math.random().toString(36).substr(2, 9)}`, 
         name: data.name, 
         email: data.email, 
         role: data.role, 
@@ -88,13 +78,14 @@ export const api = {
   async getStudentData(studentId: string): Promise<StudentData> {
     if (this.getMode() === 'LIVE') {
       try {
-        const [sRes, bRes, wRes, rRes, qRes, tRes] = await Promise.all([
+        const [sRes, bRes, wRes, rRes, qRes, tRes, rtRes] = await Promise.all([
           fetch(`${API_CONFIG.BASE_URL}syllabus/get?id=${studentId}`),
           fetch(`${API_CONFIG.BASE_URL}backlogs/get?id=${studentId}`),
           fetch(`${API_CONFIG.BASE_URL}wellness/get?id=${studentId}`),
           fetch(`${API_CONFIG.BASE_URL}results/get?id=${studentId}`),
           fetch(`${API_CONFIG.BASE_URL}questions/index`),
-          fetch(`${API_CONFIG.BASE_URL}mocktests/index`)
+          fetch(`${API_CONFIG.BASE_URL}mocktests/index`),
+          fetch(`${API_CONFIG.BASE_URL}timetable/get?id=${studentId}`)
         ]);
 
         const syllabus = await safeJson(sRes);
@@ -103,6 +94,7 @@ export const api = {
         const results = await safeJson(rRes);
         const questions = await safeJson(qRes);
         const tests = await safeJson(tRes);
+        const routine = await safeJson(rtRes);
         
         return {
           ...INITIAL_STUDENT_DATA,
@@ -113,28 +105,40 @@ export const api = {
           testHistory: Array.isArray(results) ? results : [],
           questions: Array.isArray(questions) ? questions : INITIAL_STUDENT_DATA.questions,
           mockTests: Array.isArray(tests) ? tests : INITIAL_STUDENT_DATA.mockTests,
-          psychometricHistory: wellness?.length ? wellness : INITIAL_STUDENT_DATA.psychometricHistory
+          psychometricHistory: wellness?.length ? wellness : INITIAL_STUDENT_DATA.psychometricHistory,
+          routine: routine || INITIAL_STUDENT_DATA.routine
         };
       } catch(e) { return { ...INITIAL_STUDENT_DATA, id: studentId }; }
     }
     return INITIAL_STUDENT_DATA;
   },
 
+  async saveRoutine(studentId: string, routine: RoutineConfig) {
+    if (this.getMode() === 'LIVE') {
+      await fetch(`${API_CONFIG.BASE_URL}timetable/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: studentId, ...routine })
+      });
+    }
+  },
+
   async saveEntity(module: string, data: any) {
     if (this.getMode() === 'LIVE') {
-      try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}${module.toLowerCase()}/save`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        return await safeJson(res);
-      } catch(e) { return { success: false }; }
+      const res = await fetch(`${API_CONFIG.BASE_URL}${module.toLowerCase()}/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      return await safeJson(res);
     }
     return { success: true };
   },
 
   async updateStudentData(studentId: string, updatedData: StudentData) {
+    if (updatedData.routine) {
+        await this.saveRoutine(studentId, updatedData.routine);
+    }
     return this.saveEntity('Syllabus', { student_id: studentId, chapters: updatedData.chapters });
   },
 
@@ -146,10 +150,6 @@ export const api = {
          return Array.isArray(data) ? data : [];
        } catch(e) { return []; }
      }
-     return [
-       { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2024-01-01' },
-       { id: 'ADMIN-001', name: 'System Root', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '2024-01-01' },
-       { id: 'P-4402', name: 'Ramesh Sharma', email: 'parent@jeepro.in', role: UserRole.PARENT, createdAt: '2024-01-01' }
-     ];
+     return [];
   }
 };
