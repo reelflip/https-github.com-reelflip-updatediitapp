@@ -7,6 +7,14 @@ import { StudentData } from "../types";
  * Status: KEY-AGNOSTIC / ZERO-SUBSCRIPTION REQUIRED
  */
 
+// Fix: Declaring process to satisfy TypeScript compiler in browser environment
+declare var process: {
+  env: {
+    API_KEY?: string;
+    [key: string]: string | undefined;
+  };
+};
+
 export interface ModelConfig {
   name: string;
   tag: string;
@@ -61,6 +69,7 @@ export const MODEL_CONFIGS: Record<string, ModelConfig> = {
 };
 
 const getActiveModelId = (userSelected?: string): string => {
+  // Admin selected model usually comes via student data prop or local storage override
   return localStorage.getItem('jeepro_platform_ai_model') || userSelected || 'gemini-flash';
 };
 
@@ -100,7 +109,7 @@ export const getSmartStudyAdvice = async (data: StudentData) => {
     try { return JSON.parse(onlineResult); } catch(e) {}
   }
 
-  const config = MODEL_CONFIGS[modelId];
+  const config = MODEL_CONFIGS[modelId] || MODEL_CONFIGS['gemini-flash'];
   return {
     priorities: weakChapters.length > 0 
       ? weakChapters.map(c => `[${config.tag}] Improve ${c.name} (${c.accuracy}%)`)
@@ -111,8 +120,8 @@ export const getSmartStudyAdvice = async (data: StudentData) => {
 };
 
 export const generateSmartTimetable = async (data: StudentData) => {
-  const modelId = getActiveModelId();
-  const config = MODEL_CONFIGS[modelId];
+  const modelId = getActiveModelId(data.aiTutorModel);
+  const config = MODEL_CONFIGS[modelId] || MODEL_CONFIGS['gemini-flash'];
   return {
     strategy: `${config.name} Optimized Split`,
     optimization: `Prioritizing ${config.tag === 'MATH' ? 'Calculus' : 'Critical Units'} based on model-specific heuristics.`,
@@ -121,8 +130,8 @@ export const generateSmartTimetable = async (data: StudentData) => {
 };
 
 export const chatWithTutor = async (history: any[], userMessage: string, modelId?: string, data?: StudentData) => {
-  const activeId = getActiveModelId(modelId);
-  const config = MODEL_CONFIGS[activeId];
+  const activeId = getActiveModelId(modelId || data?.aiTutorModel);
+  const config = MODEL_CONFIGS[activeId] || MODEL_CONFIGS['gemini-flash'];
   
   const onlineReply = await tryOnlineGen(userMessage, activeId, `You are ${config.name}. Your trait is ${config.tag}. Be technical, brief, and provide JEE-specific value.`);
   if (onlineReply) return onlineReply;
