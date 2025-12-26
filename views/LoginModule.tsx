@@ -62,12 +62,9 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
 
     try {
       let result;
+      // REAL PRODUCTION PATH
       if (isAuthMode === 'login') {
-        let finalRole = role;
-        if (formData.email === 'admin@jeepro.in') finalRole = UserRole.ADMIN;
-        if (formData.email === 'parent@jeepro.in') finalRole = UserRole.PARENT;
-        
-        result = await api.login({ email: formData.email, role: finalRole });
+        result = await api.login({ email: formData.email, role: role, password: formData.password });
       } else {
         result = await api.register({ 
           name: formData.name,
@@ -85,34 +82,36 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
           onLoginSuccess(result.user);
         }, 1200);
       } else {
-        setAuthError(result.error || 'Uplink Denied: Identity could not be verified.');
+        setAuthError(result.error || 'Uplink Denied: Identity could not be verified in database.');
         setIsProcessing(false);
       }
     } catch (err) {
-      setAuthError("Network Fault: Connection to master node timed out.");
+      setAuthError("Sync Error: The database node could not be reached.");
       setIsProcessing(false);
     }
   };
 
-  const forceSandbox = () => {
-    api.setMode('MOCK');
-  };
-
   const handleQuickLogin = (email: string, targetRole: UserRole) => {
-    setFormData({ ...formData, email: email, password: 'demo-password' });
-    setRole(targetRole);
+    // DEDICATED DEMO PATH: This bypasses the production database checks
     setIsProcessing(true);
     setAuthError(null);
     
-    api.login({ email, role: targetRole }).then(result => {
-      if (result.success && result.user) {
-        setIsVerified(true);
-        setTimeout(() => onLoginSuccess(result.user), 800);
+    // Switch to MOCK mode for demo accounts
+    localStorage.setItem('jeepro_datasource_mode', 'MOCK');
+    
+    setTimeout(() => {
+      let mockUser: UserAccount;
+      if (email === 'admin@jeepro.in') {
+        mockUser = { id: 'ADMIN-001', name: 'System Admin (Demo)', email: email, role: UserRole.ADMIN, createdAt: '2024-01-01' };
+      } else if (email === 'parent@jeepro.in') {
+        mockUser = { id: 'P-4402', name: 'Guardian (Demo)', email: email, role: UserRole.PARENT, createdAt: '2024-01-01' };
       } else {
-        setAuthError(result.error);
-        setIsProcessing(false);
+        mockUser = { id: '163110', name: 'Aryan Sharma (Demo)', email: email, role: UserRole.STUDENT, createdAt: '2024-01-01' };
       }
-    });
+      
+      setIsVerified(true);
+      setTimeout(() => onLoginSuccess(mockUser), 800);
+    }, 1000);
   };
 
   if (isVerified) {
@@ -128,8 +127,6 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
       </div>
     );
   }
-
-  const showDemo = (window as any).SHOW_DEMO_LOGINS !== false;
 
   return (
     <div className="min-h-screen z-[100] bg-[#020617] flex flex-col items-center justify-start p-4 py-12 lg:py-20 font-sans overflow-y-auto selection:bg-indigo-500/30">
@@ -202,14 +199,6 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
                     <AlertTriangle className="w-5 h-5 shrink-0" /> 
                     <span>{authError}</span>
                  </div>
-                 {authError.includes('Unreachable') && (
-                   <button 
-                    onClick={forceSandbox}
-                    className="w-full py-3 bg-rose-500 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-rose-600 transition-all flex items-center justify-center gap-2"
-                   >
-                     <RefreshCw className="w-3 h-3" /> Force Sandbox Mode (Bypass Server)
-                   </button>
-                 )}
               </div>
             )}
 
@@ -295,7 +284,7 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
             </button>
           </div>
 
-          {isAuthMode === 'login' && showDemo && (
+          {isAuthMode === 'login' && (
             <div className="pt-6 border-t border-white/5 space-y-4 relative z-10 animate-in fade-in slide-in-from-bottom-2 duration-700">
                <div className="text-center">
                   <span className="text-[8px] font-black uppercase text-slate-600 tracking-[0.3em]">Verified Demo Uplinks</span>

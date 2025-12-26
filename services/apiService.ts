@@ -8,17 +8,17 @@ const API_CONFIG = {
 
 const safeJson = async (response: Response) => {
   if (response.status === 404) {
-    throw new Error("Endpoint Not Found. Ensure /api/.htaccess is configured on your server.");
+    throw new Error("Endpoint Not Found (404). Ensure your /api/ folder and .htaccess are correctly uploaded.");
   }
   
   const text = await response.text();
   try {
     return JSON.parse(text);
   } catch (e) {
-    if (text.includes('<?php') || text.includes('Fatal error')) {
-        throw new Error("Backend Logic Fault. Production Node requires PHP/PDO configuration.");
+    if (text.includes('<?php') || text.includes('Fatal error') || text.includes('PDOException')) {
+        throw new Error("Database Server Error: Check your PHP config/database.php file.");
     }
-    throw new Error("Network Response Invalid");
+    throw new Error("Invalid Server Response: The backend did not return valid JSON.");
   }
 };
 
@@ -31,32 +31,26 @@ export const api = {
     localStorage.removeItem('jeepro_student_data');
     window.location.reload(); 
   },
-  
-  isDemoDisabled: (): boolean => (window as any).DISABLE_DEMO_LOGINS === true,
 
-  async login(credentials: { email: string; role: UserRole }) {
-    // 1. Check Master Demo Accounts (For testing purposes only)
-    if (!this.isDemoDisabled()) {
-      if (credentials.email === 'ishu@gmail.com') return { success: true, user: { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2024-01-01' } };
-      if (credentials.email === 'admin@jeepro.in') return { success: true, user: { id: 'ADMIN-001', name: 'System Admin', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '2024-01-01' } };
-    }
-
-    // 2. Production Fetch
+  async login(credentials: { email: string; role: UserRole; password?: string }) {
+    // STRICT PRODUCTION ONLY: No demo checks here.
     try {
       const res = await fetch(`${API_CONFIG.BASE_URL}auth/login`, {
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials)
       });
-      const data = await safeJson(res);
-      return data;
+      return await safeJson(res);
     } catch(e: any) { 
-      return { success: false, error: e.message || "Production Node Unreachable: Database sync failed." }; 
+      return { 
+        success: false, 
+        error: "Production Node Unreachable: " + (e.message || "Please check your internet or server status.") 
+      }; 
     }
   },
 
   async register(data: any) {
-    // STRICT UPLINK: No local storage used. Must hit the real backend.
+    // STRICT PRODUCTION ONLY: Must hit the real database.
     try {
       const res = await fetch(`${API_CONFIG.BASE_URL}auth/register`, {
         method: 'POST',
@@ -64,17 +58,21 @@ export const api = {
         body: JSON.stringify(data)
       });
       const result = await safeJson(res);
+      
+      if (result.success) {
+        localStorage.setItem(API_CONFIG.MODE_KEY, 'LIVE');
+      }
       return result;
     } catch(e: any) { 
-      // Explicit failure if database/server is missing
       return { 
         success: false, 
-        error: "Sync Failed: " + (e.message || "Database node unreachable.") + " Registration requires an active PHP/MySQL uplink." 
+        error: "Sync Failed: " + (e.message || "Database node unreachable.") 
       }; 
     }
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
+    // If we are in LIVE mode, we fetch from DB. If in MOCK (Demo), we use INITIAL_STUDENT_DATA.
     if (this.getMode() === 'LIVE') {
       try {
         const [sRes, bRes, wRes, rRes, qRes, tRes, rtRes] = await Promise.all([
@@ -98,7 +96,7 @@ export const api = {
         return {
           ...INITIAL_STUDENT_DATA,
           id: studentId,
-          name: syllabus?.name || 'User',
+          name: syllabus?.name || 'Verified User',
           chapters: Array.isArray(syllabus?.chapters) ? syllabus.chapters : INITIAL_STUDENT_DATA.chapters,
           backlogs: Array.isArray(backlogs) ? backlogs : [],
           testHistory: Array.isArray(results) ? results : [],
@@ -107,7 +105,10 @@ export const api = {
           psychometricHistory: wellness?.length ? wellness : INITIAL_STUDENT_DATA.psychometricHistory,
           routine: routine || INITIAL_STUDENT_DATA.routine
         };
-      } catch(e) { return { ...INITIAL_STUDENT_DATA, id: studentId }; }
+      } catch(e) { 
+          // If live fetch fails, we return a blank state for that user ID, NOT the demo student.
+          return { ...INITIAL_STUDENT_DATA, id: studentId, name: 'User ' + studentId, chapters: INITIAL_STUDENT_DATA.chapters.map(c => ({...c, progress: 0, accuracy: 0})) }; 
+      }
     }
     return INITIAL_STUDENT_DATA;
   },
@@ -135,10 +136,13 @@ export const api = {
   },
 
   async updateStudentData(studentId: string, updatedData: StudentData) {
-    if (updatedData.routine) {
-        await this.saveRoutine(studentId, updatedData.routine);
+    if (this.getMode() === 'LIVE') {
+        if (updatedData.routine) {
+            await this.saveRoutine(studentId, updatedData.routine);
+        }
+        return this.saveEntity('Syllabus', { student_id: studentId, chapters: updatedData.chapters });
     }
-    return this.saveEntity('Syllabus', { student_id: studentId, chapters: updatedData.chapters });
+    return { success: true };
   },
 
   async getAccounts(): Promise<UserAccount[]> {

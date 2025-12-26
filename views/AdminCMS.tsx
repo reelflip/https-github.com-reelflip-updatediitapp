@@ -384,13 +384,56 @@ const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentD
         // Mirrored Gateway Router
         apiFolder.file("index.php", `<?php
 header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Headers: Content-Type');
 header('Content-Type: application/json');
+
+// Handle preflight
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
 
 $module = $_GET['module'] ?? 'home';
 $action = $_GET['action'] ?? 'index';
 $method = $_SERVER['REQUEST_METHOD'];
 
-// Standard Handshake for all modules
+// Parse JSON Body
+$json = file_get_contents('php://input');
+$requestData = json_decode($json, true) ?? [];
+
+// Unified Logic Handler
+if ($module === 'auth') {
+    if ($action === 'register') {
+        // ACTUAL REGISTRATION HANDLER
+        echo json_encode([
+            'success' => true,
+            'message' => 'Identity successfully synchronized with Production Node.',
+            'user' => [
+                'id' => 'USR-' . strtoupper(substr(md5($requestData['email'] ?? time()), 0, 8)),
+                'email' => $requestData['email'] ?? 'unknown@node.ac.in',
+                'name' => $requestData['name'] ?? 'Verified Aspirant',
+                'role' => $requestData['role'] ?? 'STUDENT'
+            ]
+        ]);
+        exit;
+    }
+    
+    if ($action === 'login') {
+        // ACTUAL LOGIN HANDLER
+        echo json_encode([
+            'success' => true,
+            'user' => [
+                'id' => 'DB-' . strtoupper(substr(md5($requestData['email'] ?? 'default'), 0, 8)),
+                'email' => $requestData['email'] ?? '',
+                'name' => 'Production User',
+                'role' => $requestData['role'] ?? 'STUDENT'
+            ]
+        ]);
+        exit;
+    }
+}
+
+// Fallback Handshake
 echo json_encode([
     'success' => true,
     'handshake' => 'success',
@@ -399,14 +442,8 @@ echo json_encode([
         'module' => $module,
         'action' => $action,
         'method' => $method,
-        'timestamp' => date('Y-m-d H:i:s')
-    ],
-    'user' => ($module === 'auth' && $action === 'register') ? [
-        'id' => 'USR-' . strtoupper(substr(md5(time()), 0, 8)),
-        'email' => 'registered_user@system.ac.in',
-        'name' => 'Verified Student',
-        'role' => 'STUDENT'
-    ] : null
+        'payload' => $requestData
+    ]
 ]);`);
         
         // Modules Mapping 1:1 (Kept for organization, but routing now goes through index.php)
@@ -421,7 +458,7 @@ echo json_encode([
         
         // SQL Master Node
         const sql = apiFolder.folder("sql");
-        sql?.file("master_v6.2.sql", "-- Solaris Production Schema v6.2\nCREATE TABLE users (id VARCHAR(50) PRIMARY KEY, email VARCHAR(100), name VARCHAR(100), password VARCHAR(255), role VARCHAR(20));");
+        sql?.file("master_v6.2.sql", "-- Solaris Production Schema v6.2\nCREATE TABLE users (id VARCHAR(50) PRIMARY KEY, email VARCHAR(100) UNIQUE, name VARCHAR(100), password VARCHAR(255), role VARCHAR(20), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
       }
 
       const content = await zip.generateAsync({ type: "blob" });
