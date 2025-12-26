@@ -1,17 +1,20 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import JSZip from 'jszip';
 import saveAs from 'file-saver';
-import { StudentData, UserAccount, Subject } from '../types';
+import { StudentData, UserAccount, Subject, ChapterStatus, Question, MockTest, Chapter } from '../types';
 import { api } from '../services/apiService';
 import { chatWithTutor, MODEL_CONFIGS } from '../services/intelligenceService';
+// Added missing Clock import
 import { 
   ShieldCheck, BookOpen, Layers, Zap, Package, Loader2,
   Plus, Trash2, Edit3, X, 
-  CheckCircle2, Target, Code2, Server, 
-  Cpu, Save, Users, PenTool, Activity, Send, Hammer,
-  Brain, Network, Radio, FolderTree, ListOrdered, Check, Sparkles,
-  ChevronRight
+  Target, Code2, Server, 
+  Cpu, Save, Users, PenTool, Send,
+  Network, Check, ChevronRight, Bot, User, Terminal,
+  Layout, List, FileText, HelpCircle, Image as ImageIcon,
+  Calendar, Award, Hash, Type, Lightbulb, Activity, Filter,
+  CheckCircle2, Search, Clock
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -19,107 +22,6 @@ interface AdminCMSProps {
   data: StudentData;
   setData: (data: StudentData) => void;
 }
-
-const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
-  const [isCreating, setIsCreating] = useState(false);
-  const [editingItem, setEditingItem] = useState<any>(null);
-  const [creationType, setCreationType] = useState<string>('Question');
-  const mode = api.getMode();
-
-  const handleEdit = (type: string, item: any) => {
-    setCreationType(type);
-    setEditingItem(item);
-    setIsCreating(true);
-  };
-
-  const handleDelete = (type: string, id: string) => {
-    if (!confirm(`Confirm deletion of this ${type}?`)) return;
-    const key = type === 'Chapter' ? 'chapters' : 
-                type === 'Question' ? 'questions' : 
-                type === 'MockTest' ? 'mockTests' :
-                type === 'Flashcard' ? 'flashcards' :
-                type === 'MemoryHack' ? 'memoryHacks' : 'blogs';
-    const newList = (data[key as keyof StudentData] as any[]).filter(item => item.id !== id);
-    setData({ ...data, [key]: newList });
-  };
-
-  const handleSaveEntity = (type: string, entity: any) => {
-    const key = type === 'Chapter' ? 'chapters' : 
-                type === 'Question' ? 'questions' : 
-                type === 'MockTest' ? 'mockTests' :
-                type === 'Flashcard' ? 'flashcards' :
-                type === 'MemoryHack' ? 'memoryHacks' : 'blogs';
-    
-    const currentList = [...(data[key as keyof StudentData] as any[])];
-    const index = currentList.findIndex(e => e.id === entity.id);
-    
-    if (type === 'MockTest') {
-      entity.category = 'ADMIN';
-    }
-    
-    if (index > -1) {
-      currentList[index] = entity;
-    } else {
-      currentList.push(entity);
-    }
-    
-    setData({ ...data, [key]: currentList });
-    setIsCreating(false);
-    setEditingItem(null);
-  };
-
-  return (
-    <div className="pb-20 max-w-7xl mx-auto space-y-10 px-4">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm">
-        <div className="space-y-2">
-          <div className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.4em] flex items-center gap-3">
-             <ShieldCheck className="w-4 h-4" /> Solaris Control: System Administration
-          </div>
-          <h2 className="text-5xl font-black text-slate-900 tracking-tighter italic leading-none uppercase">Central <span className="text-indigo-600 font-black">Commander.</span></h2>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-3 bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-inner">
-             <div className="text-right">
-                <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Active Database</div>
-                <div className={`text-[10px] font-black uppercase ${mode === 'LIVE' ? 'text-emerald-600' : 'text-slate-500'}`}>
-                   {mode === 'LIVE' ? 'Production (MySQL)' : 'Sandbox (Memory)'}
-                </div>
-             </div>
-             <button 
-                onClick={() => api.setMode(mode === 'MOCK' ? 'LIVE' : 'MOCK')}
-                className={`w-14 h-8 rounded-full p-1 transition-all duration-300 relative ${mode === 'LIVE' ? 'bg-emerald-500' : 'bg-slate-300'}`}
-             >
-                <div className={`w-6 h-6 bg-white rounded-full shadow-lg transition-transform duration-300 ${mode === 'LIVE' ? 'translate-x-6' : 'translate-x-0'}`}></div>
-             </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-12 animate-in fade-in duration-700">
-        {activeTab === 'admin-overview' && <Overview data={data} />}
-        {activeTab === 'admin-users' && <UserManagement />}
-        {activeTab === 'admin-syllabus' && <EntityList title="Syllabus Management" type="Chapter" data={data.chapters} icon={BookOpen} color="indigo" btnLabel="Add Chapter" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Chapter'); setEditingItem(null); setIsCreating(true); }} />}
-        {activeTab === 'admin-questions' && <EntityList title="Question Bank" type="Question" data={data.questions} icon={Code2} color="emerald" btnLabel="Add Question" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Question'); setEditingItem(null); setIsCreating(true); }} />}
-        {activeTab === 'admin-tests' && <EntityList title="Mock Test Suite" type="MockTest" data={data.mockTests} icon={Target} color="rose" btnLabel="Create Mock Test" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MockTest'); setEditingItem(null); setIsCreating(true); }} />}
-        {activeTab === 'admin-flashcards' && <EntityList title="Revision Cards" type="Flashcard" data={data.flashcards} icon={Layers} color="blue" btnLabel="Add Card" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Flashcard'); setEditingItem(null); setIsCreating(true); }} />}
-        {activeTab === 'admin-hacks' && <EntityList title="Memory Hacks" type="MemoryHack" data={data.memoryHacks} icon={Zap} color="amber" btnLabel="Add Hack" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MemoryHack'); setEditingItem(null); setIsCreating(true); }} />}
-        {activeTab === 'admin-blogs' && <EntityList title="Resource Articles" type="Blog" data={data.blogs} icon={PenTool} color="indigo" btnLabel="New Post" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Blog'); setEditingItem(null); setIsCreating(true); }} />}
-        {activeTab === 'admin-system' && <SystemHub data={data} setData={setData} />}
-      </div>
-
-      {isCreating && (
-        <CreationHub 
-          type={creationType} 
-          item={editingItem} 
-          questions={data.questions}
-          onClose={() => setIsCreating(false)} 
-          onSave={(entity: any) => handleSaveEntity(creationType, entity)}
-        />
-      )}
-    </div>
-  );
-};
 
 const Overview = ({ data }: { data: StudentData }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -148,14 +50,13 @@ const UserManagement = () => {
   }, []);
 
   return (
-    <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden animate-in slide-in-from-bottom-4">
+    <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden">
       <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
          <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-3"><Users className="w-6 h-6 text-indigo-600" /> User Directory</h3>
-         <button className="bg-indigo-600 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl hover:scale-105 transition-all"><Plus className="w-4 h-4" /> Add Student</button>
       </div>
       <div className="divide-y divide-slate-50 max-h-[600px] overflow-y-auto">
         {isLoading ? (
-          <div className="p-20 flex flex-col items-center justify-center text-slate-400 gap-4"><Loader2 className="animate-spin" /> Fetching secure accounts...</div>
+          <div className="p-20 flex flex-col items-center justify-center text-slate-400 gap-4"><Loader2 className="animate-spin" /> Fetching accounts...</div>
         ) : (
           users.map((u) => (
             <div key={u.id} className="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors group">
@@ -179,14 +80,14 @@ const UserManagement = () => {
 };
 
 const EntityList = ({ title, type, data, icon: Icon, color, onEdit, onDelete, onNew, btnLabel = "Add Entry" }: any) => (
-  <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden animate-in slide-in-from-bottom-4">
+  <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden">
     <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
        <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-3"><Icon className={`w-6 h-6 text-${color}-600`} /> {title}</h3>
        <button onClick={onNew} className={`bg-${color}-600 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-${color}-100 hover:scale-105 transition-all`}><Plus className="w-4 h-4" /> {btnLabel}</button>
     </div>
     <div className="divide-y divide-slate-50 max-h-[600px] overflow-y-auto">
       {data.length === 0 ? (
-        <div className="p-20 text-center text-slate-300 font-black uppercase text-[10px] tracking-widest italic">Database is empty. Please create an entry.</div>
+        <div className="p-20 text-center text-slate-300 font-black uppercase text-[10px] tracking-widest italic">Database is empty.</div>
       ) : (
         data.map((item: any) => (
           <div key={item.id} className="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors group">
@@ -199,8 +100,8 @@ const EntityList = ({ title, type, data, icon: Icon, color, onEdit, onDelete, on
                      {type === 'Blog' ? item.title : type === 'Chapter' ? item.name : type === 'Question' ? item.text : type === 'Flashcard' ? item.question : item.name || item.title}
                    </div>
                    <div className="flex gap-4 mt-1">
-                      <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{item.subject || item.category || 'National Level'}</span>
-                      <span className="text-[9px] font-black uppercase text-indigo-500 tracking-widest">{item.difficulty || (item.questionIds ? `${item.questionIds.length} Questions` : 'Standard')}</span>
+                      <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{item.subject || item.category || 'Standard'}</span>
+                      {item.status && <span className="text-[8px] font-black uppercase px-2 py-0.5 bg-slate-100 rounded text-slate-500">{item.status}</span>}
                    </div>
                 </div>
              </div>
@@ -215,14 +116,260 @@ const EntityList = ({ title, type, data, icon: Icon, color, onEdit, onDelete, on
   </div>
 );
 
+const CreationHub = ({ type, item, onClose, onSave, questions = [], chapters = [] }: any) => {
+  const [formData, setFormData] = useState<any>(item || {
+    id: `ID-${Math.random().toString(36).substr(2, 9)}`,
+    name: '', title: '', subject: 'Physics' as Subject, unit: 'UNIT 1', text: '',
+    options: ['', '', '', ''], correctAnswer: 0, difficulty: 'EASY',
+    explanation: '', author: 'Admin Console', content: '',
+    date: new Date().toISOString().split('T')[0], status: 'PUBLISHED',
+    progress: 0, accuracy: 0, timeSpent: 0,
+    question: '', answer: '', category: 'Shortcuts', hack: '',
+    duration: 180, totalMarks: 300, questionIds: [], chapterIds: []
+  });
+
+  const [qSearch, setQSearch] = useState('');
+  const [qFilterSubject, setQFilterSubject] = useState<string>('All');
+
+  const handleChange = (e: any) => {
+    const { name, value } = e.target;
+    setFormData((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  const handleOptionChange = (idx: number, val: string) => {
+    const newOpts = [...formData.options];
+    newOpts[idx] = val;
+    setFormData((prev: any) => ({ ...prev, options: newOpts }));
+  };
+
+  const toggleQuestionSelection = (qId: string) => {
+    const current = [...(formData.questionIds || [])];
+    if (current.includes(qId)) {
+      setFormData({ ...formData, questionIds: current.filter(id => id !== qId) });
+    } else {
+      setFormData({ ...formData, questionIds: [...current, qId] });
+    }
+  };
+
+  const InputGroup = ({ label, icon: Icon, children }: any) => (
+    <div className="space-y-3">
+       <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-2 flex items-center gap-2">
+          {Icon && <Icon className="w-3 h-3 text-indigo-500" />} {label}
+       </label>
+       {children}
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 overflow-y-auto">
+      <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md" onClick={onClose}></div>
+      <div className="bg-white w-full max-w-5xl my-auto rounded-[4rem] shadow-2xl relative z-10 animate-in zoom-in-95 duration-300 overflow-hidden flex flex-col max-h-[90vh]">
+         {/* Editor Header */}
+         <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <div className="flex items-center gap-6">
+               <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
+                  {type === 'Blog' ? <PenTool className="w-7 h-7" /> : type === 'Question' ? <HelpCircle className="w-7 h-7" /> : type === 'MockTest' ? <Target className="w-7 h-7" /> : <Layers className="w-7 h-7" />}
+               </div>
+               <div>
+                  <h3 className="text-3xl font-black italic tracking-tighter text-slate-900 uppercase leading-none">
+                     {item ? 'Modify' : 'Create'} <span className="text-indigo-600">{type}.</span>
+                  </h3>
+                  <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mt-1">Universal Persistence Hub</p>
+               </div>
+            </div>
+            <button onClick={onClose} className="p-4 bg-white text-slate-400 hover:text-slate-900 rounded-2xl transition-all border border-slate-100"><X className="w-6 h-6" /></button>
+         </div>
+
+         {/* Editor Body */}
+         <div className="flex-1 overflow-y-auto p-12 space-y-12 custom-scrollbar">
+            {type === 'Blog' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                 <InputGroup label="Article Title" icon={Type}>
+                    <input name="title" value={formData.title} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black italic text-slate-800" placeholder="Mastering Thermodynamics..." />
+                 </InputGroup>
+                 <InputGroup label="Author Node" icon={User}>
+                    <input name="author" value={formData.author} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800" />
+                 </InputGroup>
+                 <div className="md:col-span-2">
+                    <InputGroup label="Content (HTML Supported)" icon={FileText}>
+                       <textarea name="content" value={formData.content} onChange={handleChange} rows={12} className="w-full bg-slate-50 border-none rounded-3xl p-8 text-sm font-medium leading-relaxed text-slate-600 shadow-inner" placeholder="<p>Detailed strategy...</p>" />
+                    </InputGroup>
+                 </div>
+              </div>
+            )}
+
+            {type === 'Question' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                 <div className="md:col-span-2">
+                    <InputGroup label="Problem Statement" icon={HelpCircle}>
+                       <textarea name="text" value={formData.text} onChange={handleChange} rows={4} className="w-full bg-slate-50 border-none rounded-3xl p-8 text-lg font-bold italic text-slate-800" placeholder="What is the derivative of..." />
+                    </InputGroup>
+                 </div>
+                 <InputGroup label="Subject" icon={BookOpen}>
+                    <select name="subject" value={formData.subject} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800">
+                       <option value="Physics">Physics</option>
+                       <option value="Chemistry">Chemistry</option>
+                       <option value="Mathematics">Mathematics</option>
+                    </select>
+                 </InputGroup>
+                 <InputGroup label="Difficulty Tier" icon={Zap}>
+                    <select name="difficulty" value={formData.difficulty} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800">
+                       <option value="EASY">Level 1: Basic</option>
+                       <option value="MEDIUM">Level 2: Mains</option>
+                       <option value="HARD">Level 3: Advanced</option>
+                    </select>
+                 </InputGroup>
+                 <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {formData.options.map((opt: string, i: number) => (
+                       <InputGroup key={i} label={`Option ${String.fromCharCode(65+i)}`} icon={List}>
+                          <div className="relative">
+                             <input value={opt} onChange={(e) => handleOptionChange(i, e.target.value)} className={`w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-bold text-slate-700 ${formData.correctAnswer === i ? 'ring-2 ring-emerald-500 shadow-lg shadow-emerald-50' : ''}`} placeholder={`Possible result ${i+1}`} />
+                             <button onClick={() => setFormData({...formData, correctAnswer: i})} className={`absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all ${formData.correctAnswer === i ? 'bg-emerald-500 text-white scale-110' : 'bg-slate-200 text-slate-400 hover:bg-slate-300'}`}><Check className="w-4 h-4" /></button>
+                          </div>
+                       </InputGroup>
+                    ))}
+                 </div>
+                 <div className="md:col-span-2">
+                    <InputGroup label="Step-by-Step Explanation" icon={Lightbulb}>
+                       <textarea name="explanation" value={formData.explanation} onChange={handleChange} rows={4} className="w-full bg-slate-50 border-none rounded-3xl p-8 text-sm font-medium text-slate-600" placeholder="Applying the chain rule..." />
+                    </InputGroup>
+                 </div>
+              </div>
+            )}
+
+            {type === 'MockTest' && (
+              <div className="space-y-12">
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <InputGroup label="Exam Name" icon={Type}>
+                       <input name="name" value={formData.name} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black italic text-slate-800" placeholder="JEE Main Mock #4" />
+                    </InputGroup>
+                    <InputGroup label="Duration (Mins)" icon={Clock}>
+                       <input type="number" name="duration" value={formData.duration} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800" />
+                    </InputGroup>
+                    <InputGroup label="Difficulty" icon={Zap}>
+                       <select name="difficulty" value={formData.difficulty} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800">
+                          <option value="MAINS">JEE Mains</option>
+                          <option value="ADVANCED">JEE Advanced</option>
+                          <option value="EASY">Practice</option>
+                       </select>
+                    </InputGroup>
+                 </div>
+
+                 <div className="space-y-6">
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                       <h4 className="text-xl font-black italic text-slate-800 flex items-center gap-3"><Code2 className="w-6 h-6 text-indigo-600" /> Question Selection ({formData.questionIds?.length || 0} Selected)</h4>
+                       <div className="flex gap-4">
+                          <div className="relative w-64">
+                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
+                             <input type="text" placeholder="Search bank..." value={qSearch} onChange={e => setQSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold" />
+                          </div>
+                          <select value={qFilterSubject} onChange={e => setQFilterSubject(e.target.value)} className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 text-xs font-bold">
+                             <option value="All">All Subjects</option>
+                             <option value="Physics">Physics</option>
+                             <option value="Chemistry">Chemistry</option>
+                             <option value="Mathematics">Mathematics</option>
+                          </select>
+                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto pr-4 custom-scrollbar bg-slate-50/50 p-6 rounded-[2.5rem] border border-slate-100 shadow-inner">
+                       {questions
+                        .filter((q: any) => qFilterSubject === 'All' || q.subject === qFilterSubject)
+                        .filter((q: any) => q.text.toLowerCase().includes(qSearch.toLowerCase()))
+                        .map((q: any) => (
+                          <div 
+                           key={q.id} 
+                           onClick={() => toggleQuestionSelection(q.id)}
+                           className={`p-5 rounded-2xl border-2 cursor-pointer transition-all flex items-center justify-between group ${formData.questionIds?.includes(q.id) ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg' : 'bg-white border-white hover:border-indigo-200'}`}
+                          >
+                             <div className="flex items-center gap-4">
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black ${formData.questionIds?.includes(q.id) ? 'bg-white/20' : 'bg-slate-100 text-slate-400'}`}>{q.subject[0]}</div>
+                                <div className="max-w-[200px]">
+                                   <div className={`text-xs font-bold line-clamp-1 ${formData.questionIds?.includes(q.id) ? 'text-white' : 'text-slate-800'}`}>{q.text}</div>
+                                   <div className={`text-[8px] font-black uppercase tracking-widest mt-1 ${formData.questionIds?.includes(q.id) ? 'text-indigo-200' : 'text-slate-400'}`}>{q.difficulty}</div>
+                                </div>
+                             </div>
+                             <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${formData.questionIds?.includes(q.id) ? 'bg-white border-white' : 'border-slate-200 group-hover:border-indigo-400'}`}>
+                                {formData.questionIds?.includes(q.id) && <Check className="w-3 h-3 text-indigo-600" />}
+                             </div>
+                          </div>
+                       ))}
+                    </div>
+                 </div>
+              </div>
+            )}
+
+            {type === 'Chapter' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                 <InputGroup label="Chapter Name" icon={Type}>
+                    <input name="name" value={formData.name} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black italic text-slate-800" placeholder="Thermodynamics..." />
+                 </InputGroup>
+                 <InputGroup label="Unit ID" icon={Hash}>
+                    <input name="unit" value={formData.unit} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800" placeholder="UNIT 01" />
+                 </InputGroup>
+                 <InputGroup label="Subject" icon={BookOpen}>
+                    <select name="subject" value={formData.subject} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800">
+                       <option value="Physics">Physics</option>
+                       <option value="Chemistry">Chemistry</option>
+                       <option value="Mathematics">Mathematics</option>
+                    </select>
+                 </InputGroup>
+                 <InputGroup label="Status" icon={Activity}>
+                    <select name="status" value={formData.status} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800">
+                       <option value="NOT_STARTED">Not Started</option>
+                       <option value="LEARNING">Learning Phase</option>
+                       <option value="REVISION">Revision Phase</option>
+                       <option value="COMPLETED">Mastered</option>
+                    </select>
+                 </InputGroup>
+              </div>
+            )}
+
+            {/* Fallback for other entities */}
+            {!['Blog', 'Question', 'Chapter', 'MockTest'].includes(type) && (
+               <div className="space-y-8">
+                  <InputGroup label="Entry Primary Data" icon={Type}>
+                     <input name={type === 'Flashcard' ? 'question' : 'title'} value={formData.title || formData.question || formData.name} onChange={(e) => setFormData({...formData, title: e.target.value, name: e.target.value, question: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black italic text-slate-800" placeholder="Enter content name..." />
+                  </InputGroup>
+                  <InputGroup label="Supporting Intelligence" icon={FileText}>
+                     <textarea name={type === 'Flashcard' ? 'answer' : 'description'} value={formData.description || formData.answer || formData.hack} onChange={(e) => setFormData({...formData, description: e.target.value, answer: e.target.value, hack: e.target.value})} rows={6} className="w-full bg-slate-50 border-none rounded-3xl p-8 text-sm font-medium text-slate-600 shadow-inner" placeholder="Detailed payload..." />
+                  </InputGroup>
+               </div>
+            )}
+         </div>
+
+         {/* Editor Footer */}
+         <div className="p-10 border-t border-slate-100 flex gap-6 bg-slate-50/50">
+            <button onClick={onClose} className="flex-1 py-6 bg-white border border-slate-200 text-slate-500 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-100 transition-all">Cancel</button>
+            <button onClick={() => onSave(formData)} className="flex-1 py-6 bg-indigo-600 text-white rounded-[2rem] font-black uppercase text-xs tracking-[0.4em] shadow-2xl shadow-indigo-100 flex items-center justify-center gap-4 hover:bg-indigo-700 hover:scale-[1.02] transition-all"><Save className="w-6 h-6" /> Commit to Database</button>
+         </div>
+      </div>
+    </div>
+  );
+};
+
 const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentData) => void }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'ai' | 'server'>('ai');
+  const [activeSubTab, setActiveSubTab] = useState<'ai' | 'server' | 'tester'>('ai');
   const [activeModelId, setActiveModelId] = useState(data.aiTutorModel || 'gemini-flash');
+
+  // Tester State
+  const [testerModelId, setTesterModelId] = useState('gemini-flash');
+  const [testerSubject, setTesterSubject] = useState<Subject>('Physics');
+  const [messages, setMessages] = useState<any[]>([]);
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('jeepro_platform_ai_model');
     if (saved) setActiveModelId(saved);
   }, []);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isTyping]);
 
   const handleModelSelect = (id: string) => {
     setActiveModelId(id);
@@ -232,22 +379,41 @@ const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentD
 
   const handleDownloadBuild = async () => {
     const zip = new JSZip();
-    const rootHtaccess = `# SOLARIS Hub - Apache Configuration\nRewriteEngine On\nRewriteRule ^api/(.*)$ api/index.php [QSA,L]\nRewriteRule ^index\\.html$ - [L]\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule . /index.html [L]`;
-    zip.file(".htaccess", rootHtaccess);
-    const apiRoot = zip.folder("api")!;
-    apiRoot.file("index.php", "<?php echo json_encode(['status' => 'active']); ?>");
+    zip.file(".htaccess", "RewriteEngine On\nRewriteRule . /index.html [L]");
     const content = await zip.generateAsync({ type: "blob" });
-    saveAs(content, "solaris-production-fix.zip");
+    saveAs(content, "solaris-deploy.zip");
+  };
+
+  const handleTestSend = async () => {
+    if (!input.trim() || isTyping) return;
+    
+    const userMsg = input;
+    setInput('');
+    setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    setIsTyping(true);
+
+    // Mock student data for context testing
+    const testContext: StudentData = {
+      ...data,
+      aiTutorModel: testerModelId
+    };
+
+    setTimeout(async () => {
+      const reply = await chatWithTutor([], `${testerSubject} Context: ${userMsg}`, testerModelId, testContext);
+      setMessages(prev => [...prev, { role: 'bot', text: reply }]);
+      setIsTyping(false);
+    }, 600);
   };
 
   return (
     <div className="space-y-10">
       <div className="flex bg-white p-2 rounded-[2rem] border border-slate-200 shadow-sm w-fit">
-         <button onClick={() => setActiveSubTab('ai')} className={`px-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeSubTab === 'ai' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>Intelligence Setup</button>
-         <button onClick={() => setActiveSubTab('server')} className={`px-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeSubTab === 'server' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>Server Deployment</button>
+         <button onClick={() => setActiveSubTab('ai')} className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeSubTab === 'ai' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>Intelligence Setup</button>
+         <button onClick={() => setActiveSubTab('tester')} className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeSubTab === 'tester' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>Intelligence Tester</button>
+         <button onClick={() => setActiveSubTab('server')} className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeSubTab === 'server' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>Server Deployment</button>
       </div>
 
-      {activeSubTab === 'ai' ? (
+      {activeSubTab === 'ai' && (
         <div className="space-y-10 animate-in fade-in duration-500">
           <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
              <div className="space-y-2">
@@ -270,7 +436,7 @@ const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentD
                 }`}
               >
                 {activeModelId === id && (
-                  <div className="absolute top-6 right-6 bg-indigo-600 text-white p-1.5 rounded-full shadow-lg shadow-indigo-200"><Check className="w-4 h-4" /></div>
+                  <div className="absolute top-6 right-6 bg-indigo-600 text-white p-1.5 rounded-full shadow-lg"><Check className="w-4 h-4" /></div>
                 )}
                 <div className="space-y-4">
                   <div className={`px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest w-fit ${
@@ -293,41 +459,120 @@ const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentD
               </button>
             ))}
           </div>
-
-          <div className="bg-indigo-900 p-10 rounded-[3.5rem] text-white flex items-center justify-between shadow-2xl relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-10 opacity-5"><Cpu className="w-48 h-48" /></div>
-             <div className="space-y-2 relative z-10">
-                <h4 className="text-xl font-black italic tracking-tight uppercase">Operational Security</h4>
-                <p className="text-indigo-200 text-sm max-w-xl">The student interface is set to **"Silent Architecture"**. Students will see the AI as "Solaris Intelligence" regardless of the engine selected here.</p>
-             </div>
-             <button className="px-8 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all backdrop-blur-md">Lock Configuration</button>
-          </div>
         </div>
-      ) : (
-        <div className="space-y-10 animate-in slide-in-from-right duration-500">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-8">
-               <h3 className="text-xl font-black italic flex items-center gap-3"><FolderTree className="w-6 h-6 text-indigo-600" /> Deployment Map</h3>
-               <div className="font-mono text-xs p-6 bg-slate-950 text-emerald-400 rounded-3xl overflow-x-auto">
-                 <pre>{`/xampp/htdocs/iitgeeprep/\n├── .htaccess\n├── assets/\n├── api/\n└── index.html`}</pre>
-               </div>
-            </div>
-            <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-8">
-               <h3 className="text-xl font-black italic flex items-center gap-3"><ListOrdered className="w-6 h-6 text-indigo-600" /> Success Steps</h3>
-               <div className="space-y-4">
-                  {["Run 'npm run build' locally.","Download the FIX ZIP below.","Upload everything to htdocs/your_folder/."].map((step, i) => (
-                    <div key={i} className="flex items-center gap-4 group">
-                       <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center font-black text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all text-[10px]">0{i+1}</div>
-                       <span className="text-xs font-bold text-slate-700">{step}</span>
+      )}
+
+      {activeSubTab === 'tester' && (
+        <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+           <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div className="space-y-4">
+                 <label className="text-[10px] font-black uppercase text-indigo-600 tracking-widest flex items-center gap-2"><Cpu className="w-4 h-4" /> Engine Selection</label>
+                 <select 
+                    value={testerModelId}
+                    onChange={(e) => setTesterModelId(e.target.value)}
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-sm font-black italic text-slate-800 outline-none focus:border-indigo-600 transition-all"
+                 >
+                    {Object.entries(MODEL_CONFIGS).map(([id, config]) => (
+                       <option key={id} value={id}>{config.name} ({config.tag})</option>
+                    ))}
+                 </select>
+              </div>
+              <div className="space-y-4">
+                 <label className="text-[10px] font-black uppercase text-emerald-600 tracking-widest flex items-center gap-2"><BookOpen className="w-4 h-4" /> Simulator Context</label>
+                 <select 
+                    value={testerSubject}
+                    onChange={(e) => setTesterSubject(e.target.value as Subject)}
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-sm font-black italic text-slate-800 outline-none focus:border-emerald-600 transition-all"
+                 >
+                    <option value="Physics">Physics Hub</option>
+                    <option value="Chemistry">Chemistry Lab</option>
+                    <option value="Mathematics">Mathematics Core</option>
+                 </select>
+              </div>
+           </div>
+
+           <div className="h-[600px] bg-slate-900 rounded-[3.5rem] border border-slate-800 shadow-2xl flex flex-col overflow-hidden relative">
+              <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_right,#1e1b4b_0%,transparent_70%)] opacity-30 pointer-events-none"></div>
+              
+              <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/20 backdrop-blur-md relative z-10">
+                 <div className="flex items-center gap-4">
+                    <div className="flex gap-1.5">
+                       <div className="w-2.5 h-2.5 rounded-full bg-rose-500/50"></div>
+                       <div className="w-2.5 h-2.5 rounded-full bg-amber-500/50"></div>
+                       <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/50"></div>
                     </div>
-                  ))}
-               </div>
-            </div>
-          </div>
-          <div className="bg-slate-900 rounded-[4rem] p-12 lg:p-20 text-white shadow-2xl flex justify-between items-center relative overflow-hidden">
+                    <div className="h-4 w-px bg-white/10 mx-2"></div>
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
+                       <Terminal className="w-3.5 h-3.5" /> Heuristic Debug Console
+                    </div>
+                 </div>
+                 <div className="text-[9px] font-black uppercase text-indigo-400 bg-indigo-400/10 px-4 py-1.5 rounded-full border border-indigo-400/20">
+                    Engine Link: {MODEL_CONFIGS[testerModelId]?.tag}
+                 </div>
+              </div>
+
+              <div ref={scrollRef} className="flex-1 overflow-y-auto p-10 space-y-10 relative z-10 custom-scrollbar">
+                 {messages.length === 0 && (
+                   <div className="h-full flex flex-col items-center justify-center text-center opacity-30 space-y-4">
+                      <Network className="w-16 h-16" />
+                      <p className="text-[10px] font-black uppercase tracking-[0.4em]">Awaiting Local Link...</p>
+                   </div>
+                 )}
+                 {messages.map((m, i) => (
+                   <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in duration-300`}>
+                      <div className={`flex gap-6 max-w-[85%] ${m.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                           m.role === 'bot' ? 'bg-indigo-600/10 border-indigo-500/30 text-indigo-400' : 'bg-white/10 border-white/10 text-white'
+                         }`}>
+                           {m.role === 'bot' ? <Bot className="w-5 h-5" /> : <User className="w-5 h-5" />}
+                         </div>
+                         <div className={`p-6 rounded-[2rem] text-sm leading-relaxed font-bold ${
+                           m.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white text-slate-300 border border-white/10 rounded-tl-none italic'
+                         }`}>
+                           {m.text}
+                         </div>
+                      </div>
+                   </div>
+                 ))}
+                 {isTyping && (
+                   <div className="flex justify-start">
+                      <div className="flex gap-6">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-600/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400"><Loader2 className="w-4 h-4 animate-spin" /></div>
+                        <div className="text-[10px] font-black uppercase tracking-widest text-indigo-400/50 py-3">Computing Local Logic...</div>
+                      </div>
+                   </div>
+                 )}
+              </div>
+
+              <div className="p-8 border-t border-white/5 bg-black/40 relative z-10">
+                 <div className="flex gap-4 max-w-4xl mx-auto">
+                    <input 
+                       type="text"
+                       value={input}
+                       onChange={(e) => setInput(e.target.value)}
+                       onKeyDown={(e) => e.key === 'Enter' && handleTestSend()}
+                       placeholder={`Test local ${MODEL_CONFIGS[testerModelId]?.name} output...`}
+                       className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm font-bold text-white focus:ring-4 focus:ring-indigo-500/20 transition-all outline-none"
+                    />
+                    <button 
+                       onClick={handleTestSend}
+                       disabled={isTyping}
+                       className="w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center hover:bg-indigo-700 transition-all shadow-2xl disabled:opacity-50"
+                    >
+                       <Send className="w-5 h-5" />
+                    </button>
+                 </div>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {activeSubTab === 'server' && (
+        <div className="space-y-10 animate-in slide-in-from-right duration-500">
+          <div className="bg-slate-900 rounded-[4rem] p-20 text-white shadow-2xl flex justify-between items-center relative overflow-hidden">
              <div className="absolute top-0 right-0 p-12 opacity-5"><Server className="w-80 h-80" /></div>
              <h3 className="text-4xl font-black italic tracking-tighter uppercase leading-none">The Master <span className="text-indigo-500 italic font-black">Archive.</span></h3>
-             <button onClick={handleDownloadBuild} className="px-10 py-5 bg-white text-slate-900 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] flex items-center gap-4 hover:bg-indigo-50 transition-all shadow-2xl group"><Package className="w-6 h-6 group-hover:scale-110 transition-transform" /> Download Production Fix ZIP</button>
+             <button onClick={handleDownloadBuild} className="px-10 py-5 bg-white text-slate-900 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] flex items-center gap-4 hover:bg-indigo-50 transition-all shadow-2xl group"><Package className="w-6 h-6 group-hover:scale-110 transition-transform" /> Download ZIP</button>
           </div>
         </div>
       )}
@@ -335,41 +580,98 @@ const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentD
   );
 };
 
-const CreationHub = ({ type, item, questions = [], onClose, onSave }: any) => {
-  const [formData, setFormData] = useState<any>(item || {
-    id: `ID-${Math.random().toString(36).substr(2, 9)}`,
-    name: '', title: '', subject: 'Physics' as Subject, unit: 'UNIT 1', text: '',
-    question: '', answer: '', content: '', author: 'Admin', hack: '',
-    description: '', options: ['', '', '', ''], correctAnswer: 0, difficulty: 'EASY',
-    category: 'ADMIN', duration: 180, totalMarks: 300, questionIds: [], chapterIds: [],
-    date: new Date().toISOString().split('T')[0], status: 'PUBLISHED'
-  });
+const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
+  const [isCreating, setIsCreating] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [creationType, setCreationType] = useState<string>('Question');
+  const mode = api.getMode();
+
+  const handleEdit = (type: string, item: any) => {
+    setCreationType(type);
+    setEditingItem(item);
+    setIsCreating(true);
+  };
+
+  const handleDelete = (type: string, id: string) => {
+    if (!confirm(`Confirm deletion of this ${type}?`)) return;
+    const key = type === 'Chapter' ? 'chapters' : 
+                type === 'Question' ? 'questions' : 
+                type === 'MockTest' ? 'mockTests' :
+                type === 'Flashcard' ? 'flashcards' :
+                type === 'MemoryHack' ? 'memoryHacks' : 'blogs';
+    const newList = (data[key as keyof StudentData] as any[]).filter((item: any) => item.id !== id);
+    setData({ ...data, [key]: newList });
+  };
+
+  const handleSaveEntity = (type: string, entity: any) => {
+    const key = type === 'Chapter' ? 'chapters' : 
+                type === 'Question' ? 'questions' : 
+                type === 'MockTest' ? 'mockTests' :
+                type === 'Flashcard' ? 'flashcards' :
+                type === 'MemoryHack' ? 'memoryHacks' : 'blogs';
+    
+    const currentList = [...(data[key as keyof StudentData] as any[])];
+    const index = currentList.findIndex(e => e.id === entity.id);
+    
+    if (index > -1) {
+      currentList[index] = entity;
+    } else {
+      currentList.push(entity);
+    }
+    
+    setData({ ...data, [key]: currentList });
+    setIsCreating(false);
+    setEditingItem(null);
+  };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-md" onClick={onClose}></div>
-      <div className="bg-white w-full max-w-5xl p-12 rounded-[4rem] shadow-2xl relative z-10 animate-in zoom-in-95 duration-300 overflow-hidden max-h-[90vh] flex flex-col">
-         <button onClick={onClose} className="absolute top-10 right-10 text-slate-400 hover:text-slate-900 transition-colors"><X className="w-8 h-8" /></button>
-         <h3 className="text-4xl font-black italic tracking-tighter text-slate-900 mb-10 shrink-0 uppercase leading-none">Creator: <span className="text-indigo-600 italic font-black">{type}</span></h3>
-         <div className="flex-1 overflow-y-auto px-4 space-y-8 custom-scrollbar">
-            {type === 'Question' ? (
-              <div className="space-y-8">
-                <div className="space-y-2"><label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-widest">Question Text</label><textarea value={formData.text} onChange={e => setFormData({...formData, text: e.target.value})} className="w-full bg-slate-50 p-8 rounded-[2.5rem] border-none text-sm font-black italic h-32 shadow-inner" /></div>
-                <div className="grid grid-cols-2 gap-4">
-                  {formData.options.map((opt: string, i: number) => (
-                    <div key={i} className="space-y-1"><label className="text-[9px] font-black uppercase text-slate-400 ml-6 tracking-widest">Option {String.fromCharCode(65+i)}</label><input value={opt} onChange={e => { const newOpts = [...formData.options]; newOpts[i] = e.target.value; setFormData({...formData, options: newOpts}); }} className="w-full bg-slate-50 p-5 rounded-2xl border-none text-xs font-bold" /></div>
-                  ))}
-                </div>
+    <div className="pb-20 max-w-7xl mx-auto space-y-10 px-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm">
+        <div className="space-y-2">
+          <div className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.4em] flex items-center gap-3">
+             <ShieldCheck className="w-4 h-4" /> Solaris Control: System Administration
+          </div>
+          <h2 className="text-5xl font-black text-slate-900 tracking-tighter italic leading-none uppercase">Central <span className="text-indigo-600 font-black">Commander.</span></h2>
+        </div>
+        
+        <div className="flex items-center gap-3 bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-inner">
+           <div className="text-right">
+              <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Active Database</div>
+              <div className={`text-[10px] font-black uppercase ${mode === 'LIVE' ? 'text-emerald-600' : 'text-slate-500'}`}>
+                 {mode === 'LIVE' ? 'Production (MySQL)' : 'Sandbox (Memory)'}
               </div>
-            ) : (
-               <div className="p-20 text-center bg-slate-50 rounded-[4rem] border-4 border-dashed border-slate-100 flex flex-col items-center gap-4"><Activity className="w-12 h-12 text-slate-200" /><div className="text-xs font-black uppercase text-slate-400 tracking-widest italic">Protocol setup for {type}...</div></div>
-            )}
-         </div>
-         <div className="mt-10 flex gap-6 shrink-0">
-            <button onClick={onClose} className="flex-1 py-6 bg-slate-100 text-slate-500 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] hover:bg-slate-200 transition-all">Cancel Entry</button>
-            <button onClick={() => onSave(formData)} className="flex-1 py-6 bg-indigo-600 text-white rounded-[2rem] font-black uppercase text-xs tracking-[0.4em] shadow-2xl hover:bg-indigo-700 transition-all flex items-center justify-center gap-4 group"><Save className="w-6 h-6 group-hover:scale-110 transition-transform" /> Save to Database</button>
-         </div>
+           </div>
+           <button 
+              onClick={() => api.setMode(mode === 'MOCK' ? 'LIVE' : 'MOCK')}
+              className={`w-14 h-8 rounded-full p-1 transition-all duration-300 relative ${mode === 'LIVE' ? 'bg-emerald-500' : 'bg-slate-300'}`}
+           >
+              <div className={`w-6 h-6 bg-white rounded-full shadow-lg transition-transform duration-300 ${mode === 'LIVE' ? 'translate-x-6' : 'translate-x-0'}`}></div>
+           </button>
+        </div>
       </div>
+
+      <div className="space-y-12 animate-in fade-in duration-700">
+        {activeTab === 'admin-overview' && <Overview data={data} />}
+        {activeTab === 'admin-users' && <UserManagement />}
+        {activeTab === 'admin-syllabus' && <EntityList title="Syllabus Management" type="Chapter" data={data.chapters} icon={BookOpen} color="indigo" btnLabel="Add Chapter" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Chapter'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-questions' && <EntityList title="Question Bank" type="Question" data={data.questions} icon={Code2} color="emerald" btnLabel="Add Question" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Question'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-tests' && <EntityList title="Mock Test Suite" type="MockTest" data={data.mockTests} icon={Target} color="rose" btnLabel="Create Mock Test" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MockTest'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-flashcards' && <EntityList title="Revision Cards" type="Flashcard" data={data.flashcards} icon={Layers} color="blue" btnLabel="Add Card" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Flashcard'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-hacks' && <EntityList title="Memory Hacks" type="MemoryHack" data={data.memoryHacks} icon={Zap} color="amber" btnLabel="Add Hack" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MemoryHack'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-blogs' && <EntityList title="Resource Articles" type="Blog" data={data.blogs} icon={PenTool} color="indigo" btnLabel="New Post" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Blog'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-system' && <SystemHub data={data} setData={setData} />}
+      </div>
+
+      {isCreating && (
+        <CreationHub 
+          type={creationType} 
+          item={editingItem} 
+          onClose={() => setIsCreating(false)} 
+          onSave={(entity: any) => handleSaveEntity(creationType, entity)}
+          questions={data.questions}
+          chapters={data.chapters}
+        />
+      )}
     </div>
   );
 };

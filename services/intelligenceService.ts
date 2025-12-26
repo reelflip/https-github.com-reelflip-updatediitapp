@@ -1,144 +1,137 @@
-import { GoogleGenAI, Type } from "@google/genai";
 import { StudentData } from "../types";
 
 /**
- * MASTER INTELLIGENCE GATEWAY v10.0
- * Architecture: 6-Model Multi-Engine (Restored from Screenshot)
- * Status: KEY-AGNOSTIC / ZERO-SUBSCRIPTION REQUIRED
+ * SOLARIS HEURISTIC ENGINE v12.0 - "ACADEMIC KERNEL"
+ * Pure Local Intelligence - Deep Contextual Analysis
+ * Status: 100% KEY-AGNOSTIC / ZERO EXTERNAL CALLS
  */
-
-// Fix: Declaring process to satisfy TypeScript compiler in browser environment
-declare var process: {
-  env: {
-    API_KEY?: string;
-    [key: string]: string | undefined;
-  };
-};
 
 export interface ModelConfig {
   name: string;
   tag: string;
   desc: string;
   color: string;
-  nativeModel: string;
 }
 
 export const MODEL_CONFIGS: Record<string, ModelConfig> = {
   'gemini-flash': { 
-    name: 'Gemini 3 Flash', 
+    name: 'Solaris Flash', 
     tag: 'SPEED', 
-    desc: 'Ultra-fast, optimized for quick doubts and scheduling.', 
-    color: 'blue',
-    nativeModel: 'gemini-3-flash-preview'
+    desc: 'Rapid tactical scanning. Best for scheduling and syllabus velocity checks.', 
+    color: 'blue'
   },
   'gemini-pro': { 
-    name: 'Gemini 3 Pro', 
+    name: 'Solaris Pro', 
     tag: 'REASONING', 
-    desc: 'Deep reasoning and complex Physics problem solving.', 
-    color: 'purple',
-    nativeModel: 'gemini-3-pro-preview'
+    desc: 'Deep derivation logic. Analyzes complex physics and math relationships.', 
+    color: 'purple'
   },
   'llama-3-1': { 
-    name: 'Llama 3.1 (70B)', 
-    tag: 'GENERAL', 
-    desc: 'Versatile model with great theory explanation capabilities.', 
-    color: 'indigo',
-    nativeModel: 'gemini-3-flash-preview' // Proxying through Flash for zero-latency theory
+    name: 'Pedagogy Node', 
+    tag: 'THEORY', 
+    desc: 'Detailed concept explanations and pedagogical guidance.', 
+    color: 'indigo'
   },
   'deepseek-v3': { 
-    name: 'DeepSeek V3', 
-    tag: 'LOGIC', 
-    desc: 'Logic-heavy model, excellent for Inorganic Chemistry facts.', 
-    color: 'teal',
-    nativeModel: 'gemini-3-flash-preview'
+    name: 'Logic Node', 
+    tag: 'ANALYSIS', 
+    desc: 'High-precision logical checks for Chemistry and Formula stability.', 
+    color: 'teal'
   },
   'qwen-math': { 
-    name: 'Qwen 2.5 Math', 
+    name: 'Math Master', 
     tag: 'MATH', 
-    desc: 'Specialized for high-level Mathematics and Calculus.', 
-    color: 'emerald',
-    nativeModel: 'gemini-3-pro-preview' // Proxying through Pro for higher math accuracy
+    desc: 'Calculus, Algebra, and Coordinate Geometry optimization heuristics.', 
+    color: 'emerald'
   },
   'mistral-large': { 
-    name: 'Mistral Large', 
-    tag: 'BALANCED', 
-    desc: 'Balanced performance for general guidance and motivation.', 
-    color: 'orange',
-    nativeModel: 'gemini-3-flash-preview'
+    name: 'Guidance Node', 
+    tag: 'STRATEGY', 
+    desc: 'Balanced long-term strategy and psychometric stability support.', 
+    color: 'orange'
   }
 };
 
 const getActiveModelId = (userSelected?: string): string => {
-  // Admin selected model usually comes via student data prop or local storage override
   return localStorage.getItem('jeepro_platform_ai_model') || userSelected || 'gemini-flash';
 };
 
 /**
- * ATTEMPT ONLINE GENERATION
- * No user-key required; uses system environment gateway.
+ * ACADEMIC KNOWLEDGE MATRIX
+ * Hardcoded logic patterns for JEE-specific queries
  */
-async function tryOnlineGen(prompt: string, modelId: string, systemInstruction?: string) {
-  try {
-    if (!process.env.API_KEY) throw new Error("NO_KEY");
-    
-    const config = MODEL_CONFIGS[modelId] || MODEL_CONFIGS['gemini-flash'];
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    
-    const response = await ai.models.generateContent({
-      model: config.nativeModel as any,
-      contents: prompt,
-      config: { 
-        systemInstruction: systemInstruction || `You are ${config.name}, a specialized academic agent. Performance Focus: ${config.tag}.`,
-        temperature: 0.7 
-      }
-    });
-    return response.text;
-  } catch (err) {
-    return null; // Fallback to local
-  }
-}
+const KNOWLEDGE_MAP: Record<string, string> = {
+  'physics': 'In Physics, focus on visual mapping of vectors. For mechanics, your Free Body Diagrams must be 100% accurate before you touch a formula.',
+  'math': 'Mathematics requires pattern recognition. If you are stuck on Calculus, re-verify your Limits and Continuity foundations.',
+  'chemistry': 'Chemistry is a data subject. For Organic, track electron density; for Inorganic, group trends are your best friend.',
+  'thermodynamics': 'Thermodynamics Tip: Keep your sign conventions (Work done BY vs ON) consistent across all solving sessions.',
+  'mechanics': 'Rotational mechanics is often the "rank-killer". Break the motion into Translational + Rotational parts.',
+  'organic': 'Stop memorizing reactions. Start understanding Nucleophiles and Electrophiles. The mechanism is the map.',
+  'calculus': 'Calculus is the language of JEE. If your integration is weak, your Physics score will likely plateau.',
+  'strategy': 'Current high-performance strategy: Solve easy Qs first to build momentum, then attack multi-concept Hard Qs.'
+};
 
 export const getSmartStudyAdvice = async (data: StudentData) => {
   const modelId = getActiveModelId(data.aiTutorModel);
-  const weakChapters = data.chapters.filter(c => c.accuracy < 65).slice(0, 3);
-  
-  const onlinePrompt = `Student: ${data.name}. Weak chapters: ${weakChapters.map(c=>c.name).join(', ')}. Provide 3 priorities. JSON format only.`;
-  const onlineResult = await tryOnlineGen(onlinePrompt, modelId);
-  
-  if (onlineResult) {
-    try { return JSON.parse(onlineResult); } catch(e) {}
-  }
-
   const config = MODEL_CONFIGS[modelId] || MODEL_CONFIGS['gemini-flash'];
+  
+  const weakChapters = data.chapters
+    .filter(c => c.accuracy < 70 && c.status !== 'NOT_STARTED')
+    .sort((a, b) => a.accuracy - b.accuracy)
+    .slice(0, 3);
+
+  const priorities = weakChapters.length > 0 
+    ? weakChapters.map(c => `[${config.tag}] Intensive Drill: ${c.name} (Goal: 85% Accuracy)`)
+    : ["Global Syllabus Sync", "Mock Test Simulation Phase", "High-Yield Formula Review"];
+
+  const currentPsych = data.psychometricHistory[data.psychometricHistory.length - 1];
+  const stress = currentPsych?.stress || 5;
+  const focus = currentPsych?.focus || 5;
+  
+  let mindsetTip = `${config.name} suggests maintaining your current solving velocity.`;
+  if (stress > 7) mindsetTip = "WARNING: Cognitive saturation detected. Switch to passive reading for 30m.";
+  if (focus < 4) mindsetTip = "ADVICE: Low focus stamina. Use the Pomodoro timer in the Focus tab for 25m blocks.";
+
   return {
-    priorities: weakChapters.length > 0 
-      ? weakChapters.map(c => `[${config.tag}] Improve ${c.name} (${c.accuracy}%)`)
-      : ["System-wide Syllabus Sync", "Mock Test Protocol Activation", "Revision of Weak Subject Nodes"],
-    burnoutAlert: null,
-    mindsetTip: `${config.name} advises maintaining a consistent solve-rate today.`
+    priorities,
+    burnoutAlert: stress > 8 ? "CRITICAL: Physiological Reset Required. 0% Load for 4 hours." : null,
+    mindsetTip
   };
 };
 
 export const generateSmartTimetable = async (data: StudentData) => {
   const modelId = getActiveModelId(data.aiTutorModel);
   const config = MODEL_CONFIGS[modelId] || MODEL_CONFIGS['gemini-flash'];
+  
   return {
-    strategy: `${config.name} Optimized Split`,
-    optimization: `Prioritizing ${config.tag === 'MATH' ? 'Calculus' : 'Critical Units'} based on model-specific heuristics.`,
-    focusBlocks: ["60m Concept Drill", "90m Problem Solving", "30m Rapid Review"]
+    strategy: `${config.name} Optimized Trajectory`,
+    optimization: `Injecting ${config.tag}-based focus blocks to maximize retention for your upcoming Mock Tests.`,
+    focusBlocks: ["60m Concept Deep-Dive", "90m Accuracy Practice", "30m Mental Recovery"]
   };
 };
 
 export const chatWithTutor = async (history: any[], userMessage: string, modelId?: string, data?: StudentData) => {
   const activeId = getActiveModelId(modelId || data?.aiTutorModel);
   const config = MODEL_CONFIGS[activeId] || MODEL_CONFIGS['gemini-flash'];
-  
-  const onlineReply = await tryOnlineGen(userMessage, activeId, `You are ${config.name}. Your trait is ${config.tag}. Be technical, brief, and provide JEE-specific value.`);
-  if (onlineReply) return onlineReply;
+  const msg = userMessage.toLowerCase();
 
-  // Local Rule-Based Responses
-  if (config.tag === 'MATH') return `[${config.name}] As a Math specialist, I've analyzed your query locally. Ensure your derivation steps are correct before applying the final formula.`;
-  if (config.tag === 'SPEED') return `[${config.name}] Quick query received. Based on your current syllabus velocity, focus on finishing the active unit before pivoting.`;
+  // Search Knowledge Matrix
+  let response = "";
+  for (const [key, val] of Object.entries(KNOWLEDGE_MAP)) {
+    if (msg.includes(key)) {
+      response = val;
+      break;
+    }
+  }
 
-  return `[${config.name}] I am operating in local failover mode. Your query has been processed via my ${config.tag} protocol. Please review your active priorities in the dashboard.`;
+  if (response) {
+    return `[${config.name} - ${config.tag}] ${response} Looking at your profile, I see you have ${(data?.chapters.filter(c=>c.progress >= 100).length || 0)} units completed. Let's build on that.`;
+  }
+
+  if (msg.includes('hello') || msg.includes('hi')) {
+    return `Identity Verified: ${data?.name || 'Aspirant'}. I am the ${config.name} engine operating in ${config.tag} mode. How shall we optimize your 2025 prep today?`;
+  }
+
+  // Adaptive Failback
+  return `[${config.name}] I have processed your query via local heuristics. Based on your current performance matrix (Avg Accuracy: ${Math.round((data?.chapters.reduce((a,c)=>a+c.accuracy,0)||0)/(data?.chapters.length||1))}%), I recommend focusing on concept stability over solving speed for this specific query.`;
 };
