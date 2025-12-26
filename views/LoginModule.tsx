@@ -1,11 +1,10 @@
-
 import React, { useState, useMemo } from 'react';
 import { UserRole, UserAccount } from '../types';
 import { api } from '../services/apiService';
 import { 
   Mail, Lock, Loader2, Shield, ArrowLeft, RefreshCw, KeyRound, Home, 
   BookOpen, Layers, Phone, ChevronRight, UserCircle2, GraduationCap, HeartHandshake,
-  ShieldCheck, Fingerprint, HelpCircle, Sparkles, UserPlus, CheckCircle2
+  ShieldCheck, Fingerprint, HelpCircle, Sparkles, UserPlus, CheckCircle2, AlertTriangle
 } from 'lucide-react';
 
 interface LoginModuleProps {
@@ -44,7 +43,6 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
   }, [formData.password, formData.confirmPassword, isAuthMode]);
 
   const executeAuth = async () => {
-    // 1. Unified Validation
     setAuthError(null);
     
     if (!formData.email.trim() || !formData.email.includes('@')) {
@@ -55,10 +53,9 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
     }
 
     if (isAuthMode === 'register') {
-      if (!formData.name.trim()) return setAuthError("Identity Required: Full name is missing.");
-      if (formData.password.length < 6) return setAuthError("Security Weak: Password must be 6+ characters.");
-      if (!passwordMatch) return setAuthError("Verify Key Mismatch: Passwords do not match.");
-      if (!formData.recoveryAnswer.trim()) return setAuthError("Protocol Gap: Please provide a security answer.");
+      if (!formData.name.trim()) return setAuthError("Identity Required: Signature is missing.");
+      if (formData.password.length < 6) return setAuthError("Security Weak: Key must be 6+ characters.");
+      if (!passwordMatch) return setAuthError("Verify Cipher Mismatch: Input does not match.");
     }
 
     setIsProcessing(true);
@@ -66,7 +63,6 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
     try {
       let result;
       if (isAuthMode === 'login') {
-        // Auto-detect role for master demo accounts, otherwise use selected role
         let finalRole = role;
         if (formData.email === 'admin@jeepro.in') finalRole = UserRole.ADMIN;
         if (formData.email === 'parent@jeepro.in') finalRole = UserRole.PARENT;
@@ -85,7 +81,6 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
 
       if (result.success && result.user) {
         setIsVerified(true);
-        // Brief delay for the 'Verified' UI state to be visible
         setTimeout(() => {
           onLoginSuccess(result.user);
         }, 1200);
@@ -99,10 +94,13 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
     }
   };
 
+  const forceSandbox = () => {
+    api.setMode('MOCK');
+  };
+
   const handleQuickLogin = (email: string, targetRole: UserRole) => {
     setFormData({ ...formData, email: email, password: 'demo-password' });
     setRole(targetRole);
-    // Setting state is async, so we use the values directly for the execution
     setIsProcessing(true);
     setAuthError(null);
     
@@ -135,10 +133,8 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
 
   return (
     <div className="min-h-screen z-[100] bg-[#020617] flex flex-col items-center justify-start p-4 py-12 lg:py-20 font-sans overflow-y-auto selection:bg-indigo-500/30">
-      {/* Dynamic Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_20%,#1e1b4b_0%,#020617_100%)] opacity-60"></div>
-        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-indigo-600/10 blur-[120px] rounded-full"></div>
       </div>
 
       <div className="max-w-[500px] w-full animate-in fade-in zoom-in-95 duration-700 relative z-10">
@@ -155,7 +151,6 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
         </div>
 
         <div className="bg-white/[0.02] backdrop-blur-3xl p-8 lg:p-12 rounded-[3.5rem] border border-white/10 shadow-2xl space-y-8 relative overflow-hidden">
-          {/* Mode Switcher */}
           <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5 relative z-10">
             <button 
               onClick={() => { setIsAuthMode('login'); setAuthError(null); }} 
@@ -172,7 +167,6 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
           </div>
 
           <div className="space-y-6 relative z-10">
-            {/* Unified Role Selection */}
             <div className="space-y-3">
               <div className="flex items-center justify-between px-2">
                  <label className="text-[10px] font-black uppercase text-indigo-400 tracking-widest">Protocol Role</label>
@@ -203,8 +197,19 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
             </div>
 
             {authError && (
-              <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center gap-3 text-rose-400 text-[11px] font-bold animate-in zoom-in-95">
-                 <Shield className="w-4 h-4 shrink-0" /> {authError}
+              <div className="p-5 bg-rose-500/10 border border-rose-500/20 rounded-3xl flex flex-col gap-4 text-rose-400 text-[11px] font-bold animate-in zoom-in-95 shadow-xl">
+                 <div className="flex items-center gap-3">
+                    <AlertTriangle className="w-5 h-5 shrink-0" /> 
+                    <span>{authError}</span>
+                 </div>
+                 {authError.includes('Unreachable') && (
+                   <button 
+                    onClick={forceSandbox}
+                    className="w-full py-3 bg-rose-500 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-rose-600 transition-all flex items-center justify-center gap-2"
+                   >
+                     <RefreshCw className="w-3 h-3" /> Force Sandbox Mode (Bypass Server)
+                   </button>
+                 )}
               </div>
             )}
 
@@ -266,32 +271,7 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
                         className={`w-full bg-black/40 border rounded-2xl py-4 pl-14 pr-6 text-white text-sm font-medium focus:ring-2 outline-none transition-all placeholder:text-slate-700 ${
                           formData.confirmPassword ? (passwordMatch ? 'border-emerald-500/30 focus:ring-emerald-500/20' : 'border-rose-500/30 focus:ring-rose-500/20') : 'border-white/5 focus:ring-indigo-500/40'
                         }`} 
-                        placeholder="Confirm password..." 
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 pt-2">
-                    <div className="flex justify-between items-center px-2">
-                       <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2">
-                         <HelpCircle className="w-3 h-3" /> Recovery Setup
-                       </label>
-                    </div>
-                    <select 
-                      value={formData.recoveryQuestion}
-                      onChange={e => setFormData({...formData, recoveryQuestion: e.target.value})}
-                      className="w-full bg-black/60 border border-white/10 rounded-2xl py-4 px-6 text-white text-sm font-medium focus:ring-2 focus:ring-indigo-500/40 outline-none appearance-none cursor-pointer"
-                    >
-                      {SECURITY_QUESTIONS.map(q => <option key={q} value={q} className="bg-slate-900">{q}</option>)}
-                    </select>
-                    <div className="relative group">
-                      <KeyRound className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-emerald-400" />
-                      <input 
-                        type="text" 
-                        value={formData.recoveryAnswer}
-                        onChange={e => setFormData({...formData, recoveryAnswer: e.target.value})}
-                        className="w-full bg-black/40 border border-white/5 rounded-2xl py-4 pl-14 pr-6 text-white text-sm font-medium focus:ring-2 focus:ring-indigo-500/40 outline-none transition-all placeholder:text-slate-700" 
-                        placeholder="Secret verification answer..." 
+                        placeholder="Confirm cipher key..." 
                       />
                     </div>
                   </div>
@@ -308,14 +288,13 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel, onN
             >
               {isProcessing ? <Loader2 className="w-6 h-6 animate-spin" /> : (
                 <>
-                  {isAuthMode === 'login' ? 'Initialize Node' : 'Register Profile'}
+                  {isAuthMode === 'login' ? 'Initialize Node' : 'Commit Registration'}
                   <ChevronRight className="w-5 h-5" />
                 </>
               )}
             </button>
           </div>
 
-          {/* Quick Access Grid */}
           {isAuthMode === 'login' && showDemo && (
             <div className="pt-6 border-t border-white/5 space-y-4 relative z-10 animate-in fade-in slide-in-from-bottom-2 duration-700">
                <div className="text-center">

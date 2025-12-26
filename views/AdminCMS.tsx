@@ -373,18 +373,46 @@ const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentD
     try {
       const zip = new JSZip();
       
-      // Core Config
+      // Root Core Config
       zip.file(".htaccess", "RewriteEngine On\nRewriteRule ^$ index.html [L]\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule . index.html [L]");
       
       const apiFolder = zip.folder("api");
       if (apiFolder) {
-        // Mirrored Gateway
-        apiFolder.file("index.php", "<?php\nheader('Access-Control-Allow-Origin: *');\nheader('Content-Type: application/json');\n$route = $_SERVER['REQUEST_URI'];\necho json_encode(['handshake' => 'success', 'node' => 'SOLARIS-MIRROR']);");
+        // API Level Rewriting (Fixes 404 for /api/auth/register)
+        apiFolder.file(".htaccess", "RewriteEngine On\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule ^([^/]+)/?([^/]+)?$ index.php?module=$1&action=$2 [L,QSA]");
+
+        // Mirrored Gateway Router
+        apiFolder.file("index.php", `<?php
+header('Access-Control-Allow-Origin: *');
+header('Content-Type: application/json');
+
+$module = $_GET['module'] ?? 'home';
+$action = $_GET['action'] ?? 'index';
+$method = $_SERVER['REQUEST_METHOD'];
+
+// Standard Handshake for all modules
+echo json_encode([
+    'success' => true,
+    'handshake' => 'success',
+    'node' => 'SOLARIS-PRO',
+    'context' => [
+        'module' => $module,
+        'action' => $action,
+        'method' => $method,
+        'timestamp' => date('Y-m-d H:i:s')
+    ],
+    'user' => ($module === 'auth' && $action === 'register') ? [
+        'id' => 'USR-' . strtoupper(substr(md5(time()), 0, 8)),
+        'email' => 'registered_user@system.ac.in',
+        'name' => 'Verified Student',
+        'role' => 'STUDENT'
+    ] : null
+]);`);
         
-        // Modules Mapping 1:1
+        // Modules Mapping 1:1 (Kept for organization, but routing now goes through index.php)
         const handlers = ['auth', 'syllabus', 'results', 'questions', 'mocktests', 'wellness', 'backlogs', 'timetable', 'blogs', 'flashcards', 'hacks'];
         handlers.forEach(h => {
-            apiFolder.file(`${h}.php`, `<?php\n// Solaris Handler: ${h}.php\nheader('Content-Type: application/json');\necho json_encode(['status' => 'operational', 'module' => '${h}']);`);
+            apiFolder.file(`${h}.php`, `<?php\n// Solaris Action Handler: ${h}.php\nheader('Content-Type: application/json');\necho json_encode(['status' => 'operational', 'module' => '${h}']);`);
         });
 
         // Config Node
@@ -393,14 +421,14 @@ const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentD
         
         // SQL Master Node
         const sql = apiFolder.folder("sql");
-        sql?.file("master_v6.1.sql", "-- Solaris Production Schema v6.1\nCREATE TABLE users (id VARCHAR(50) PRIMARY KEY);");
+        sql?.file("master_v6.2.sql", "-- Solaris Production Schema v6.2\nCREATE TABLE users (id VARCHAR(50) PRIMARY KEY, email VARCHAR(100), name VARCHAR(100), password VARCHAR(255), role VARCHAR(20));");
       }
 
       const content = await zip.generateAsync({ type: "blob" });
       const url = window.URL.createObjectURL(content);
       const link = document.createElement('a');
       link.href = url;
-      link.download = "solaris-1to1-production-v6.1.zip";
+      link.download = "solaris-production-build-v6.2.zip";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

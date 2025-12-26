@@ -1,4 +1,3 @@
-
 import { StudentData, UserRole, UserAccount, Chapter, TestResult, BacklogItem, Question, MockTest, RoutineConfig } from '../types';
 import { INITIAL_STUDENT_DATA } from '../mockData';
 
@@ -8,12 +7,16 @@ const API_CONFIG = {
 };
 
 const safeJson = async (response: Response) => {
+  if (response.status === 404) {
+    throw new Error("Endpoint Not Found. Ensure /api/.htaccess is configured on your server.");
+  }
+  
   const text = await response.text();
   try {
     return JSON.parse(text);
   } catch (e) {
     if (text.includes('<?php') || text.includes('Fatal error')) {
-        throw new Error("Backend Logic Fault. Use Admin > System > Build Hub to re-generate.");
+        throw new Error("Backend Logic Fault. Production Node requires PHP/PDO configuration.");
     }
     throw new Error("Network Response Invalid");
   }
@@ -32,47 +35,43 @@ export const api = {
   isDemoDisabled: (): boolean => (window as any).DISABLE_DEMO_LOGINS === true,
 
   async login(credentials: { email: string; role: UserRole }) {
+    // 1. Check Master Demo Accounts (For testing purposes only)
     if (!this.isDemoDisabled()) {
       if (credentials.email === 'ishu@gmail.com') return { success: true, user: { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2024-01-01' } };
       if (credentials.email === 'admin@jeepro.in') return { success: true, user: { id: 'ADMIN-001', name: 'System Admin', email: 'admin@jeepro.in', role: UserRole.ADMIN, createdAt: '2024-01-01' } };
     }
 
-    if (this.getMode() === 'LIVE') {
-      try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}auth/login`, {
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(credentials)
-        });
-        return await safeJson(res);
-      } catch(e) { return { success: false, error: 'Production Node Unreachable' }; }
+    // 2. Production Fetch
+    try {
+      const res = await fetch(`${API_CONFIG.BASE_URL}auth/login`, {
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials)
+      });
+      const data = await safeJson(res);
+      return data;
+    } catch(e: any) { 
+      return { success: false, error: e.message || "Production Node Unreachable: Database sync failed." }; 
     }
-    return { success: false, error: 'Sandbox Mode: Registration required.' };
   },
 
-  // Added register method to fix "Property 'register' does not exist" error in LoginModule
   async register(data: any) {
-    if (this.getMode() === 'LIVE') {
-      try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}auth/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        return await safeJson(res);
-      } catch(e) { return { success: false, error: 'Production Node Unreachable' }; }
+    // STRICT UPLINK: No local storage used. Must hit the real backend.
+    try {
+      const res = await fetch(`${API_CONFIG.BASE_URL}auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await safeJson(res);
+      return result;
+    } catch(e: any) { 
+      // Explicit failure if database/server is missing
+      return { 
+        success: false, 
+        error: "Sync Failed: " + (e.message || "Database node unreachable.") + " Registration requires an active PHP/MySQL uplink." 
+      }; 
     }
-    // Sandbox registration simulation
-    return { 
-      success: true, 
-      user: { 
-        id: `DEMO-${Math.random().toString(36).substr(2, 9)}`, 
-        name: data.name, 
-        email: data.email, 
-        role: data.role, 
-        createdAt: new Date().toISOString() 
-      } 
-    };
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
