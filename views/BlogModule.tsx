@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { StudentData, Blog } from '../types';
-import { BookOpen, Calendar, User, ArrowLeft, Share2, Bookmark, Clock, Sparkles, ChevronRight, Search, TrendingUp } from 'lucide-react';
+import { Calendar, User, ArrowLeft, Share2, Bookmark, Clock, Sparkles, ChevronRight, Search, TrendingUp, BookOpen, Zap } from 'lucide-react';
 
 interface BlogModuleProps {
   data: StudentData;
@@ -9,61 +8,98 @@ interface BlogModuleProps {
 
 const BlogModule: React.FC<BlogModuleProps> = ({ data }) => {
   const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
-  const [activeCategory, setActiveCategory] = useState('All Articles');
+  const [activeCategory, setActiveCategory] = useState('All Strategy Reports');
 
-  const categories = ['All Articles', 'JEE Strategy', 'Physics Insights', 'Chemistry Lab', 'Math Shortcuts', 'Wellness'];
+  // Enhanced categories for better preparation utility
+  const categories = ['All Strategy Reports', 'Physics Insights', 'Organic Hacks', 'Math Mechanics', 'Numerical Stoicism', 'Wellness'];
 
-  if (selectedBlog) {
+  // High-value preparation articles (Simulated context)
+  const strategyArticles = [
+    {
+      id: 's1',
+      title: 'The Forgetting Curve: Why your Revision Fails',
+      author: 'Academic Node 01',
+      date: 'DEC 24, 2024',
+      readTime: '12 MIN',
+      category: 'Psychology',
+      content: `<h1>The Science of Memory Decay</h1><p>Standard revision follows a linear path. Dominant preparation follows an exponential one. Learn how to exploit the science of spaced repetition to double your retention velocity before the Jan attempt.</p>`,
+      excerpt: "Generic revision leads to decay. Learn how to use Spaced Repetition algorithms to retain 90% of the JEE syllabus."
+    },
+    {
+      id: 's2',
+      title: 'Numerical Stoicism: Surviving consecutive Hard Qs',
+      author: 'IIT-B Graduate Node',
+      date: 'DEC 22, 2024',
+      readTime: '8 MIN',
+      category: 'Exam Strategy',
+      content: `<h1>Exam Stoicism</h1><p>The biggest mark-killer in JEE Advanced isn't lack of knowledge—it's panic. When you face 3 consecutive unsolved problems, your cortisol levels spike. We analyze how to maintain a flat-line focus pulse.</p>`,
+      excerpt: "Panic is the #1 reason for silly mistakes. Master the psychological flat-line to maintain precision under pressure."
+    },
+    {
+      id: 's3',
+      title: 'Organic Chemistry: Architecture over Memorization',
+      author: 'Chemistry Specialist',
+      date: 'DEC 20, 2024',
+      readTime: '15 MIN',
+      category: 'Subject Strategy',
+      content: `<h1>The Mechanism Map</h1><p>Stop memorizing 500+ reactions. Start understanding Electron Density and Nucleophilic attacks. Once you see the architecture of the molecule, the reaction predicts itself.</p>`,
+      excerpt: "Molecular architecture predicts reactions. Stop rote learning and start engineering your Chemistry scores."
+    }
+  ];
+
+  if (selectedBlog || (selectedBlog && selectedBlog.id === 'b1')) {
+    const blog = selectedBlog || data.blogs[0];
     return (
-      <div className="max-w-4xl mx-auto space-y-12 animate-in slide-in-from-bottom-8 duration-500 pb-32">
+      <div className="bg-[#0a0c1a] min-h-screen text-white pt-20 px-6 max-w-5xl mx-auto space-y-16 animate-in slide-in-from-bottom-8 duration-700 pb-40">
         <button 
           onClick={() => setSelectedBlog(null)}
-          className="flex items-center gap-3 text-slate-500 hover:text-indigo-600 font-black text-xs uppercase tracking-widest transition-all group"
+          className="flex items-center gap-4 text-[#4a5578] hover:text-white font-black text-[10px] uppercase tracking-[0.4em] transition-all group"
         >
-          <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" /> Back to Intelligence Hub
+          <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-2" /> Back to Intelligence Hub
         </button>
 
-        <article className="bg-white rounded-[4rem] overflow-hidden border border-slate-200 shadow-2xl">
-          <div className="h-[450px] bg-slate-900 relative">
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent"></div>
-            <div className="absolute bottom-16 left-16 right-16 space-y-6">
-              <div className="flex gap-3">
-                 <span className="bg-indigo-600 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-900/40">Article Deep Dive</span>
-                 <span className="bg-white/10 backdrop-blur-md text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/20">7 Min Detailed Read</span>
+        <article className="bg-[#161a2e] rounded-[5rem] overflow-hidden border border-[#2d3656] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.7)] relative">
+          <div className="h-[550px] bg-slate-950 relative">
+            <div className="absolute inset-0 bg-gradient-to-t from-[#161a2e] via-[#0d1021]/60 to-transparent"></div>
+            <div className="absolute bottom-20 left-16 right-16 space-y-8">
+              <div className="flex gap-4">
+                 <span className="bg-[#5d5fef] text-white px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-[0_15px_30px_rgba(93,95,239,0.4)]">Strategic Report</span>
+                 <span className="bg-white/5 backdrop-blur-md text-[#7d8cb8] px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10">High Frequency Intel</span>
               </div>
-              <h1 className="text-5xl md:text-6xl font-black text-white italic tracking-tighter leading-[0.95] drop-shadow-2xl">{selectedBlog.title}</h1>
+              <h1 className="text-6xl md:text-8xl font-black text-white italic tracking-tighter leading-[0.85] uppercase drop-shadow-2xl">{blog.title}</h1>
             </div>
           </div>
 
-          <div className="p-16 space-y-16">
-            <div className="flex flex-wrap items-center justify-between gap-8 pb-10 border-b border-slate-100">
-               <div className="flex items-center gap-5">
-                  <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center text-slate-300">
-                     <User className="w-8 h-8" />
+          <div className="p-16 md:p-24 space-y-16">
+            <div className="flex flex-wrap items-center justify-between gap-10 pb-12 border-b border-[#1e2440]">
+               <div className="flex items-center gap-8">
+                  <div className="w-20 h-20 bg-[#0d1021] border border-[#1e2440] rounded-[2rem] flex items-center justify-center text-indigo-400 shadow-inner">
+                     <User className="w-10 h-10" />
                   </div>
                   <div>
-                    <div className="text-lg font-black text-slate-900 tracking-tight">{selectedBlog.author}</div>
-                    <div className="text-[10px] text-indigo-500 font-black uppercase tracking-[0.2em]">{selectedBlog.date}</div>
+                    <div className="text-2xl font-black text-white tracking-tight uppercase italic leading-none">{blog.author}</div>
+                    <div className="text-[11px] text-indigo-400 font-black uppercase tracking-[0.4em] mt-3">{blog.date} • JEE-PRO VERIFIED</div>
                   </div>
                </div>
-               <div className="flex gap-4">
-                  <button className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-slate-100"><Share2 className="w-6 h-6" /></button>
-                  <button className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-rose-500 hover:text-white transition-all shadow-sm border border-slate-100"><Bookmark className="w-6 h-6" /></button>
+               <div className="flex gap-6">
+                  <button className="p-5 bg-[#0d1021] text-[#4a5578] rounded-2xl hover:bg-[#5d5fef] hover:text-white transition-all shadow-sm border border-[#1e2440]"><Share2 className="w-7 h-7" /></button>
+                  <button className="p-5 bg-[#0d1021] text-[#4a5578] rounded-2xl hover:bg-rose-500 hover:text-white transition-all shadow-sm border border-[#1e2440]"><Bookmark className="w-7 h-7" /></button>
                </div>
             </div>
 
             <div 
-              className="prose prose-slate max-w-none prose-p:text-slate-600 prose-p:text-xl prose-p:leading-relaxed prose-headings:font-black prose-headings:tracking-tighter prose-img:rounded-[3rem] prose-img:shadow-2xl prose-strong:text-slate-900"
-              dangerouslySetInnerHTML={{ __html: selectedBlog.content }}
+              className="prose prose-invert max-w-none prose-p:text-[#7d8cb8] prose-p:text-2xl prose-p:leading-relaxed prose-headings:font-black prose-headings:tracking-tighter prose-img:rounded-[4rem] prose-img:shadow-2xl prose-strong:text-white italic font-medium selection:bg-indigo-500/30"
+              dangerouslySetInnerHTML={{ __html: blog.content }}
             />
             
-            <div className="pt-16 border-t border-slate-100">
-               <div className="bg-indigo-50 p-10 rounded-[3rem] flex flex-col md:flex-row items-center justify-between gap-10">
-                  <div className="space-y-3 text-center md:text-left">
-                     <h4 className="text-2xl font-black italic text-slate-900 tracking-tight">Enjoyed this strategy?</h4>
-                     <p className="text-slate-500 font-medium">Join 12,000+ aspirants receiving weekly tactical reports.</p>
+            <div className="pt-20 border-t border-[#1e2440]">
+               <div className="bg-[#0d1021] p-16 rounded-[4rem] flex flex-col md:flex-row items-center justify-between gap-12 border border-[#1e2440] relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform"><TrendingUp className="w-32 h-32" /></div>
+                  <div className="space-y-6 text-center md:text-left relative z-10">
+                     <h4 className="text-4xl font-black italic text-white tracking-tight uppercase leading-none">Upgrade your Architecture.</h4>
+                     <p className="text-[#4a5578] font-medium text-xl max-w-md italic">Join 15,000+ aspirants receiving weekly tactical reports and memory flushes.</p>
                   </div>
-                  <button className="bg-indigo-600 text-white px-10 py-5 rounded-[2rem] font-black uppercase tracking-widest shadow-xl shadow-indigo-200">Subscribe Now</button>
+                  <button className="bg-[#5d5fef] text-white px-16 py-8 rounded-[2.5rem] font-black uppercase text-[11px] tracking-[0.4em] shadow-[0_20px_50px_-10px_rgba(93,95,239,0.5)] hover:scale-105 transition-all relative z-10">Establish Permanent Link</button>
                </div>
             </div>
           </div>
@@ -73,110 +109,120 @@ const BlogModule: React.FC<BlogModuleProps> = ({ data }) => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-16 animate-in fade-in duration-700 pb-32">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-10">
-        <div className="space-y-4">
-          <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-100 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest text-indigo-600">
-            <Sparkles className="w-3.5 h-3.5" /> Tactics for AIR-1
+    <div className="bg-[#0a0c1a] min-h-screen text-white pt-20 px-6 max-w-7xl mx-auto space-y-24 animate-in fade-in duration-1000 pb-40">
+      
+      {/* --- HUB HEADER --- */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-12">
+        <div className="space-y-8">
+          <div className="inline-flex items-center gap-3 bg-indigo-500/10 border border-indigo-500/20 px-6 py-2.5 rounded-full text-[11px] font-black uppercase tracking-[0.4em] text-indigo-400">
+            <Sparkles className="w-4 h-4" /> Tactics for AIR-1
           </div>
-          <h2 className="text-6xl font-black text-slate-900 tracking-tighter italic leading-none">INTELLIGENCE <br /> <span className="text-indigo-600">HUB.</span></h2>
-          <p className="text-slate-500 text-lg font-medium max-w-lg leading-relaxed">Deep dives into high-performance study mechanics, subject strategies, and exam day psychological warfare.</p>
+          <h2 className="text-8xl font-black text-white tracking-tighter italic leading-[0.85] uppercase">INTELLIGENCE <br /> <span className="text-[#5d5fef]">HUB.</span></h2>
+          <p className="text-[#7d8cb8] text-2xl font-medium max-w-xl leading-relaxed italic">"Deep dives into high-performance study mechanics, subject strategies, and numerical warfare."</p>
         </div>
         
-        <div className="w-full lg:w-96 relative group">
-           <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within:text-indigo-600 transition-colors" />
+        <div className="w-full lg:w-[450px] relative group">
+           <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-6 h-6 text-[#2d3656] group-focus-within:text-[#5d5fef] transition-colors" />
            <input 
             type="text" 
-            placeholder="Search articles..." 
-            className="w-full pl-14 pr-8 py-5 bg-white border border-slate-200 rounded-[2rem] text-sm font-bold focus:ring-4 focus:ring-indigo-100 shadow-sm transition-all"
+            placeholder="Search tactical reports..." 
+            className="w-full pl-16 pr-10 py-7 bg-[#0d1021] border border-[#1e2440] rounded-[2.5rem] text-base font-bold text-white placeholder:text-[#2d3656] focus:ring-8 focus:ring-indigo-500/10 shadow-inner transition-all outline-none"
            />
         </div>
       </div>
 
-      <nav className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+      {/* --- CATEGORY NAV --- */}
+      <nav className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide">
          {categories.map((cat, i) => (
            <button 
             key={i} 
             onClick={() => setActiveCategory(cat)}
-            className={`px-8 py-3.5 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all border-2 ${activeCategory === cat ? 'bg-slate-900 border-slate-900 text-white shadow-xl' : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'}`}
+            className={`px-10 py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.25em] whitespace-nowrap transition-all border-2 ${activeCategory === cat ? 'bg-[#5d5fef] border-[#5d5fef] text-white shadow-[0_15px_30px_rgba(93,95,239,0.3)]' : 'bg-[#0d1021] border-[#1e2440] text-[#4a5578] hover:text-[#7d8cb8] hover:border-[#2d3656]'}`}
            >
              {cat}
            </button>
          ))}
       </nav>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-        {/* Featured Card */}
+      {/* --- ARTICLE GRID --- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
+        
+        {/* FEATURED: THE FORGETTING CURVE */}
         <div 
-          onClick={() => setSelectedBlog(data.blogs[0])}
-          className="lg:col-span-2 group bg-white rounded-[4rem] border border-slate-200 overflow-hidden shadow-sm hover:shadow-2xl hover:border-indigo-400 transition-all cursor-pointer flex flex-col md:flex-row min-h-[450px]"
+          onClick={() => setSelectedBlog(strategyArticles[0] as any)}
+          className="lg:col-span-2 group bg-[#161a2e] rounded-[5rem] border border-[#2d3656] overflow-hidden shadow-2xl hover:border-indigo-500/40 transition-all cursor-pointer flex flex-col md:flex-row min-h-[550px]"
         >
-          <div className="md:w-1/2 bg-slate-900 relative overflow-hidden">
-             <div className="absolute inset-0 bg-indigo-900 opacity-20 group-hover:scale-110 transition-transform duration-1000"></div>
-             <div className="absolute top-10 left-10">
-                <span className="bg-indigo-600 text-white px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl">Masterclass</span>
+          <div className="md:w-1/2 bg-[#0d1021] relative overflow-hidden p-16 flex items-center justify-center">
+             <div className="absolute inset-0 bg-indigo-500/5 group-hover:scale-110 transition-transform duration-[3s]"></div>
+             <div className="absolute top-12 left-12">
+                <span className="bg-[#5d5fef] text-white px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl">Masterclass</span>
              </div>
+             <Zap className="w-32 h-32 text-[#1e2440] group-hover:text-indigo-500/20 transition-colors duration-1000" />
           </div>
-          <div className="md:w-1/2 p-12 flex flex-col justify-between space-y-8">
-            <div className="space-y-6">
-              <div className="flex items-center gap-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                <Calendar className="w-4 h-4" /> DEC 20, 2024
-                <span>•</span>
-                <Clock className="w-4 h-4" /> 12 MIN READ
+          <div className="md:w-1/2 p-16 md:p-20 flex flex-col justify-between space-y-12 bg-[#161a2e] relative z-10">
+            <div className="space-y-8">
+              <div className="flex items-center gap-5 text-[10px] font-black text-[#4a5578] uppercase tracking-[0.3em]">
+                <Calendar className="w-4 h-4" /> {strategyArticles[0].date}
+                <div className="w-1 h-1 bg-[#2d3656] rounded-full"></div>
+                <Clock className="w-4 h-4" /> {strategyArticles[0].readTime}
               </div>
-              <h3 className="text-4xl font-black text-slate-900 tracking-tighter italic leading-[0.95] group-hover:text-indigo-600 transition-colors">{data.blogs[0].title}</h3>
-              <p className="text-slate-500 font-medium leading-relaxed line-clamp-3 italic">"Standard preparation follows a linear path. Dominant preparation follows an exponential one. Learn how to exploit the science of recall to double your efficiency."</p>
+              <h3 className="text-4xl md:text-5xl font-black text-white tracking-tighter italic leading-[0.9] group-hover:text-[#5d5fef] transition-colors uppercase">{strategyArticles[0].title}</h3>
+              <p className="text-[#7d8cb8] text-lg font-medium leading-relaxed line-clamp-3 italic">"{strategyArticles[0].excerpt}"</p>
             </div>
-            <div className="flex items-center justify-between pt-8 border-t border-slate-50">
-               <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-300"><User className="w-5 h-5" /></div>
-                  <span className="text-xs font-black text-slate-900 uppercase">By Admin Console</span>
+            <div className="flex items-center justify-between pt-12 border-t border-[#1e2440]">
+               <div className="flex items-center gap-5">
+                  <div className="w-14 h-14 bg-[#0d1021] border border-[#1e2440] rounded-2xl flex items-center justify-center text-indigo-400"><User className="w-6 h-6" /></div>
+                  <span className="text-[10px] font-black text-white uppercase tracking-widest">{strategyArticles[0].author}</span>
                </div>
-               <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 group-hover:bg-indigo-600 group-hover:text-white transition-all group-hover:rotate-12">
-                  <ChevronRight className="w-6 h-6" />
+               <div className="w-16 h-16 bg-[#0d1021] border border-[#1e2440] rounded-[1.5rem] flex items-center justify-center text-[#4a5578] group-hover:bg-[#5d5fef] group-hover:text-white transition-all group-hover:rotate-12 shadow-inner">
+                  <ChevronRight className="w-8 h-8" />
                </div>
             </div>
           </div>
         </div>
 
-        {/* Regular Article Card */}
-        {data.blogs.slice(1).map((blog) => (
+        {/* REGULAR STRATEGY REPORTS */}
+        {strategyArticles.slice(1).map((blog) => (
           <div 
             key={blog.id} 
-            onClick={() => setSelectedBlog(blog)}
-            className="group bg-white rounded-[3rem] border border-slate-200 overflow-hidden shadow-sm hover:shadow-2xl hover:border-indigo-400 transition-all cursor-pointer flex flex-col h-full"
+            onClick={() => setSelectedBlog(blog as any)}
+            className="group bg-[#161a2e] rounded-[4.5rem] border border-[#2d3656] overflow-hidden shadow-xl hover:border-indigo-500/40 transition-all cursor-pointer flex flex-col h-full"
           >
-            <div className="h-64 bg-slate-900 relative overflow-hidden">
-               <div className="absolute inset-0 bg-slate-800 opacity-20 group-hover:scale-110 transition-transform duration-1000"></div>
+            <div className="h-72 bg-[#0d1021] relative overflow-hidden p-12 flex items-center justify-center">
+               <div className="absolute inset-0 bg-indigo-500/5 group-hover:scale-110 transition-transform duration-[3s]"></div>
+               <BookOpen className="w-16 h-16 text-[#1e2440] group-hover:text-indigo-500/20 transition-colors" />
+               <div className="absolute top-10 left-10">
+                  <span className="px-4 py-1.5 bg-[#161a2e] border border-[#2d3656] text-[8px] font-black uppercase tracking-widest text-indigo-400 rounded-lg">{blog.category}</span>
+               </div>
             </div>
-            <div className="p-10 space-y-6 flex-1 flex flex-col">
-              <div className="flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                <Calendar className="w-3.5 h-3.5" /> {blog.date}
-                <span>•</span>
-                <Clock className="w-3.5 h-3.5" /> 5 MIN
+            <div className="p-12 space-y-10 flex-1 flex flex-col">
+              <div className="flex items-center gap-5 text-[9px] font-black text-[#4a5578] uppercase tracking-[0.3em]">
+                <Calendar className="w-4 h-4" /> {blog.date}
+                <div className="w-1 h-1 bg-[#2d3656] rounded-full"></div>
+                <Clock className="w-4 h-4" /> {blog.readTime}
               </div>
-              <h3 className="text-2xl font-black text-slate-800 tracking-tighter group-hover:text-indigo-600 transition-colors leading-none italic">{blog.title}</h3>
-              <p className="text-sm text-slate-500 font-medium line-clamp-3 leading-relaxed">Master the core concepts of JEE Advanced with our latest deep-dive strategy report. Precision beats volume every time.</p>
-              <div className="pt-8 mt-auto border-t border-slate-50 flex items-center justify-between">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">By {blog.author}</span>
-                <div className="w-12 h-12 rounded-2xl bg-slate-50 text-slate-300 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
-                  <ArrowLeft className="w-6 h-6 rotate-180" />
+              <h3 className="text-3xl font-black text-white tracking-tighter group-hover:text-[#5d5fef] transition-colors leading-[1.1] italic uppercase">{blog.title}</h3>
+              <p className="text-base text-[#7d8cb8] font-medium line-clamp-3 leading-relaxed italic">"{blog.excerpt}"</p>
+              <div className="pt-10 mt-auto border-t border-[#1e2440] flex items-center justify-between">
+                <span className="text-[10px] font-black text-[#4a5578] uppercase tracking-widest">By {blog.author}</span>
+                <div className="w-12 h-12 rounded-2xl bg-[#0d1021] border border-[#1e2440] text-[#2d3656] flex items-center justify-center group-hover:bg-[#5d5fef] group-hover:text-white transition-all shadow-inner">
+                  <ChevronRight className="w-6 h-6" />
                 </div>
               </div>
             </div>
           </div>
         ))}
         
-        {/* Newsletter In-grid Widget */}
-        <div className="bg-indigo-950 p-12 rounded-[3rem] text-white space-y-8 flex flex-col justify-center relative overflow-hidden shadow-2xl">
-           <div className="absolute top-0 right-0 p-10 opacity-10 rotate-12 scale-150"><TrendingUp className="w-48 h-48" /></div>
-           <div className="space-y-4 relative z-10">
-              <h4 className="text-3xl font-black italic tracking-tighter leading-none">Stay ahead of <br /> the curve.</h4>
-              <p className="text-indigo-200 text-sm font-medium leading-relaxed opacity-80">Subscribe for weekly tactical formula flushes and psychological focus hacks.</p>
+        {/* NEWSLETTER: OPERATIONAL SYNC */}
+        <div className="bg-[#0d1021] p-16 rounded-[4.5rem] text-white space-y-12 flex flex-col justify-center relative overflow-hidden shadow-2xl border border-[#1e2440] group">
+           <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12 scale-150 group-hover:rotate-45 transition-transform duration-[4s]"><TrendingUp className="w-64 h-64 text-indigo-400" /></div>
+           <div className="space-y-6 relative z-10">
+              <h4 className="text-5xl font-black italic tracking-tighter leading-[0.9] uppercase">Stay Ahead <br /> Of The Curve.</h4>
+              <p className="text-[#7d8cb8] text-lg font-medium leading-relaxed italic">"Weekly formula flushes, subject-specific focus hacks, and real-time exam cycle alerts."</p>
            </div>
-           <div className="space-y-4 relative z-10">
-              <input type="email" placeholder="aspirant@iit.ac.in" className="w-full bg-white/10 border-none rounded-2xl p-5 text-sm font-black text-white placeholder-indigo-300/40 focus:ring-4 focus:ring-indigo-500/20" />
-              <button className="w-full bg-white text-indigo-950 py-5 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.3em] shadow-xl hover:scale-105 transition-all">Establish Uplink</button>
+           <div className="space-y-6 relative z-10">
+              <input type="email" placeholder="aspirant@node.iit.ac.in" className="w-full bg-[#161a2e] border border-[#2d3656] rounded-[1.8rem] px-8 py-7 text-base font-black text-white placeholder:text-[#2d3656] focus:ring-8 focus:ring-indigo-500/10 outline-none transition-all" />
+              <button className="w-full bg-[#5d5fef] text-white py-8 rounded-[2.5rem] text-[11px] font-black uppercase tracking-[0.5em] shadow-[0_20px_50px_-10px_rgba(93,95,239,0.5)] hover:scale-105 transition-all">ESTABLISH UPLINK</button>
            </div>
         </div>
       </div>

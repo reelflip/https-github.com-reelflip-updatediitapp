@@ -1,45 +1,93 @@
-
-import React, { useState } from 'react';
-import { StudentData } from '../types';
-import { UserCircle, Save, School, Briefcase, Calendar, GraduationCap, CheckCircle, Globe, HeartHandshake, ShieldCheck, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { StudentData, UserAccount } from '../types';
+import { api } from '../services/apiService';
+import { 
+  UserCircle, Save, School, Briefcase, Calendar, 
+  GraduationCap, CheckCircle, Globe, HeartHandshake, 
+  ShieldCheck, Trash2, Mail, Building, Target, User, Info, Loader2
+} from 'lucide-react';
 
 interface ProfileModuleProps {
   data: StudentData;
   setData: (data: StudentData) => void;
 }
 
+const INSTITUTES = [
+  "Allen Career Institute", "FIITJEE", "Resonance", "Aakash Institute",
+  "Physics Wallah (PW)", "Narayana Educational Institutions", "Sri Chaitanya",
+  "Vibrant Academy", "Bansal Classes", "Unacademy Centre", "Byju's Tuition Centre",
+  "Motion Education", "Reliable Institute", "Other / Self Study"
+];
+
+const NATIONAL_EXAMS = [
+  "JEE Main & Advanced", "JEE Main Only", "BITSAT", "VITEEE", "NEET (Medical)",
+  "WBJEE", "MHT-CET", "KVPY / Olympiads", "COMEDK / KCET", "CUET"
+];
+
+const TARGET_YEARS = ["2025", "2026", "2027", "2028"];
+
 const ProfileModule: React.FC<ProfileModuleProps> = ({ data, setData }) => {
-  const [profile, setProfile] = useState({
-    name: data.name,
-    targetYear: data.targetYear || '2025',
-    coachingName: data.coachingName || '',
-    schoolName: data.schoolName || '',
-    targetExams: data.targetExams || ['JEE Mains']
-  });
+  const [user, setUser] = useState<UserAccount | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
-  const availableExams = ['JEE Mains', 'JEE Advanced', 'BITSAT', 'VITEEE', 'KVPY', 'Olympiads'];
+  useEffect(() => {
+    const savedUser = localStorage.getItem('jeepro_user');
+    if (savedUser) setUser(JSON.parse(savedUser));
+  }, []);
 
-  const toggleExam = (exam: string) => {
-    const current = [...profile.targetExams];
-    if (current.includes(exam)) {
-      setProfile({ ...profile, targetExams: current.filter(e => e !== exam) });
-    } else {
-      setProfile({ ...profile, targetExams: [...current, exam] });
+  const [profile, setProfile] = useState({
+    name: data.name,
+    email: '',
+    targetYear: data.targetYear || TARGET_YEARS[0],
+    institute: data.institute || INSTITUTES[0],
+    targetExam: data.targetExam || NATIONAL_EXAMS[0],
+    birthDate: data.birthDate || '',
+    gender: data.gender || ''
+  });
+
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        name: user.name || data.name,
+        email: user.email || '',
+        targetYear: user.targetYear || data.targetYear || TARGET_YEARS[0],
+        institute: user.institute || data.institute || INSTITUTES[0],
+        targetExam: user.targetExam || data.targetExam || NATIONAL_EXAMS[0],
+        birthDate: user.birthDate || data.birthDate || '',
+        gender: user.gender || data.gender || ''
+      });
     }
-  };
+  }, [user, data]);
 
-  const handleSave = () => {
-    setData({
-      ...data,
-      name: profile.name,
-      targetYear: profile.targetYear,
-      coachingName: profile.coachingName,
-      schoolName: profile.schoolName,
-      targetExams: profile.targetExams
-    });
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+  const handleSave = async () => {
+    if (!user) return;
+    setIsSaving(true);
+    
+    const result = await api.updateUserProfile(user.id, profile);
+    
+    if (result.success) {
+      const updatedUser = { ...user, ...profile };
+      localStorage.setItem('jeepro_user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      
+      setData({
+        ...data,
+        name: profile.name,
+        targetYear: profile.targetYear,
+        institute: profile.institute,
+        targetExam: profile.targetExam,
+        birthDate: profile.birthDate,
+        gender: profile.gender
+      });
+      
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    } else {
+      alert("Database error: " + (result.error || "Uplink failed."));
+    }
+    
+    setIsSaving(false);
   };
 
   const revokeHandshake = () => {
@@ -49,17 +97,18 @@ const ProfileModule: React.FC<ProfileModuleProps> = ({ data, setData }) => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in duration-500 pb-20">
-      <div className="flex justify-between items-center">
+    <div className="max-w-5xl mx-auto space-y-10 animate-in fade-in duration-500 pb-20 px-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h2 className="text-4xl font-black text-slate-900 tracking-tight italic">Academic Profile.</h2>
           <p className="text-slate-500 font-medium">Manage your identity and academic targets.</p>
         </div>
         <button 
           onClick={handleSave}
-          className={`px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl transition-all ${isSaved ? 'bg-emerald-500 text-white shadow-emerald-100' : 'bg-indigo-600 text-white shadow-indigo-100 hover:bg-indigo-700 hover:scale-105'}`}
+          disabled={isSaving}
+          className={`px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl transition-all flex items-center gap-3 ${isSaved ? 'bg-emerald-500 text-white shadow-emerald-100' : 'bg-indigo-600 text-white shadow-indigo-100 hover:bg-indigo-700 hover:scale-105'} disabled:opacity-50`}
         >
-          {isSaved ? <><CheckCircle className="w-5 h-5 inline mr-2" /> Saved</> : <><Save className="w-5 h-5 inline mr-2" /> Save Profile</>}
+          {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : isSaved ? <><CheckCircle className="w-5 h-5" /> Saved</> : <><Save className="w-5 h-5" /> Save Profile</>}
         </button>
       </div>
 
@@ -95,16 +144,11 @@ const ProfileModule: React.FC<ProfileModuleProps> = ({ data, setData }) => {
                             <div className="text-[10px] font-black uppercase text-indigo-400 tracking-widest mb-1">Since</div>
                             <div className="text-xs font-bold text-slate-300">{data.connectedParent.linkedSince}</div>
                          </div>
-                         <button 
-                          onClick={revokeHandshake}
-                          className="p-3 text-rose-400 hover:bg-rose-500 hover:text-white rounded-xl transition-all border border-white/10"
-                         >
-                            <Trash2 className="w-5 h-5" />
-                         </button>
+                         <button onClick={revokeHandshake} className="p-3 text-rose-400 hover:bg-rose-500 hover:text-white rounded-xl transition-all border border-white/10"><Trash2 className="w-5 h-5" /></button>
                       </div>
                    </div>
                    <p className="text-[10px] text-slate-400 font-medium leading-relaxed italic">
-                      "Family Handshake allows Mr. Ramesh Sharma to view your Live Syllabus Progress, Mock Results, and Psychometric Profile."
+                      "Handshake allows your parent to view your Live Syllabus Progress and Mock Results."
                    </p>
                 </div>
               ) : (
@@ -122,54 +166,59 @@ const ProfileModule: React.FC<ProfileModuleProps> = ({ data, setData }) => {
               <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] flex items-center gap-3">
                 <GraduationCap className="w-5 h-5" /> Personal Information
               </h4>
-              <div className="grid grid-cols-1 gap-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-[0.2em]">Full Legal Name</label>
-                  <input 
-                    type="text" 
-                    value={profile.name}
-                    onChange={(e) => setProfile({...profile, name: e.target.value})}
-                    className="w-full bg-slate-50 border-none rounded-[2rem] p-6 text-sm font-black text-slate-800 focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner" 
-                    placeholder="Enter your name" 
-                  />
+                  <div className="relative">
+                    <User className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                    <input type="text" value={profile.name} onChange={(e) => setProfile({...profile, name: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] py-6 pl-14 pr-6 text-sm font-black text-slate-800 focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner" />
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-[0.2em]">Email Address (Read Only)</label>
+                  <div className="relative">
+                    <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                    <input type="text" value={profile.email} disabled className="w-full bg-slate-100 border-none rounded-[2rem] py-6 pl-14 pr-6 text-sm font-black text-slate-400 cursor-not-allowed" />
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-[0.2em]">Birth Date</label>
+                  <input type="date" value={profile.birthDate} onChange={(e) => setProfile({...profile, birthDate: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] p-6 text-sm font-black text-slate-800 focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner" />
+                </div>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-[0.2em]">Gender</label>
+                  <select value={profile.gender} onChange={(e) => setProfile({...profile, gender: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] p-6 text-sm font-black text-slate-800 appearance-none focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner">
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
                 </div>
               </div>
             </section>
 
-            <section className="space-y-8">
+            <section className="space-y-8 pt-8 border-t border-slate-100">
               <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] flex items-center gap-3">
-                <Calendar className="w-5 h-5" /> Goal Configuration
+                <Target className="w-5 h-5" /> Goal Configuration
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-[0.2em]">Target Exam Year</label>
-                  <select 
-                    value={profile.targetYear}
-                    onChange={(e) => setProfile({...profile, targetYear: e.target.value})}
-                    className="w-full bg-slate-50 border-none rounded-[2rem] p-6 text-sm font-black text-slate-800 appearance-none focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner"
-                  >
-                    <option>2025</option>
-                    <option>2026</option>
-                    <option>2027</option>
-                  </select>
+                  <div className="relative">
+                    <Calendar className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                    <select value={profile.targetYear} onChange={(e) => setProfile({...profile, targetYear: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] py-6 pl-14 pr-6 text-sm font-black text-slate-800 appearance-none focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner">
+                      {TARGET_YEARS.map(yr => <option key={yr} value={yr}>{yr}</option>)}
+                    </select>
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-4">
-                <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-[0.2em]">Priority Target Exams</label>
-                <div className="flex flex-wrap gap-3 ml-4">
-                  {availableExams.map(exam => (
-                    <button 
-                      key={exam}
-                      onClick={() => toggleExam(exam)}
-                      className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${
-                        profile.targetExams.includes(exam) 
-                        ? 'bg-slate-900 border-slate-900 text-white shadow-xl' 
-                        : 'bg-white border-slate-100 text-slate-400 hover:border-slate-300'
-                      }`}
-                    >
-                      {exam}
-                    </button>
-                  ))}
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-[0.2em]">Primary Target Exam</label>
+                  <div className="relative">
+                    <Target className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
+                    <select value={profile.targetExam} onChange={(e) => setProfile({...profile, targetExam: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] py-6 pl-14 pr-6 text-sm font-black text-slate-800 appearance-none focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner">
+                      {NATIONAL_EXAMS.map(ex => <option key={ex} value={ex}>{ex}</option>)}
+                    </select>
+                  </div>
                 </div>
               </div>
             </section>
@@ -178,31 +227,14 @@ const ProfileModule: React.FC<ProfileModuleProps> = ({ data, setData }) => {
               <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] flex items-center gap-3">
                 <School className="w-5 h-5" /> Academic Nodes
               </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid grid-cols-1 gap-8">
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-[0.2em]">Coaching Institute</label>
                   <div className="relative">
-                    <Briefcase className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                    <input 
-                      type="text" 
-                      value={profile.coachingName}
-                      onChange={(e) => setProfile({...profile, coachingName: e.target.value})}
-                      className="w-full bg-slate-50 border-none rounded-[2rem] py-6 pl-16 pr-6 text-sm font-black text-slate-800 shadow-inner" 
-                      placeholder="Allen, FIITJEE..." 
-                    />
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-[0.2em]">School Affiliation</label>
-                  <div className="relative">
-                    <School className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-                    <input 
-                      type="text" 
-                      value={profile.schoolName}
-                      onChange={(e) => setProfile({...profile, schoolName: e.target.value})}
-                      className="w-full bg-slate-50 border-none rounded-[2rem] py-6 pl-16 pr-6 text-sm font-black text-slate-800 shadow-inner" 
-                      placeholder="Enter school name" 
-                    />
+                    <Building className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
+                    <select value={profile.institute} onChange={(e) => setProfile({...profile, institute: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] py-6 pl-16 pr-6 text-sm font-black text-slate-800 appearance-none focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner">
+                      {INSTITUTES.map(inst => <option key={inst} value={inst}>{inst}</option>)}
+                    </select>
                   </div>
                 </div>
               </div>

@@ -7,19 +7,24 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background-color: #0a0c1a; margin: 0; padding: 0; }
         #root:empty::before {
             content: 'Initializing Academic Node...';
             display: flex;
             align-items: center;
             justify-content: center;
             height: 100vh;
-            color: #6366f1;
+            color: #5d5fef;
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0.2em;
             font-size: 12px;
         }
+        /* Custom scrollbar for tactical feel */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0c1a; }
+        ::-webkit-scrollbar-thumb { background: #1e2440; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5d5fef; }
     </style>
     <script>
       window.SHOW_DEMO_LOGINS = true;
@@ -42,7 +47,7 @@
 }
 </script>
 </head>
-<body class="text-slate-900">
+<body class="text-white selection:bg-[#5d5fef]/30">
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
 </body>

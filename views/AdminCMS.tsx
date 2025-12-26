@@ -21,7 +21,7 @@ interface AdminCMSProps {
 }
 
 const Overview = ({ data }: { data: StudentData }) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-4">
     {[
       { label: 'Syllabus Chapters', val: data.chapters.length, sub: 'Units Active', icon: BookOpen, color: 'indigo' },
       { label: 'Question Library', val: data.questions.length, sub: 'Bank Depth', icon: Code2, color: 'emerald' },
@@ -47,7 +47,7 @@ const UserManagement = () => {
   }, []);
 
   return (
-    <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden mx-4">
       <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
          <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-3"><Users className="w-6 h-6 text-indigo-600" /> User Directory</h3>
       </div>
@@ -77,7 +77,7 @@ const UserManagement = () => {
 };
 
 const EntityList = ({ title, type, data, icon: Icon, color, onEdit, onDelete, onNew, btnLabel = "Add Entry" }: any) => (
-  <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden">
+  <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden mx-4">
     <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
        <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-3"><Icon className={`w-6 h-6 text-${color}-600`} /> {title}</h3>
        <button onClick={onNew} className={`bg-${color}-600 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-${color}-100 hover:scale-105 transition-all`}><Plus className="w-4 h-4" /> {btnLabel}</button>
@@ -373,99 +373,254 @@ const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentD
     try {
       const zip = new JSZip();
       
-      // Root Core Config
       zip.file(".htaccess", "RewriteEngine On\nRewriteRule ^$ index.html [L]\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule . index.html [L]");
       
       const apiFolder = zip.folder("api");
       if (apiFolder) {
-        // API Level Rewriting (Fixes 404 for /api/auth/register)
         apiFolder.file(".htaccess", "RewriteEngine On\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule ^([^/]+)/?([^/]+)?$ index.php?module=$1&action=$2 [L,QSA]");
 
-        // Mirrored Gateway Router
+        const configFolder = apiFolder.folder("config");
+        configFolder?.file("database.php", `<?php
+return [
+    'host' => 'localhost',
+    'dbname' => 'jeepro_db',
+    'user' => 'root',
+    'pass' => ''
+];`);
+
+        apiFolder.file("db.php", `<?php
+function getDB() {
+    $config = require 'config/database.php';
+    try {
+        $pdo = new PDO("mysql:host={$config['host']};dbname={$config['dbname']};charset=utf8mb4", $config['user'], $config['pass']);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        return $pdo;
+    } catch(PDOException $e) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Database Link Broken: ' . $e.getMessage()]);
+        exit;
+    }
+}`);
+
         apiFolder.file("index.php", `<?php
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 header('Content-Type: application/json');
 
-// Handle preflight
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') exit;
 
-$module = $_GET['module'] ?? 'home';
-$action = $_GET['action'] ?? 'index';
-$method = $_SERVER['REQUEST_METHOD'];
+require_once 'db.php';
+$db = getDB();
 
-// Parse JSON Body
+$module = $_GET['module'] ?? '';
+$action = $_GET['action'] ?? '';
 $json = file_get_contents('php://input');
-$requestData = json_decode($json, true) ?? [];
+$reqData = json_decode($json, true) ?? [];
 
-// Unified Logic Handler
-if ($module === 'auth') {
-    if ($action === 'register') {
-        // ACTUAL REGISTRATION HANDLER
-        echo json_encode([
-            'success' => true,
-            'message' => 'Identity successfully synchronized with Production Node.',
-            'user' => [
-                'id' => 'USR-' . strtoupper(substr(md5($requestData['email'] ?? time()), 0, 8)),
-                'email' => $requestData['email'] ?? 'unknown@node.ac.in',
-                'name' => $requestData['name'] ?? 'Verified Aspirant',
-                'role' => $requestData['role'] ?? 'STUDENT'
-            ]
-        ]);
-        exit;
-    }
+/** 
+ * SOLARIS PRODUCTION ROUTER v6.8
+ * Handles: Auth (Role Agnostic Login), Syllabus, Results, Wellness, Backlogs, Timetable
+ */
+
+try {
+    if ($module === 'auth') {
+        if ($action === 'register') {
+            $id = 'USR-' . strtoupper(substr(md5($reqData['email'] . time()), 0, 8));
+            $stmt = $db->prepare("INSERT INTO users (id, email, name, password, role, institute, target_exam, target_year, birth_date, gender) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $id, $reqData['email'], $reqData['name'], 
+                password_hash($reqData['password'], PASSWORD_DEFAULT), 
+                $reqData['role'], $reqData['institute'] ?? '', 
+                $reqData['targetExam'] ?? '', $reqData['targetYear'] ?? '',
+                $reqData['birthDate'] ?? null, $reqData['gender'] ?? ''
+            ]);
+            echo json_encode(['success' => true, 'user' => [
+                'id' => $id, 'name' => $reqData['name'], 'email' => $reqData['email'], 'role' => $reqData['role'],
+                'institute' => $reqData['institute'] ?? '', 'targetExam' => $reqData['targetExam'] ?? '',
+                'targetYear' => $reqData['targetYear'] ?? '', 'birthDate' => $reqData['birthDate'] ?? '', 'gender' => $reqData['gender'] ?? ''
+            ]]);
+        } elseif ($action === 'login') {
+            // NEW: Role agnostic login - find user first, then verify password
+            $stmt = $db->prepare("SELECT * FROM users WHERE email = ?");
+            $stmt->execute([$reqData['email']]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($user && password_verify($reqData['password'], $user['password'])) {
+                unset($user['password']);
+                echo json_encode(['success' => true, 'user' => $user]);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'Invalid credentials.']);
+            }
+        } elseif ($action === 'update_profile') {
+            $stmt = $db->prepare("UPDATE users SET name = ?, institute = ?, target_exam = ?, target_year = ?, birth_date = ?, gender = ? WHERE id = ?");
+            $stmt->execute([$reqData['name'], $reqData['institute'], $reqData['targetExam'], $reqData['targetYear'], $reqData['birthDate'], $reqData['gender'], $reqData['id']]);
+            echo json_encode(['success' => true]);
+        } elseif ($action === 'index') {
+            $stmt = $db->query("SELECT id, name, email, role, institute FROM users");
+            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+        }
+    } 
     
-    if ($action === 'login') {
-        // ACTUAL LOGIN HANDLER
-        echo json_encode([
-            'success' => true,
-            'user' => [
-                'id' => 'DB-' . strtoupper(substr(md5($requestData['email'] ?? 'default'), 0, 8)),
-                'email' => $requestData['email'] ?? '',
-                'name' => 'Production User',
-                'role' => $requestData['role'] ?? 'STUDENT'
-            ]
-        ]);
-        exit;
+    elseif ($module === 'syllabus') {
+        if ($action === 'save') {
+            $stmt = $db->prepare("INSERT INTO syllabus (student_id, data) VALUES (?, ?) ON DUPLICATE KEY UPDATE data = ?");
+            $jsonData = json_encode($reqData['chapters']);
+            $stmt->execute([$reqData['student_id'], $jsonData, $jsonData]);
+            echo json_encode(['success' => true]);
+        } elseif ($action === 'get') {
+            $stmt = $db->prepare("SELECT u.name, s.data FROM users u LEFT JOIN syllabus s ON u.id = s.student_id WHERE u.id = ?");
+            $stmt->execute([$_GET['id']]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            echo json_encode(['name' => $row['name'] ?? '', 'chapters' => json_decode($row['data'] ?? '[]', true)]);
+        }
     }
+
+    elseif ($module === 'results') {
+        if ($action === 'save') {
+            $stmt = $db->prepare("INSERT INTO results (student_id, test_id, test_name, score, total_marks, date, accuracy) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$reqData['student_id'], $reqData['testId'], $reqData['testName'], $reqData['score'], $reqData['totalMarks'], $reqData['date'], $reqData['accuracy']]);
+            echo json_encode(['success' => true]);
+        } elseif ($action === 'get') {
+            $stmt = $db->prepare("SELECT * FROM results WHERE student_id = ? ORDER BY date DESC");
+            $stmt->execute([$_GET['id']]);
+            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+        }
+    }
+
+    elseif ($module === 'wellness') {
+        if ($action === 'save') {
+            $stmt = $db->prepare("INSERT INTO wellness (student_id, stress, focus, motivation, exam_fear, timestamp, summary) VALUES (?, ?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$reqData['student_id'], $reqData['stress'], $reqData['focus'], $reqData['motivation'], $reqData['examFear'], $reqData['timestamp'], $reqData['studentSummary'] ?? '']);
+            echo json_encode(['success' => true]);
+        } elseif ($action === 'get') {
+            $stmt = $db->prepare("SELECT * FROM wellness WHERE student_id = ? ORDER BY timestamp DESC");
+            $stmt->execute([$_GET['id']]);
+            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+        }
+    }
+
+    elseif ($module === 'timetable') {
+        if ($action === 'save') {
+            $stmt = $db->prepare("INSERT INTO timetable (student_id, routine_json) VALUES (?, ?) ON DUPLICATE KEY UPDATE routine_json = ?");
+            $routineJson = json_encode($reqData);
+            $stmt->execute([$reqData['student_id'], $routineJson, $routineJson]);
+            echo json_encode(['success' => true]);
+        } elseif ($action === 'get') {
+            $stmt = $db->prepare("SELECT routine_json FROM timetable WHERE student_id = ?");
+            $stmt->execute([$_GET['id']]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            echo $row['routine_json'] ?? 'null';
+        }
+    }
+
+    elseif ($module === 'backlogs') {
+        if ($action === 'save') {
+            $stmt = $db->prepare("INSERT INTO backlogs (student_id, title, subject, priority, status, deadline) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$reqData['student_id'], $reqData['title'], $reqData['subject'], $reqData['priority'], $reqData['status'], $reqData['deadline']]);
+            echo json_encode(['success' => true]);
+        } elseif ($action === 'get') {
+            $stmt = $db->prepare("SELECT * FROM backlogs WHERE student_id = ? ORDER BY deadline ASC");
+            $stmt->execute([$_GET['id']]);
+            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+        }
+    }
+
+    elseif ($module === 'questions' || $module === 'mocktests') {
+        echo json_encode([]);
+    }
+
+} catch (PDOException $e) {
+    echo json_encode(['success' => false, 'error' => $e.getMessage()]);
 }
-
-// Fallback Handshake
-echo json_encode([
-    'success' => true,
-    'handshake' => 'success',
-    'node' => 'SOLARIS-PRO',
-    'context' => [
-        'module' => $module,
-        'action' => $action,
-        'method' => $method,
-        'payload' => $requestData
-    ]
-]);`);
+`);
         
-        // Modules Mapping 1:1 (Kept for organization, but routing now goes through index.php)
-        const handlers = ['auth', 'syllabus', 'results', 'questions', 'mocktests', 'wellness', 'backlogs', 'timetable', 'blogs', 'flashcards', 'hacks'];
-        handlers.forEach(h => {
-            apiFolder.file(`${h}.php`, `<?php\n// Solaris Action Handler: ${h}.php\nheader('Content-Type: application/json');\necho json_encode(['status' => 'operational', 'module' => '${h}']);`);
-        });
+        const sqlFolder = apiFolder.folder("sql");
+        sqlFolder?.file("full_production_schema_v6.8.sql", `
+-- SOLARIS MASTER SCHEMA v6.8
+-- Recommended for Hostinger / VPS / XAMPP
 
-        // Config Node
-        const config = apiFolder.folder("config");
-        config?.file("database.php", "<?php\nreturn ['host' => 'localhost', 'user' => 'root', 'pass' => '', 'db' => 'jeepro_db'];");
-        
-        // SQL Master Node
-        const sql = apiFolder.folder("sql");
-        sql?.file("master_v6.2.sql", "-- Solaris Production Schema v6.2\nCREATE TABLE users (id VARCHAR(50) PRIMARY KEY, email VARCHAR(100) UNIQUE, name VARCHAR(100), password VARCHAR(255), role VARCHAR(20), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- 1. Identity Infrastructure
+CREATE TABLE IF NOT EXISTS users (
+    id VARCHAR(50) PRIMARY KEY,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('STUDENT', 'PARENT', 'ADMIN') NOT NULL,
+    institute VARCHAR(150),
+    target_exam VARCHAR(100),
+    target_year VARCHAR(10),
+    birth_date DATE,
+    gender VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 2. Academic Telemetry
+CREATE TABLE IF NOT EXISTS syllabus (
+    student_id VARCHAR(50) PRIMARY KEY,
+    data LONGTEXT COMMENT 'JSON chapters data',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 3. Standardized Results
+CREATE TABLE IF NOT EXISTS results (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id VARCHAR(50),
+    test_id VARCHAR(100),
+    test_name VARCHAR(255),
+    score INT,
+    total_marks INT,
+    date DATE,
+    accuracy INT,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 4. Psychometric History
+CREATE TABLE IF NOT EXISTS wellness (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id VARCHAR(50),
+    stress INT,
+    focus INT,
+    motivation INT,
+    exam_fear INT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    summary TEXT,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 5. Tactical Timetable
+CREATE TABLE IF NOT EXISTS timetable (
+    student_id VARCHAR(50) PRIMARY KEY,
+    routine_json JSON,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 6. Backlog Debt
+CREATE TABLE IF NOT EXISTS backlogs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id VARCHAR(50),
+    title VARCHAR(255),
+    subject VARCHAR(50),
+    priority VARCHAR(20),
+    status VARCHAR(20),
+    deadline DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET FOREIGN_KEY_CHECKS = 1;
+`);
       }
 
       const content = await zip.generateAsync({ type: "blob" });
       const url = window.URL.createObjectURL(content);
       const link = document.createElement('a');
       link.href = url;
-      link.download = "solaris-production-build-v6.2.zip";
+      link.download = "solaris-full-stack-build-v6.8.zip";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -497,7 +652,7 @@ echo json_encode([
   };
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 px-4">
       <div className="flex bg-white p-2 rounded-[2rem] border border-slate-200 shadow-sm w-fit">
          <button onClick={() => setActiveSubTab('ai')} className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeSubTab === 'ai' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>Intelligence Setup</button>
          <button onClick={() => setActiveSubTab('tester')} className={`px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeSubTab === 'tester' ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>Intelligence Tester</button>
@@ -660,10 +815,13 @@ echo json_encode([
 
       {activeSubTab === 'server' && (
         <div className="space-y-10 animate-in slide-in-from-right duration-500">
-          <div className="bg-slate-900 rounded-[4rem] p-20 text-white shadow-2xl flex justify-between items-center relative overflow-hidden">
+          <div className="bg-slate-900 rounded-[4rem] p-20 text-white shadow-2xl flex flex-col md:flex-row justify-between items-center relative overflow-hidden">
              <div className="absolute top-0 right-0 p-12 opacity-5"><Server className="w-80 h-80" /></div>
-             <h3 className="text-4xl font-black italic tracking-tighter uppercase leading-none">The Master <span className="text-indigo-500 italic font-black">Archive.</span></h3>
-             <button onClick={handleDownloadBuild} className="px-10 py-5 bg-white text-slate-900 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] flex items-center gap-4 hover:bg-indigo-50 transition-all shadow-2xl group"><Package className="w-6 h-6 group-hover:scale-110 transition-transform" /> Download Mirrored 1:1 Build</button>
+             <div className="space-y-4 relative z-10">
+                <h3 className="text-4xl font-black italic tracking-tighter uppercase leading-none">The Master <span className="text-indigo-500 italic font-black">Archive.</span></h3>
+                <p className="text-slate-400 font-medium max-w-md">Full-stack blueprint including PHP gatekeeper and MySQL master schema v6.8 with Role-Agnostic Login.</p>
+             </div>
+             <button onClick={handleDownloadBuild} className="px-10 py-5 bg-white text-slate-900 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] flex items-center gap-4 hover:bg-indigo-50 transition-all shadow-2xl group relative z-10"><Package className="w-6 h-6 group-hover:scale-110 transition-transform" /> Download Production Build v6.8</button>
           </div>
         </div>
       )}
@@ -716,8 +874,8 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
   };
 
   return (
-    <div className="pb-20 max-w-7xl mx-auto space-y-10 px-4">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm">
+    <div className="pb-20 max-w-7xl mx-auto space-y-10">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm mx-4">
         <div className="space-y-2">
           <div className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.4em] flex items-center gap-3">
              <ShieldCheck className="w-4 h-4" /> Solaris Control: System Administration

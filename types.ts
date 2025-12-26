@@ -1,4 +1,3 @@
-
 export enum UserRole {
   STUDENT = 'STUDENT',
   PARENT = 'PARENT',
@@ -163,6 +162,11 @@ export interface StudentData {
     id: string;
     linkedSince: string;
   };
+  // Detailed Profile Fields
+  institute?: string;
+  targetExam?: string;
+  birthDate?: string;
+  gender?: string;
 }
 
 export interface UserAccount {
@@ -173,6 +177,12 @@ export interface UserAccount {
   password?: string;
   createdAt: string;
   connectedId?: string; 
+  // Detailed Profile Fields
+  institute?: string;
+  targetExam?: string;
+  targetYear?: string;
+  birthDate?: string;
+  gender?: string;
 }
 
 export interface SystemEvent {

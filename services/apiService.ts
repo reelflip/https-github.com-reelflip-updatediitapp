@@ -6,9 +6,32 @@ const API_CONFIG = {
   MODE_KEY: 'jeepro_datasource_mode'
 };
 
+const DEMO_IDS = ['163110', 'P-4402', 'ADMIN-001'];
+
+const getBlankStudentData = (id: string, name: string): StudentData => ({
+  ...INITIAL_STUDENT_DATA,
+  id,
+  name,
+  chapters: INITIAL_STUDENT_DATA.chapters.map(c => ({
+    ...c,
+    progress: 0,
+    accuracy: 0,
+    timeSpent: 0,
+    timeSpentNotes: 0,
+    timeSpentVideos: 0,
+    timeSpentPractice: 0,
+    timeSpentTests: 0,
+    status: 'NOT_STARTED'
+  })),
+  backlogs: [],
+  testHistory: [],
+  psychometricHistory: [{ stress: 5, focus: 5, motivation: 5, examFear: 5, timestamp: new Date().toISOString().split('T')[0] }],
+  timeSummary: { notes: 0, videos: 0, practice: 0, tests: 0 }
+});
+
 const safeJson = async (response: Response) => {
   if (response.status === 404) {
-    throw new Error("Endpoint Not Found (404). Ensure your /api/ folder and .htaccess are correctly uploaded.");
+    throw new Error("Endpoint Not Found (404). Ensure /api/ folder and .htaccess are uploaded.");
   }
   
   const text = await response.text();
@@ -16,9 +39,9 @@ const safeJson = async (response: Response) => {
     return JSON.parse(text);
   } catch (e) {
     if (text.includes('<?php') || text.includes('Fatal error') || text.includes('PDOException')) {
-        throw new Error("Database Server Error: Check your PHP config/database.php file.");
+        throw new Error("Database Logic Error: " + text.substring(0, 150));
     }
-    throw new Error("Invalid Server Response: The backend did not return valid JSON.");
+    throw new Error("Invalid Server Response.");
   }
 };
 
@@ -33,24 +56,23 @@ export const api = {
   },
 
   async login(credentials: { email: string; role: UserRole; password?: string }) {
-    // STRICT PRODUCTION ONLY: No demo checks here.
     try {
       const res = await fetch(`${API_CONFIG.BASE_URL}auth/login`, {
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials)
       });
-      return await safeJson(res);
+      const result = await safeJson(res);
+      if (result.success) {
+        localStorage.setItem(API_CONFIG.MODE_KEY, 'LIVE');
+      }
+      return result;
     } catch(e: any) { 
-      return { 
-        success: false, 
-        error: "Production Node Unreachable: " + (e.message || "Please check your internet or server status.") 
-      }; 
+      return { success: false, error: "Uplink Failed: " + (e.message || "Database unreachable.") }; 
     }
   },
 
   async register(data: any) {
-    // STRICT PRODUCTION ONLY: Must hit the real database.
     try {
       const res = await fetch(`${API_CONFIG.BASE_URL}auth/register`, {
         method: 'POST',
@@ -58,22 +80,35 @@ export const api = {
         body: JSON.stringify(data)
       });
       const result = await safeJson(res);
-      
       if (result.success) {
         localStorage.setItem(API_CONFIG.MODE_KEY, 'LIVE');
       }
       return result;
     } catch(e: any) { 
-      return { 
-        success: false, 
-        error: "Sync Failed: " + (e.message || "Database node unreachable.") 
-      }; 
+      return { success: false, error: "Registration Failed: " + (e.message || "Server error.") }; 
     }
   },
 
-  async getStudentData(studentId: string): Promise<StudentData> {
-    // If we are in LIVE mode, we fetch from DB. If in MOCK (Demo), we use INITIAL_STUDENT_DATA.
+  async updateUserProfile(studentId: string, profileData: any) {
     if (this.getMode() === 'LIVE') {
+      try {
+        const res = await fetch(`${API_CONFIG.BASE_URL}auth/update_profile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: studentId, ...profileData })
+        });
+        return await safeJson(res);
+      } catch (e: any) {
+        return { success: false, error: e.message };
+      }
+    }
+    return { success: true };
+  },
+
+  async getStudentData(studentId: string): Promise<StudentData> {
+    const isDemo = DEMO_IDS.includes(studentId);
+    
+    if (this.getMode() === 'LIVE' || !isDemo) {
       try {
         const [sRes, bRes, wRes, rRes, qRes, tRes, rtRes] = await Promise.all([
           fetch(`${API_CONFIG.BASE_URL}syllabus/get?id=${studentId}`),
@@ -86,6 +121,10 @@ export const api = {
         ]);
 
         const syllabus = await safeJson(sRes);
+        if (!syllabus || !syllabus.chapters) {
+          return getBlankStudentData(studentId, 'Verified Student');
+        }
+
         const backlogs = await safeJson(bRes);
         const wellness = await safeJson(wRes);
         const results = await safeJson(rRes);
@@ -94,22 +133,20 @@ export const api = {
         const routine = await safeJson(rtRes);
         
         return {
-          ...INITIAL_STUDENT_DATA,
-          id: studentId,
-          name: syllabus?.name || 'Verified User',
-          chapters: Array.isArray(syllabus?.chapters) ? syllabus.chapters : INITIAL_STUDENT_DATA.chapters,
+          ...getBlankStudentData(studentId, syllabus.name || 'User'),
+          chapters: Array.isArray(syllabus.chapters) ? syllabus.chapters : [],
           backlogs: Array.isArray(backlogs) ? backlogs : [],
           testHistory: Array.isArray(results) ? results : [],
           questions: Array.isArray(questions) ? questions : INITIAL_STUDENT_DATA.questions,
           mockTests: Array.isArray(tests) ? tests : INITIAL_STUDENT_DATA.mockTests,
-          psychometricHistory: wellness?.length ? wellness : INITIAL_STUDENT_DATA.psychometricHistory,
-          routine: routine || INITIAL_STUDENT_DATA.routine
+          psychometricHistory: wellness?.length ? wellness : [],
+          routine: routine || undefined
         };
       } catch(e) { 
-          // If live fetch fails, we return a blank state for that user ID, NOT the demo student.
-          return { ...INITIAL_STUDENT_DATA, id: studentId, name: 'User ' + studentId, chapters: INITIAL_STUDENT_DATA.chapters.map(c => ({...c, progress: 0, accuracy: 0})) }; 
+          return getBlankStudentData(studentId, 'Recovery User'); 
       }
     }
+    
     return INITIAL_STUDENT_DATA;
   },
 
