@@ -7,9 +7,7 @@ import { StudentData } from "../types";
  */
 
 export const getSmartStudyAdvice = async (data: StudentData) => {
-  // Simulate network delay for "processing" feel
   await new Promise(resolve => setTimeout(resolve, 800));
-
   const weakChapters = data.chapters.filter(c => c.accuracy < 65).slice(0, 2);
   const backlogs = data.backlogs.slice(0, 1);
   const currentPsych = data.psychometricHistory[data.psychometricHistory.length - 1];
@@ -39,9 +37,7 @@ export const getSmartStudyAdvice = async (data: StudentData) => {
 
 export const generateSmartTimetable = async (data: StudentData) => {
   await new Promise(resolve => setTimeout(resolve, 1000));
-
   const weakSubject = data.chapters.reduce((prev, curr) => (prev.accuracy < curr.accuracy ? prev : curr)).subject;
-
   return {
     strategy: `Strategic 2:1:1 split favoring ${weakSubject}. Heavy focus on problem-solving during your peak energy hours.`,
     optimization: "Shift your high-difficulty tasks (Calculus/Physics) to immediately after school hours when brain plasticity is highest.",
@@ -53,22 +49,30 @@ export const generateSmartTimetable = async (data: StudentData) => {
   };
 };
 
-export const chatWithTutor = async (history: any[], userMessage: string) => {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
+export const chatWithTutor = async (history: any[], userMessage: string, modelId: string = 'solaris-core') => {
+  await new Promise(resolve => setTimeout(resolve, 600));
   const msg = userMessage.toLowerCase();
   
-  if (msg.includes('physics') || msg.includes('how to study')) {
-    return "For Physics, the key is visualization. Instead of memorizing formulas, try to derive them from basic principles. For today, I recommend focusing on FBD diagrams for Mechanics.";
-  }
-  
-  if (msg.includes('chem') || msg.includes('organic')) {
-    return "Organic Chemistry requires 'Mechanism Mapping'. Don't just look at the reaction; draw the electron flow. Have you cleared your nomenclature backlogs yet?";
-  }
+  // Model Personalities Logic
+  const responses: Record<string, string> = {
+    'solaris-core': "System focus: Data-driven efficiency. Based on local telemetry, Darwin's theory (Natural Selection) mirrors your testing phase: only the most practiced concepts survive the exam pressure. Focus on your 45% accuracy units first.",
+    
+    'gpt-4o-edu': "Mathematical Precision Mode: Darwin's theory can be modeled as a stochastic process where traits (p) increase frequency based on fitness (w). For your prep, 'fitness' is your MCQ speed. Currently, your Physics speed is 2.4 min/q—needs optimization.",
+    
+    'claude-3-stu': "Conceptual Deep-Dive: Understanding Darwin requires looking at the 'Variation' within a population. Similarly, look at the 'Variation' in your mistakes. Are they calculation errors or conceptual gaps? Notes for Biology/Evolution are being prioritized in your feed.",
+    
+    'gemini-flash-base': "Multimodal Insight: I've processed your query. Darwin's Theory is often illustrated via the 'Finches of Galapagos'. I suggest you visualize the Evolutionary Tree. I can help you map out the connections between Genetics and Evolution chapters next.",
+    
+    'llama-3-heuristic': "Conversational Coach: Hey! Darwin's theory is all about adapting to stay alive. In JEE, you adapt by failing Mocks and learning. Don't sweat the low scores; they are just 'mutations' that help you find the right solving path. Keep at it!",
+    
+    'deepseek-coder': "Logic & Algorithm Node: Darwin_Theory_v1.0. Error correction detected. The 'Survival of the Fittest' algorithm is a recursive loop of testing. If your Accuracy < 60, break current loop and re-initialize basic theory. Recursive solving advised.",
+    
+    'iit-pulse': "Topper Strategy Mode: Darwin's theory is a high-weightage topic for KVPY and certain JEE advanced biological applications. Realistically, if you don't master the 'Evidence' section, you'll lose 4 marks. Memorize the 'Analogous vs Homologous' table tonight. High priority."
+  };
 
-  if (msg.includes('plan') || msg.includes('timetable')) {
-    return "I've analyzed your mastery trends. Your Mathematics accuracy is leading, but Physics needs more 'Deep Work' blocks. Check your Timetable module for the updated tactical plan.";
-  }
+  // Subject specific overrides if the query is clear
+  if (msg.includes('physics')) return `[${modelId.toUpperCase()}] Analytical focus: Physics requires first-principle thinking. Your Mechanics accuracy is currently drifting. Drill 10 FBD problems.`;
+  if (msg.includes('chem')) return `[${modelId.toUpperCase()}] Chemical properties sync: Inorganic requires daily recall. Organic requires mechanism mapping. Clear the 'Nomenclature' backlog before moving to 'Hydrocarbons'.`;
 
-  return "I am the JEE-PRO Tactical Assistant. I analyze your performance data to give you subject-specific advice. You can ask me about study strategies, subject focus, or how to improve your accuracy.";
+  return responses[modelId] || "Intelligence node active. Ready for query.";
 };

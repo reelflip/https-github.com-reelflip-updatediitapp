@@ -4,6 +4,7 @@ import JSZip from 'jszip';
 import saveAs from 'file-saver';
 import { StudentData, Question, MockTest, Chapter, UserAccount, UserRole, ChapterStatus, Flashcard, MemoryHack, Blog } from '../types';
 import { api } from '../services/apiService';
+import { chatWithTutor } from '../services/intelligenceService';
 import { 
   ShieldCheck, Database, Activity, FileCode, CloudUpload,
   BookOpen, Layers, Zap, Package, Download, Loader2,
@@ -12,7 +13,8 @@ import {
   Lightbulb, PenTool, Eye, Calendar, UserPlus, Globe, Brain, Server, ShieldAlert, Cpu,
   History, Code2, HardDrive, Network, ToggleLeft, ToggleRight, Radio,
   Users, FolderTree, Map, Copy, Tag, CheckCircle2, Bold, Italic, List, Heading1, Heading2, Link as LinkIcon, Quote, Type, Eye as EyeIcon, Code as CodeIcon, Video, Layout,
-  Terminal, Shield, Check, ListChecks, FileJson, Globe2, Link2, Info
+  Terminal, Shield, Check, ListChecks, FileJson, Globe2, Link2, Info, Send, Bot, Sparkles, Sliders,
+  Target
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -86,7 +88,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
       {activeTab === 'admin-flashcards' && <FlashcardsMaster data={data} onEdit={handleEdit} onDelete={handleDelete} />}
       {activeTab === 'admin-hacks' && <HacksMaster data={data} onEdit={handleEdit} onDelete={handleDelete} />}
       {activeTab === 'admin-blogs' && <BlogManager data={data} onEdit={handleEdit} onDelete={handleDelete} />}
-      {activeTab === 'admin-system' && <SystemModule />}
+      {activeTab === 'admin-system' && <SystemModule data={data} setData={setData} />}
 
       {isCreating && (
         <CreationHub 
@@ -361,9 +363,174 @@ const BlogManager = ({ data, onEdit, onDelete }: any) => (
   </div>
 );
 
-const SystemModule = () => {
+const SystemModule = ({ data, setData }: { data: StudentData, setData: any }) => {
+  const [activeSubTab, setActiveSubTab] = useState<'deployment' | 'ai'>('deployment');
+
+  return (
+    <div className="space-y-10 animate-in fade-in duration-500 pb-20">
+      <div className="flex gap-2 bg-white p-2 rounded-[2rem] border border-slate-200 w-fit mx-auto shadow-lg">
+         <button 
+           onClick={() => setActiveSubTab('deployment')}
+           className={`px-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${activeSubTab === 'deployment' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-700'}`}
+         >
+           <Globe2 className="w-4 h-4" /> Deployment Blueprint
+         </button>
+         <button 
+           onClick={() => setActiveSubTab('ai')}
+           className={`px-10 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${activeSubTab === 'ai' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-700'}`}
+         >
+           <Brain className="w-4 h-4" /> AI Orchestrator
+         </button>
+      </div>
+
+      {activeSubTab === 'deployment' ? <DeploymentBlueprint /> : <AIModelSetup data={data} setData={setData} />}
+    </div>
+  );
+};
+
+const AIModelSetup = ({ data, setData }: { data: StudentData, setData: any }) => {
+  const [previewMsg, setPreviewMsg] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [chatLog, setChatLog] = useState<{role: 'user'|'bot', text: string}[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [chatLog, isTyping]);
+
+  const models = [
+    { id: 'solaris-core', name: 'Solaris Core', provider: 'Local Heuristic', tier: 'FREE', desc: 'Default local reasoning engine. No latency.', icon: Sparkles, color: 'indigo' },
+    { id: 'gpt-4o-edu', name: 'GPT-4o Mini (Edu)', provider: 'OpenAI Academic', tier: 'FREE', desc: 'High-precision mathematics & symbolic logic.', icon: Zap, color: 'emerald' },
+    { id: 'claude-3-stu', name: 'Claude 3 Haiku (Stu)', provider: 'Anthropic Student', tier: 'FREE', desc: 'Exceptional context handling for long notes.', icon: BookOpen, color: 'amber' },
+    { id: 'gemini-flash-base', name: 'Gemini 1.5 Flash', provider: 'Google Dev', tier: 'FREE', desc: 'Multimodal input support (Images/Handwriting).', icon: Globe, color: 'blue' },
+    { id: 'llama-3-heuristic', name: 'Llama 3.1 (H)', provider: 'Meta Open', tier: 'FREE', desc: 'Optimized for conversational revision.', icon: Activity, color: 'rose' },
+    { id: 'deepseek-coder', name: 'DeepSeek Academic', provider: 'DeepSeek', tier: 'FREE', desc: 'Specialized in Physics numerical algorithms.', icon: Code2, color: 'cyan' },
+    { id: 'iit-pulse', name: 'IIT-Pulse Engine', provider: 'Solaris Proprietary', tier: 'PRO (FREE)', desc: 'Tuned specifically for JEE Advanced trends.', icon: Target, color: 'violet' },
+  ];
+
+  const handleSelect = (modelId: string) => {
+    setData({ ...data, aiTutorModel: modelId });
+    setChatLog(prev => [...prev, { role: 'bot', text: `System: AI Model re-mapped to ${modelId}. Verified operational.` }]);
+  };
+
+  const verifyModel = async () => {
+    if (!previewMsg.trim()) return;
+    const userMsg = previewMsg;
+    setPreviewMsg('');
+    setChatLog(prev => [...prev, { role: 'user', text: userMsg }]);
+    setIsTyping(true);
+    
+    // Pass the currently selected model ID to get model-specific logic
+    const botReply = await chatWithTutor([], userMsg, data.aiTutorModel || 'solaris-core');
+    const modelName = models.find(m => m.id === data.aiTutorModel)?.name || 'Solaris Core';
+    
+    setChatLog(prev => [...prev, { role: 'bot', text: `[${modelName} Result]: ${botReply}` }]);
+    setIsTyping(false);
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 animate-in fade-in duration-500">
+       <div className="lg:col-span-7 space-y-8">
+          <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-8">
+             <div className="flex justify-between items-center border-b border-slate-50 pb-6">
+                <div>
+                   <h3 className="text-2xl font-black text-slate-800 italic">Core Intelligence Bank</h3>
+                   <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mt-1">Available Educational Tier Nodes</p>
+                </div>
+                <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center"><Sliders className="w-5 h-5" /></div>
+             </div>
+             
+             <div className="space-y-4 max-h-[600px] overflow-y-auto pr-4 custom-scrollbar">
+                {models.map(m => (
+                  <button 
+                    key={m.id}
+                    onClick={() => handleSelect(m.id)}
+                    className={`w-full p-6 rounded-[2.5rem] border-2 transition-all text-left flex items-center justify-between group ${data.aiTutorModel === m.id ? 'bg-slate-900 border-slate-900 text-white shadow-2xl scale-[1.02]' : 'bg-slate-50 border-transparent hover:border-indigo-200 hover:bg-white'}`}
+                  >
+                     <div className="flex items-center gap-6">
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-inner ${data.aiTutorModel === m.id ? 'bg-white/10' : `bg-${m.color}-50 text-${m.color}-600 group-hover:bg-indigo-600 group-hover:text-white transition-all`}`}>
+                           <m.icon className="w-7 h-7" />
+                        </div>
+                        <div>
+                           <div className="font-black text-lg italic tracking-tight">{m.name}</div>
+                           <div className={`text-[10px] font-bold uppercase tracking-widest ${data.aiTutorModel === m.id ? 'text-indigo-400' : 'text-slate-400'}`}>{m.provider} • {m.tier}</div>
+                           <p className={`text-[11px] mt-1 font-medium ${data.aiTutorModel === m.id ? 'text-slate-400' : 'text-slate-500'}`}>{m.desc}</p>
+                        </div>
+                     </div>
+                     {data.aiTutorModel === m.id && <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl"><Check className="w-5 h-5 text-white" /></div>}
+                  </button>
+                ))}
+             </div>
+          </div>
+       </div>
+
+       <div className="lg:col-span-5 space-y-8">
+          <div className="bg-slate-950 rounded-[4rem] border border-slate-800 shadow-2xl flex flex-col h-[750px] overflow-hidden">
+             <div className="p-8 bg-slate-900/50 border-b border-white/5 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                   <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg"><Terminal className="w-5 h-5 text-white" /></div>
+                   <div>
+                      <div className="text-xs font-black text-white italic">Model Verifier</div>
+                      <div className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">Selected: {models.find(m => m.id === data.aiTutorModel)?.name || 'Default'}</div>
+                   </div>
+                </div>
+                <div className="flex gap-1.5">
+                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                   <div className="w-2 h-2 rounded-full bg-slate-700"></div>
+                </div>
+             </div>
+
+             <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar font-mono">
+                <div className="text-[10px] text-slate-500 italic mb-10 border-b border-white/5 pb-4">--- System initialized. Integrity handshake confirmed. ---</div>
+                {chatLog.map((c, i) => (
+                  <div key={i} className={`flex ${c.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                     <div className={`max-w-[85%] p-5 rounded-3xl text-[11px] font-medium leading-relaxed ${c.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white/5 text-indigo-300 border border-white/5 rounded-tl-none'}`}>
+                        {c.text}
+                     </div>
+                  </div>
+                ))}
+                {isTyping && <div className="text-[10px] text-slate-600 animate-pulse uppercase tracking-[0.3em]">Querying Node Matrix...</div>}
+             </div>
+
+             <div className="p-8 border-t border-white/5 bg-slate-900/20">
+                <div className="flex gap-3">
+                   <input 
+                    type="text" 
+                    value={previewMsg}
+                    onChange={e => setPreviewMsg(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && verifyModel()}
+                    placeholder="Verify model logic (e.g. Darwin Theory)..." 
+                    className="flex-1 bg-white/5 border border-white/10 rounded-2xl p-4 text-white text-xs font-bold outline-none focus:ring-4 focus:ring-indigo-500/20 transition-all" 
+                   />
+                   <button 
+                    onClick={verifyModel}
+                    className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center hover:bg-indigo-700 transition-all shadow-xl"
+                   >
+                      <Send className="w-5 h-5" />
+                   </button>
+                </div>
+                <p className="text-[8px] font-bold text-slate-600 uppercase tracking-widest mt-4 text-center">Root Command Verified Offline Mode Only</p>
+             </div>
+          </div>
+
+          <div className="bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm relative overflow-hidden group">
+             <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-[3s]"><Map className="w-48 h-48" /></div>
+             <h4 className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.2em] mb-4 flex items-center gap-2">
+                <ShieldCheck className="w-3.5 h-3.5" /> Intelligence Policy
+             </h4>
+             <p className="text-xs text-slate-500 leading-relaxed font-medium italic relative z-10">
+                "AI Models are selected globally. Once a model is selected in this Orchestrator, all Student Nodes will automatically re-route their tutor queries through the selected endpoint."
+             </p>
+          </div>
+       </div>
+    </div>
+  );
+};
+
+const DeploymentBlueprint = () => {
   const [zipping, setZipping] = useState(false);
-  const [diagnosing, setDiagnosing] = useState(false);
   const [config, setConfig] = useState({ host: 'localhost', name: 'jeepro_db', user: 'root', pass: '' });
   const [logs, setLogs] = useState([
     { id: 1, type: 'SYS', msg: 'Core Intelligence Kernel initialized v5.6.2.', time: '09:00' },
@@ -376,33 +543,27 @@ const SystemModule = () => {
     try {
       const zip = new JSZip();
       
-      // CONFIG LAYER
       const dbContent = `<?php\ndefine('DB_HOST', '${config.host}');\ndefine('DB_NAME', '${config.name}');\ndefine('DB_USER', '${config.user}');\ndefine('DB_PASS', '${config.pass}');\n\nfunction getDBConnection() {\n    try {\n        $db = new PDO("mysql:host=".DB_HOST.";dbname=".DB_NAME, DB_USER, DB_PASS);\n        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);\n        return $db;\n    } catch (PDOException $e) {\n        header('Content-Type: application/json');\n        die(json_encode(["success" => false, "error" => $e.getMessage()]));\n    }\n}\n?>`;
       zip.folder("config")?.file("database.php", dbContent);
 
-      // CORE LAYER
       const routerContent = `<?php\nclass Router {\n    public static function handle($uri) {\n        $routes = [\n            'auth/login' => 'AuthController@login',\n            'auth/register' => 'AuthController@register',\n            'syllabus/get' => 'SyllabusController@get',\n            'questions/index' => 'QuestionController@index',\n            'mocktests/index' => 'MockTestController@index'\n        ];\n        // Implementation of RESTful MVC routing...\n    }\n}\n?>`;
       zip.folder("core")?.file("Router.php", routerContent);
       zip.folder("core")?.file("BaseController.php", "<?php class BaseController { protected function json($data) { header('Content-Type: application/json'); echo json_encode($data); exit; } } ?>");
 
-      // CONTROLLERS (Simulating 20+ files)
       const controllers = ['Auth', 'Syllabus', 'Question', 'MockTest', 'Result', 'Wellness', 'Backlog', 'MemoryHack', 'Flashcard', 'Blog', 'Message', 'User', 'System', 'Analytics', 'Profile', 'Security', 'File', 'Report', 'Routine', 'Activity', 'Notification'];
       const controllersFolder = zip.folder("controllers");
       controllers.forEach(name => {
         controllersFolder?.file(`${name}Controller.php`, `<?php\nclass ${name}Controller extends BaseController {\n    public function index() { /* REST API logic for ${name} vertical */ }\n    public function save() { /* Create or update logic for ${name} */ }\n    public function delete() { /* Removal logic for ${name} */ }\n}\n?>`);
       });
 
-      // MODELS
       const modelsFolder = zip.folder("models");
       controllers.forEach(name => {
         modelsFolder?.file(`${name}.php`, `<?php\nclass ${name} {\n    private $db;\n    private $table = '${name.toLowerCase()}s';\n    public function __construct($db) { $this->db = $db; }\n    public function find($id) { /* PDO prepared query for ${name} fetch */ }\n}\n?>`);
       });
 
-      // SQL LAYER
       const sqlContent = `-- IITGEEPREP Master Schema v5.6.2\nCREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100) UNIQUE, role ENUM('STUDENT','PARENT','ADMIN'), password VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);\nCREATE TABLE IF NOT EXISTS chapters (id VARCHAR(50) PRIMARY KEY, subject VARCHAR(50), unit VARCHAR(50), name VARCHAR(255), progress INT, accuracy INT, time_spent INT);\n-- Additional 38 table definitions for all modular nodes...`;
       zip.folder("sql")?.file("master_schema_v5.6.2.sql", sqlContent);
 
-      // ROOT GATEWAY
       zip.file("index.php", "<?php\nrequire_once 'config/database.php';\nrequire_once 'core/Router.php';\n// Gateway for all asynchronous academic transmissions\n$uri = $_GET['uri'] ?? '';\nRouter::handle($uri);\n?>");
       zip.file(".htaccess", "RewriteEngine On\nRewriteRule ^(.*)$ index.php?uri=$1 [QSA,L]");
       zip.file("check.php", "<?php\nrequire_once 'config/database.php';\n$conn = getDBConnection();\necho 'Handshake Status: 200 OK - Node Active';\n?>");
@@ -418,8 +579,7 @@ const SystemModule = () => {
   };
 
   return (
-    <div className="space-y-12 animate-in fade-in duration-500 pb-20 px-4">
-      {/* Blueprint Header */}
+    <div className="space-y-12 animate-in fade-in duration-500">
       <div className="bg-white p-12 rounded-[4rem] border border-slate-200 shadow-sm space-y-10 overflow-hidden relative">
          <div className="absolute top-0 right-0 p-12 opacity-5 rotate-12"><FolderTree className="w-80 h-80" /></div>
          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-10 border-b border-slate-50 pb-10">
@@ -442,7 +602,6 @@ const SystemModule = () => {
             </div>
          </div>
 
-         {/* Steps to Deploy */}
          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
             {[
                { icon: Globe2, title: 'Server Space', desc: 'Create an "api" directory in your public_html root.' },
@@ -482,7 +641,6 @@ const SystemModule = () => {
          </button>
       </div>
 
-      {/* Visual Directory Tree */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
          <div className="bg-slate-950 p-12 rounded-[3.5rem] shadow-2xl border border-slate-800 font-mono text-[10px] space-y-4">
             <div className="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
@@ -518,7 +676,7 @@ const SystemModule = () => {
             <div className="pt-6 border-t border-slate-100 flex items-center justify-between">
                <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]"></div>
-                  <span className="text-[10px] font-black uppercase text-emerald-500 tracking-widest">Active Compiler Uplink</span>
+                  <span className="text-emerald-500 font-black uppercase tracking-widest">Active Compiler Uplink</span>
                </div>
                <button onClick={() => setLogs([])} className="text-[10px] font-black uppercase text-slate-300 hover:text-slate-900 transition-colors">Clear Console</button>
             </div>

@@ -14,8 +14,22 @@ interface AITutorProps {
 }
 
 const AITutor: React.FC<AITutorProps> = ({ data }) => {
+  // Mapping for UI display
+  const modelNames: Record<string, string> = {
+    'solaris-core': 'Solaris Core',
+    'gpt-4o-edu': 'GPT-4o Mini',
+    'claude-3-stu': 'Claude 3 Haiku',
+    'gemini-flash-base': 'Gemini 1.5 Flash',
+    'llama-3-heuristic': 'Llama 3.1 (H)',
+    'deepseek-coder': 'DeepSeek Academic',
+    'iit-pulse': 'IIT-Pulse Engine'
+  };
+
+  const activeModelId = data.aiTutorModel || 'solaris-core';
+  const activeModelName = modelNames[activeModelId] || 'Solaris Core';
+
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'bot', text: `Hello ${data.name}! I'm your local JEE-PRO Tactical Bot. I provide advice based on your syllabus data without needing an internet connection. How can I help?` }
+    { role: 'bot', text: `Hello ${data.name}! I'm your local JEE-PRO Tactical Bot, currently running on the ${activeModelName} engine. I provide advice based on your syllabus data without needing an internet connection. How can I help?` }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -35,7 +49,8 @@ const AITutor: React.FC<AITutorProps> = ({ data }) => {
     setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setIsLoading(true);
 
-    const botReply = await chatWithTutor([], userMsg);
+    // CRITICAL FIX: Pass the globally selected modelId from data
+    const botReply = await chatWithTutor([], userMsg, activeModelId);
     setMessages(prev => [...prev, { role: 'bot', text: botReply || 'Thinking...' }]);
     setIsLoading(false);
   };
@@ -49,7 +64,9 @@ const AITutor: React.FC<AITutorProps> = ({ data }) => {
           </div>
           <div>
             <h2 className="font-black italic text-lg">Tactical Advisor</h2>
-            <div className="text-[9px] uppercase font-black text-indigo-400 tracking-widest">Local Heuristic Mode • Offline Secure</div>
+            <div className="text-[9px] uppercase font-black text-indigo-400 tracking-widest">
+               Engine: {activeModelName} • Offline Secure
+            </div>
           </div>
         </div>
         <Sparkles className="w-5 h-5 text-indigo-400" />
@@ -77,7 +94,7 @@ const AITutor: React.FC<AITutorProps> = ({ data }) => {
                 <Loader2 className="w-5 h-5 text-indigo-600 animate-spin" />
               </div>
               <div className="p-5 bg-white/50 border border-slate-100 rounded-[2rem] rounded-tl-none text-slate-400 text-sm italic font-medium">
-                Analyzing your trajectory...
+                Node {activeModelId} analyzing your trajectory...
               </div>
             </div>
           </div>
@@ -91,7 +108,7 @@ const AITutor: React.FC<AITutorProps> = ({ data }) => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="Ask about Physics, Chemistry, or your Study Plan..."
+            placeholder={`Query the ${activeModelName} engine...`}
             className="flex-1 bg-slate-50 border-none rounded-[1.5rem] px-6 py-4 text-sm font-bold text-slate-800 focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner"
           />
           <button 
