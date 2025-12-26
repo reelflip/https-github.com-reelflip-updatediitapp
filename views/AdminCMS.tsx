@@ -1,11 +1,9 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import JSZip from 'jszip';
 import saveAs from 'file-saver';
 import { StudentData, UserAccount, Subject, ChapterStatus, Question, MockTest, Chapter } from '../types';
 import { api } from '../services/apiService';
 import { chatWithTutor, MODEL_CONFIGS } from '../services/intelligenceService';
-// Added missing Clock import
 import { 
   ShieldCheck, BookOpen, Layers, Zap, Package, Loader2,
   Plus, Trash2, Edit3, X, 
@@ -378,10 +376,31 @@ const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentD
   };
 
   const handleDownloadBuild = async () => {
-    const zip = new JSZip();
-    zip.file(".htaccess", "RewriteEngine On\nRewriteRule . /index.html [L]");
-    const content = await zip.generateAsync({ type: "blob" });
-    saveAs(content, "solaris-deploy.zip");
+    try {
+      const zip = new JSZip();
+      
+      // Core Frontend Logic
+      zip.file(".htaccess", "RewriteEngine On\nRewriteRule . /index.html [L]");
+      
+      // Backend API structure
+      const apiFolder = zip.folder("api");
+      if (apiFolder) {
+        apiFolder.file(".htaccess", "RewriteEngine On\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule ^(.*)$ index.php [QSA,L]");
+        apiFolder.file("index.php", "<?php\n// IITGEEPREP Solaris Master Gateway\nheader('Access-Control-Allow-Origin: *');\nheader('Content-Type: application/json');\necho json_encode(['handshake' => 'established', 'version' => '6.0.0']);");
+        
+        const config = apiFolder.folder("config");
+        config?.file("database.php", "<?php\nreturn [\n  'host' => 'localhost',\n  'dbname' => 'jeepro_db',\n  'user' => 'root',\n  'pass' => ''\n];");
+        
+        const sql = apiFolder.folder("sql");
+        sql?.file("master_schema_v6.0.sql", "-- Solaris Production Schema\nCREATE TABLE students (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100));");
+      }
+
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, "solaris-production-v6.zip");
+    } catch (err) {
+      console.error("ZIP Generation Failed", err);
+      alert("System could not bundle production files. See console for logs.");
+    }
   };
 
   const handleTestSend = async () => {
