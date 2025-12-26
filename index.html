@@ -1,19 +1,30 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JEE-Prep Tracker</title>
+    <title>JEE-Prep Tracker | Solaris Hub</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        #deployment-guard { display: none; }
+        .is-broken #deployment-guard { display: flex; }
+        .is-broken #root { display: none; }
     </style>
     <script>
       // GLOBAL CONFIGURATION
-      window.SHOW_DEMO_LOGINS = true;     // Show/Hide demo buttons in UI
-      window.DISABLE_DEMO_LOGINS = false; // If true, "Master Keys" (ishu@gmail.com) are blocked.
+      window.SHOW_DEMO_LOGINS = true;
+      window.DISABLE_DEMO_LOGINS = false;
+
+      // DEPLOYMENT SENTINEL
+      // If the main module doesn't signal "ready" within 3 seconds, show troubleshooting
+      window.APP_LOADED = false;
+      setTimeout(() => {
+        if (!window.APP_LOADED) {
+          document.documentElement.classList.add('is-broken');
+        }
+      }, 3500);
     </script>
 <script type="importmap">
 {
@@ -24,16 +35,36 @@
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
-    "vite": "https://esm.sh/vite@^7.3.0",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
     "jszip": "https://esm.sh/jszip@^3.10.1",
-    "file-saver": "https://esm.sh/file-saver@^2.0.5"
+    "file-saver": "https://esm.sh/file-saver@^2.0.5",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "vite": "https://esm.sh/vite@^7.3.0"
   }
 }
 </script>
 </head>
-<body class="bg-slate-50 text-slate-900">
+<body class="text-slate-900">
     <div id="root"></div>
+
+    <!-- TROUBLESHOOTING UI (Only shows if load fails) -->
+    <div id="deployment-guard" class="fixed inset-0 z-[999] bg-slate-50 flex-col items-center justify-center p-6 text-center">
+        <div class="max-w-xl w-full bg-white p-10 rounded-[3rem] shadow-2xl border border-slate-200 space-y-8">
+            <div class="w-20 h-20 bg-rose-100 text-rose-600 rounded-3xl flex items-center justify-center mx-auto animate-bounce">
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+            </div>
+            <div class="space-y-2">
+                <h1 class="text-3xl font-black italic tracking-tighter uppercase">Uplink Timeout.</h1>
+                <p class="text-slate-500 font-medium">The browser could not initialize the application module.</p>
+            </div>
+            <div class="bg-slate-900 text-emerald-400 p-6 rounded-2xl text-left font-mono text-xs space-y-2 overflow-auto">
+                <p>> CHECK: XAMPP Apache is running?</p>
+                <p>> CHECK: Files copied from <span class="text-white font-bold">/dist</span> folder (not source)?</p>
+                <p>> CHECK: Browser console (F12) for MIME-type errors?</p>
+            </div>
+            <button onclick="window.location.reload()" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] hover:bg-indigo-700 transition-all">Retry Handshake</button>
+        </div>
+    </div>
+
     <script type="module" src="./index.tsx"></script>
 </body>
 </html>
