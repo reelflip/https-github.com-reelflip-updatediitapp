@@ -1,12 +1,14 @@
 
 import React, { useState } from 'react';
 import { StudentData, PsychometricScore } from '../types';
+// Added ShieldCheck to the imports
 import { 
   Brain, ChevronRight, ChevronLeft, Sparkles, Zap, Target, Clock, ShieldAlert,
   Loader2, HeartHandshake, Moon, Activity, UserCheck, Users, Layout, Trophy,
-  AlertTriangle, Lightbulb, CheckCircle2, Fingerprint, Eye, Coffee, Thermometer
+  AlertTriangle, Lightbulb, CheckCircle2, Fingerprint, Eye, Coffee, Thermometer,
+  Compass, BarChart, History, Flame, Timer, Gauge, ShieldCheck
 } from 'lucide-react';
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 interface PsychometricTestProps {
   data: StudentData;
@@ -19,24 +21,33 @@ const PsychometricTest: React.FC<PsychometricTestProps> = ({ data, setData }) =>
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
 
   const [scores, setScores] = useState<Record<string, number>>({
-    stress: 5, focus: 5, motivation: 5, examFear: 5, 
-    fatigue: 5, sleep: 5, consistency: 5, confidence: 5, 
-    socialSupport: 5, vitality: 5, backlogGuilt: 5, subjectDread: 5
+    sillyMistakes: 5,
+    focusStamina: 5,
+    backlogStress: 5,
+    sleepSync: 5,
+    conceptEncoding: 5,
+    examStoicism: 5,
+    numericalPhobia: 5,
+    socialIsolation: 5,
+    routineDiscipline: 5,
+    recoverySpeed: 5,
+    competitivePressure: 5,
+    revisionConsistency: 5
   });
 
   const questions = [
-    { id: 'stress', title: 'Cognitive Load', subtitle: 'How overwhelmed do you feel by the volume of syllabus remaining?', low: 'In Control', high: 'Drowning', icon: ShieldAlert, color: 'rose' },
-    { id: 'focus', title: 'Concentration Depth', subtitle: 'Ability to enter "Flow State" during 3-hour study blocks.', low: 'Scattered', high: 'Laser-Focused', icon: Target, color: 'indigo' },
-    { id: 'backlogGuilt', title: 'Backlog Anxiety', subtitle: 'Does the thought of pending units disrupt your current focus?', low: 'Ignoring', high: 'Paralyzing', icon: Activity, color: 'amber' },
-    { id: 'sleep', title: 'Sleep Quality', subtitle: 'Are you getting 6.5+ hours of restorative, undisturbed sleep?', low: 'Insomniac', high: 'Restored', icon: Moon, color: 'blue' },
-    { id: 'motivation', title: 'Intrinsic Drive', subtitle: 'Genuine desire to solve problems vs studying due to pressure.', low: 'External Only', high: 'Self-Driven', icon: Zap, color: 'emerald' },
-    { id: 'subjectDread', title: 'Subject Aversion', subtitle: 'Tendency to procrastinate starting your weakest subject.', low: 'Equanimous', high: 'Total Dread', icon: Thermometer, color: 'orange' },
-    { id: 'examFear', title: 'Mock Performance Anxiety', subtitle: 'Nervousness specifically about Mock Tests or the final D-Day.', low: 'Stoic', high: 'Panic', icon: Brain, color: 'violet' },
-    { id: 'fatigue', title: 'Physical Exhaustion', subtitle: 'Frequency of eye strain, headaches, or general body fatigue.', low: 'Energetic', high: 'Burned Out', icon: Coffee, color: 'rose' },
-    { id: 'socialSupport', title: 'Social Connection', subtitle: 'Feeling supported by family/friends vs feeling isolated.', low: 'Lonely', high: 'Connected', icon: Users, color: 'teal' },
-    { id: 'consistency', title: 'Routine Adherence', subtitle: 'How often do you follow your planned schedule to 90%+ accuracy?', low: 'Erratic', high: 'Disciplined', icon: CheckCircle2, color: 'indigo' },
-    { id: 'vitality', title: 'Mental Sharpness', subtitle: 'How quickly can you grasp a new complex concept right now?', low: 'Foggy', high: 'Acute', icon: Fingerprint, color: 'emerald' },
-    { id: 'confidence', title: 'Self-Efficacy', subtitle: 'Internal belief that you WILL crack your target rank.', low: 'Doubtful', high: 'Certain', icon: Trophy, color: 'amber' }
+    { id: 'sillyMistakes', title: 'Precision Drift', subtitle: 'Frequency of "silly errors" despite knowing the concept fully.', low: 'Laser Accurate', high: 'Erratic', icon: Target, color: 'emerald' },
+    { id: 'focusStamina', title: 'Deep Work Capacity', subtitle: 'Ability to stay in a single numerical problem for 15+ minutes without distraction.', low: 'Low Stamina', high: 'Unbreakable', icon: Timer, color: 'indigo' },
+    { id: 'numericalPhobia', title: 'Calculative Friction', subtitle: 'The internal resistance or "fear" when facing heavy multi-step calculations.', low: 'Stoic', high: 'Aversion', icon: Gauge, color: 'rose' },
+    { id: 'conceptEncoding', title: 'Encoding Velocity', subtitle: 'Speed of grasping new complex theoretical derivations.', low: 'Foggy', high: 'Acute', icon: Fingerprint, color: 'blue' },
+    { id: 'examStoicism', title: 'Test Performance Stoicism', subtitle: 'Maintaining calm when facing 3-4 consecutive unsolved questions in a mock.', low: 'Panic Prone', high: 'Battle Hardened', icon: ShieldAlert, color: 'violet' },
+    { id: 'backlogStress', title: 'Cumulative Debt Anxiety', subtitle: 'Mental noise generated by the thought of unfinished units.', low: 'Zero Weight', high: 'Paralyzing', icon: Activity, color: 'amber' },
+    { id: 'sleepSync', title: 'Circadian Alignment', subtitle: 'Restorative quality of sleep and alertness during morning hours.', low: 'Desynced', high: 'Optimized', icon: Moon, color: 'blue' },
+    { id: 'recoverySpeed', title: 'Burnout Recovery', subtitle: 'How quickly you bounce back after a bad mock test result.', low: 'Slow/Lingering', high: 'Instant Reset', icon: Flame, color: 'orange' },
+    { id: 'routineDiscipline', title: 'Schedule Adherence', subtitle: 'Strictness in following the planned time-table vs impulsive studying.', low: 'Impulsive', high: 'Clockwork', icon: CheckCircle2, color: 'emerald' },
+    { id: 'socialIsolation', title: 'Synergy vs Solitude', subtitle: 'Feeling healthy solitude vs feeling disconnected/lonely.', low: 'Healthy', high: 'Isolated', icon: Users, color: 'teal' },
+    { id: 'competitivePressure', title: 'Relative Comparison', subtitle: 'Mental load from comparing your rank with peers or toppers.', low: 'Self-Focused', high: 'Peer-Obsessed', icon: Compass, color: 'indigo' },
+    { id: 'revisionConsistency', title: 'Memory Maintenance', subtitle: 'Discipline in revisiting "Easy" topics to prevent decay.', low: 'Negligent', high: 'Rigorous', icon: History, color: 'rose' }
   ];
 
   const radarData = questions.slice(0, 6).map(q => ({
@@ -47,64 +58,60 @@ const PsychometricTest: React.FC<PsychometricTestProps> = ({ data, setData }) =>
 
   const handleFinish = async () => {
     setIsFinishing(true);
-    await new Promise(r => setTimeout(r, 1500));
+    await new Promise(r => setTimeout(r, 2000));
 
-    // Nuanced Heuristic Logic
-    const burnoutScore = (scores.fatigue + (10 - scores.sleep) + scores.stress) / 3;
-    const driveScore = (scores.motivation + scores.confidence + scores.consistency) / 3;
-    const anxietyScore = (scores.examFear + scores.backlogGuilt + scores.subjectDread) / 3;
-
-    let profile = "Steady State";
+    // Advanced Heuristic Scoring
+    const fatigueIndex = (scores.sillyMistakes + (10 - scores.sleepSync) + scores.recoverySpeed) / 3;
+    const executionStrength = (scores.focusStamina + scores.routineDiscipline + scores.revisionConsistency) / 3;
+    const anxietyLoad = (scores.examStoicism + scores.numericalPhobia + scores.backlogStress) / 3;
+    
+    let archetype = "The Steady Aspirant";
     let riskLevel = "LOW";
-    let recommendation = "";
-
-    if (burnoutScore > 7) {
-      profile = "Burnout Critical";
-      riskLevel = "HIGH";
-      recommendation = "Immediate physiological reset required. Stop all mock tests for 72 hours. Prioritize sleep and low-intensity revision.";
-    } else if (anxietyScore > 7) {
-      profile = "Performance Block";
-      riskLevel = "MEDIUM";
-      recommendation = "Your knowledge is high but anxiety is capping your score. Focus on 'Process-based' goals rather than 'Rank-based' outcomes.";
-    } else if (driveScore < 4) {
-      profile = "Motivation Drift";
-      riskLevel = "MEDIUM";
-      recommendation = "You are going through the motions. Revisit your 'Why'. Take a half-day break to recalibrate your long-term goals.";
-    } else {
-      profile = "Peak Performance Flow";
-      riskLevel = "OPTIMAL";
-      recommendation = "You are in the zone. Maintain this rhythm. Don't add more load; just sharpen the existing edges.";
+    let statusBg = "bg-emerald-600";
+    
+    if (fatigueIndex > 7) { 
+        archetype = "The Redline Performer"; 
+        riskLevel = "CRITICAL"; 
+        statusBg = "bg-rose-600";
+    } else if (anxietyLoad > 7) { 
+        archetype = "The Perfectionist Miner"; 
+        riskLevel = "ELEVATED"; 
+        statusBg = "bg-amber-600";
+    } else if (executionStrength > 7) { 
+        archetype = "The Strategic Machine"; 
+        riskLevel = "OPTIMAL"; 
+        statusBg = "bg-indigo-600";
     }
 
-    const localReport = {
-      profile,
+    const report = {
+      archetype,
       riskLevel,
-      description: recommendation,
-      tacticalActions: [
-        `Focus primarily on ${scores.subjectDread > 7 ? 'weak subject integration' : 'high-yield formula recall'}.`,
-        scores.sleep < 5 ? "Mandatory 11 PM digital blackout." : "Maintain current sleep cycle.",
-        scores.backlogGuilt > 7 ? "Allocate 45 mins daily to ONLY one backlog unit." : "Stay on the current syllabus track."
+      statusBg,
+      indices: {
+        focus: Math.round(executionStrength * 10),
+        resilience: Math.round((10 - anxietyLoad) * 10),
+        vitality: Math.round((10 - fatigueIndex) * 10)
+      },
+      directives: [
+        fatigueIndex > 6 ? "Mandatory 48-hour 'Digital Detox' from mock results." : "Continue current high-intensity drills.",
+        anxietyLoad > 6 ? "Shift focus from 'Rank Targets' to 'Concept Clarity' for 7 days." : "Maintain competitive benchmarking.",
+        executionStrength < 5 ? "Re-establish morning routine via 15m 'Formula Flush' sessions." : "Workflow is optimal; avoid over-optimization."
       ],
-      mindsetShifts: [
-        "Focus on the 'Next 3 Hours', not the 'Next 3 Months'.",
-        "Your score is a metric of strategy, not your worth."
-      ],
-      parentSupport: riskLevel === 'HIGH' 
-        ? "Student is showing signs of severe burnout. Reduce academic pressure and ensure proper nutrition/rest." 
-        : "Student is managing load well. Continue providing a positive, non-rank-focused environment.",
+      summaryText: `Your current cognitive state is identified as '${archetype}'. While your ${executionStrength > 6 ? 'disciplined routine' : 'potential'} is high, you are currently ${fatigueIndex > 6 ? 'experiencing significant neural fatigue' : 'maintaining a healthy load'}. Your immediate focus must be on ${anxietyLoad > 6 ? 'anxiety regulation' : 'velocity maintenance'}.`
     };
 
+    setAiAnalysis(report);
+    
     const newEntry: PsychometricScore = {
-      stress: scores.stress,
-      focus: scores.focus,
-      motivation: scores.motivation,
-      examFear: scores.examFear,
+      stress: Math.round(anxietyLoad),
+      focus: Math.round(executionStrength),
+      motivation: Math.round(scores.recoverySpeed),
+      examFear: Math.round(scores.examStoicism),
       timestamp: new Date().toISOString().split('T')[0],
-      studentSummary: localReport.description,
-      parentAdvice: localReport.parentSupport
+      studentSummary: report.summaryText,
+      parentAdvice: fatigueIndex > 6 ? "Student needs immediate rest. High risk of burnout." : "Student is performing well. Maintain positive reinforcement."
     };
 
-    setAiAnalysis(localReport);
     setData({ ...data, psychometricHistory: [...data.psychometricHistory, newEntry] });
     setIsFinishing(false);
     setStep(questions.length);
@@ -114,51 +121,82 @@ const PsychometricTest: React.FC<PsychometricTestProps> = ({ data, setData }) =>
 
   if (step === questions.length) {
     return (
-      <div className="max-w-6xl mx-auto space-y-10 animate-in zoom-in-95 duration-700 pb-24">
+      <div className="max-w-6xl mx-auto space-y-8 animate-in zoom-in-95 duration-700 pb-32 px-4">
         {aiAnalysis && (
           <>
-            <section className={`p-12 rounded-[3.5rem] text-white shadow-2xl flex flex-col md:flex-row items-center gap-10 ${
-              aiAnalysis.riskLevel === 'HIGH' ? 'bg-rose-900' : aiAnalysis.riskLevel === 'OPTIMAL' ? 'bg-emerald-900' : 'bg-indigo-900'
-            }`}>
-              <div className="w-32 h-32 bg-white/10 rounded-[2.5rem] flex items-center justify-center shrink-0 border border-white/20 backdrop-blur-md">
-                <Brain className="w-16 h-16 text-white" />
-              </div>
-              <div className="space-y-4 text-center md:text-left">
-                <div className="inline-flex px-4 py-1 rounded-full bg-white/10 text-[10px] font-black uppercase tracking-widest border border-white/10">
-                   Status: {aiAnalysis.riskLevel}
-                </div>
-                <h2 className="text-5xl font-black italic tracking-tighter uppercase">{aiAnalysis.profile}</h2>
-              </div>
-            </section>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <div className="lg:col-span-8 bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm space-y-8">
-                  <h3 className="text-2xl font-black text-slate-800 flex items-center gap-3"><Layout className="w-6 h-6 text-indigo-600" /> Intelligence Insights</h3>
-                  <p className="text-slate-600 text-lg leading-relaxed font-medium italic border-l-4 border-indigo-100 pl-6">"{aiAnalysis.description}"</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                        <h4 className="text-xs font-black uppercase text-indigo-600 mb-4">Tactical Shifts</h4>
-                        <ul className="space-y-2 text-sm text-slate-600 font-bold">{aiAnalysis.tacticalActions.map((a:string, i:number) => <li key={i}>• {a}</li>)}</ul>
+            <div className="bg-white rounded-[4rem] border border-slate-200 shadow-2xl overflow-hidden">
+               <div className={`p-12 text-white relative overflow-hidden ${aiAnalysis.statusBg}`}>
+                  <div className="absolute top-0 right-0 p-12 opacity-10 rotate-12"><Brain className="w-64 h-64" /></div>
+                  <div className="relative z-10 space-y-6">
+                     <div className="inline-flex px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-black uppercase tracking-widest border border-white/20">
+                        Diagnostic Result: {aiAnalysis.riskLevel} Risk
                      </div>
-                     <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-                        <h4 className="text-xs font-black uppercase text-indigo-600 mb-4">Mindset Tip</h4>
-                        <p className="text-sm text-slate-600 font-medium italic">"{aiAnalysis.mindsetShifts[0]}"</p>
+                     <h2 className="text-6xl font-black italic tracking-tighter uppercase leading-none">
+                        {aiAnalysis.archetype}.
+                     </h2>
+                     <p className="text-white/80 max-w-2xl text-lg font-medium leading-relaxed italic">
+                        "{aiAnalysis.summaryText}"
+                     </p>
+                  </div>
+               </div>
+
+               <div className="p-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
+                  <div className="space-y-8">
+                     <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-indigo-500" /> Core Indices
+                     </h4>
+                     <div className="space-y-6">
+                        {[
+                           { label: 'Execution Force', val: aiAnalysis.indices.focus, color: 'bg-indigo-500' },
+                           { label: 'Anxiety Shield', val: aiAnalysis.indices.resilience, color: 'bg-emerald-500' },
+                           { label: 'Metabolic Reserve', val: aiAnalysis.indices.vitality, color: 'bg-rose-500' }
+                        ].map((idx, i) => (
+                           <div key={i} className="space-y-2">
+                              <div className="flex justify-between items-end">
+                                 <span className="text-xs font-black text-slate-700 uppercase tracking-widest">{idx.label}</span>
+                                 <span className="text-xl font-black text-slate-900">{idx.val}%</span>
+                              </div>
+                              <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                                 <div className={`h-full ${idx.color} transition-all duration-1000`} style={{ width: `${idx.val}%` }}></div>
+                              </div>
+                           </div>
+                        ))}
                      </div>
                   </div>
-              </div>
-              <div className="lg:col-span-4 bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm flex flex-col items-center">
-                 <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Cognitive Balance Map</h4>
-                 <div className="h-64 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                        <PolarGrid stroke="#f1f5f9" />
-                        <PolarAngleAxis dataKey="subject" tick={{ fontSize: 8, fontWeight: 'bold', fill: '#94a3b8' }} />
-                        <Radar name="Student" dataKey="A" stroke="#6366f1" fill="#6366f1" fillOpacity={0.15} strokeWidth={3} />
-                      </RadarChart>
-                    </ResponsiveContainer>
-                 </div>
-                 <button onClick={() => setStep(0)} className="w-full mt-6 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 transition-all">Retake Diagnostic</button>
-              </div>
+
+                  <div className="lg:col-span-2 space-y-8">
+                     <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-indigo-500" /> Intelligence Directives
+                     </h4>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {aiAnalysis.directives.map((dir: string, i: number) => (
+                           <div key={i} className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex gap-6 group hover:border-indigo-200 transition-all">
+                              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shrink-0 shadow-sm text-indigo-600 font-black">0{i+1}</div>
+                              <p className="text-sm font-bold text-slate-600 leading-relaxed italic">"{dir}"</p>
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+               </div>
+
+               <div className="p-12 border-t border-slate-100 bg-slate-50/30 flex flex-col md:flex-row justify-between items-center gap-10">
+                  <div className="flex items-center gap-6">
+                     <div className="h-40 w-40">
+                        <ResponsiveContainer width="100%" height="100%">
+                           <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                              <PolarGrid stroke="#e2e8f0" />
+                              <PolarAngleAxis dataKey="subject" tick={false} />
+                              <Radar name="Student" dataKey="A" stroke="#6366f1" fill="#6366f1" fillOpacity={0.4} />
+                           </RadarChart>
+                        </ResponsiveContainer>
+                     </div>
+                     <div>
+                        <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest">Equilibrium Map</h4>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Symmetry indicates balanced prep</p>
+                     </div>
+                  </div>
+                  <button onClick={() => setStep(0)} className="px-12 py-5 bg-slate-900 text-white rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em] shadow-2xl hover:scale-105 transition-all">Re-Sync Diagnostic</button>
+               </div>
             </div>
           </>
         )}
@@ -167,50 +205,98 @@ const PsychometricTest: React.FC<PsychometricTestProps> = ({ data, setData }) =>
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in duration-500 pb-20">
-      <div className="flex justify-between items-end">
-        <div className="space-y-1">
-          <h2 className="text-4xl font-black text-slate-900 tracking-tight italic">Performance Diagnostic.</h2>
-          <p className="text-slate-500 font-medium text-xs uppercase tracking-widest">Question {step + 1} of {questions.length}</p>
+    <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in duration-500 pb-32 px-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <div>
+           <div className="text-[11px] font-black uppercase text-indigo-600 tracking-[0.5em] mb-4 flex items-center gap-3">
+              <Compass className="w-5 h-5" /> Cognitive Mapping Phase
+           </div>
+           <h2 className="text-6xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">
+              PULSE <br /><span className="text-indigo-600">CHECK.</span>
+           </h2>
         </div>
-        <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-400">
-           Heuristic Engine v2.0
+        <div className="bg-white px-6 py-3 rounded-2xl border border-slate-200 flex flex-col items-end">
+           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Progress</span>
+           <div className="flex gap-1.5 mt-2">
+              {questions.map((_, i) => (
+                <div key={i} className={`h-1.5 rounded-full transition-all duration-500 ${i <= step ? 'w-4 bg-indigo-600' : 'w-2 bg-slate-100'}`}></div>
+              ))}
+           </div>
         </div>
       </div>
 
-      <div className="bg-white p-12 rounded-[4rem] border border-slate-200 shadow-2xl flex flex-col justify-between min-h-[550px]">
-        <div className="flex flex-col items-center text-center space-y-8">
-          <div className={`w-24 h-24 bg-${currentQ.color}-50 text-${currentQ.color}-600 rounded-[2.5rem] flex items-center justify-center shadow-inner`}>
-            <currentQ.icon className="w-12 h-12" />
+      <div className="bg-white p-12 lg:p-20 rounded-[4rem] border border-slate-200 shadow-2xl space-y-12 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity"><Brain className="w-96 h-96" /></div>
+        
+        <div className="flex flex-col items-center text-center space-y-10 relative z-10">
+          <div className={`w-28 h-28 bg-${currentQ.color}-50 text-${currentQ.color}-600 rounded-[3rem] flex items-center justify-center shadow-inner border border-${currentQ.color}-100`}>
+            <currentQ.icon className="w-14 h-14" />
           </div>
-          <div className="space-y-3">
-            <h3 className="text-4xl font-black text-slate-900 tracking-tight leading-none italic">{currentQ.title}</h3>
-            <p className="text-slate-500 text-lg font-medium max-w-xl">{currentQ.subtitle}</p>
+          
+          <div className="space-y-4">
+            <h3 className="text-5xl font-black text-slate-900 tracking-tighter leading-none italic">{currentQ.title}</h3>
+            <p className="text-slate-500 text-xl font-medium max-w-2xl leading-relaxed italic">"{currentQ.subtitle}"</p>
           </div>
-          <div className="w-full max-w-2xl pt-10">
-               <input 
-                type="range" min="0" max="10" step="1"
+
+          <div className="w-full max-w-2xl pt-12 space-y-12">
+            <div className="relative pt-6">
+              <input 
+                type="range" min="1" max="10" step="1"
                 value={scores[currentQ.id]}
                 onChange={(e) => setScores({...scores, [currentQ.id]: parseInt(e.target.value)})}
-                className="w-full h-4 bg-slate-100 rounded-full appearance-none cursor-pointer accent-indigo-600 outline-none"
-               />
-               <div className="flex justify-between mt-8">
-                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{currentQ.low}</span>
-                  <span className="text-4xl font-black text-indigo-600 tabular-nums">{scores[currentQ.id]}</span>
-                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{currentQ.high}</span>
-               </div>
-            <div className="flex justify-between gap-6 pt-16">
-              <button disabled={step === 0} onClick={() => setStep(step - 1)} className="px-10 py-5 bg-slate-50 border border-slate-100 text-slate-400 font-black rounded-2xl transition-all uppercase text-[10px] tracking-widest hover:bg-slate-100">Previous</button>
+                className="w-full h-4 bg-slate-100 rounded-full appearance-none cursor-pointer accent-indigo-600 outline-none shadow-inner"
+              />
+              <div className="flex justify-between mt-10">
+                 <div className="text-left">
+                    <div className="text-[9px] font-black uppercase text-slate-300 tracking-widest mb-1">Scale Min</div>
+                    <div className="text-xs font-black text-slate-400 uppercase">{currentQ.low}</div>
+                 </div>
+                 <div className="text-center">
+                    <div className="text-7xl font-black text-indigo-600 tracking-tighter tabular-nums">{scores[currentQ.id]}</div>
+                 </div>
+                 <div className="text-right">
+                    <div className="text-[9px] font-black uppercase text-slate-300 tracking-widest mb-1">Scale Max</div>
+                    <div className="text-xs font-black text-slate-400 uppercase">{currentQ.high}</div>
+                 </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center gap-8 pt-10">
+              <button 
+                disabled={step === 0} 
+                onClick={() => setStep(step - 1)} 
+                className="flex-1 py-6 bg-slate-50 text-slate-400 font-black rounded-3xl transition-all uppercase text-[10px] tracking-widest hover:bg-slate-100 disabled:opacity-20 border border-slate-100"
+              >
+                Previous
+              </button>
               {step === questions.length - 1 ? (
-                <button onClick={handleFinish} disabled={isFinishing} className="bg-indigo-600 text-white px-14 py-5 rounded-[2.5rem] font-black text-sm uppercase tracking-[0.2em] shadow-2xl flex items-center gap-4 hover:scale-105 transition-all">
-                  {isFinishing ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-5 h-5" /> Analyze Matrix</>}
+                <button 
+                  onClick={handleFinish} 
+                  disabled={isFinishing} 
+                  className="flex-[2] bg-indigo-600 text-white py-6 rounded-[2.5rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl flex items-center justify-center gap-4 hover:scale-105 active:scale-95 transition-all"
+                >
+                  {isFinishing ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Sparkles className="w-5 h-5" /> Finalize Diagnostic</>}
                 </button>
               ) : (
-                <button onClick={() => setStep(step + 1)} className="bg-slate-900 text-white px-14 py-5 rounded-[2.5rem] font-black text-sm uppercase tracking-[0.2em] shadow-2xl hover:bg-black transition-all flex items-center gap-4">Continue <ChevronRight className="w-5 h-5" /></button>
+                <button 
+                  onClick={() => setStep(step + 1)} 
+                  className="flex-[2] bg-slate-900 text-white py-6 rounded-[2.5rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-4 active:scale-95"
+                >
+                  Continue <ChevronRight className="w-5 h-5" />
+                </button>
               )}
             </div>
           </div>
         </div>
+      </div>
+      
+      <div className="bg-indigo-50 p-10 rounded-[3rem] border border-indigo-100 flex items-center gap-8 shadow-sm">
+         <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-100 shrink-0">
+            <ShieldCheck className="w-8 h-8" />
+         </div>
+         <p className="text-xs text-indigo-800 font-bold leading-relaxed italic">
+            "Your responses are stored locally and encrypted. They help our heuristic engine adjust your 'Smart Study Advice' on the dashboard. Be brutally honest for high-precision results."
+         </p>
       </div>
     </div>
   );

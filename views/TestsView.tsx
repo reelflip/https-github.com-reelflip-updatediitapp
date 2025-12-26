@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { StudentData, MockTest, Question, TestResult, Chapter } from '../types';
 import { api } from '../services/apiService';
@@ -6,7 +5,7 @@ import {
   Clock, Target, Trophy, ArrowLeft, Award, Zap, 
   ListFilter, History, X, BookOpen, BarChart, 
   ChevronLeft, Lightbulb, Eye, CheckCircle, 
-  ChevronRight, AlertCircle, Activity
+  ChevronRight, AlertCircle, Activity, TrendingUp
 } from 'lucide-react';
 
 interface TestsViewProps {
@@ -45,10 +44,17 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
     setViewingResult(null);
   };
 
+  const calculateConfidence = (chapter: Chapter) => {
+    // Confidence = 70% Accuracy + 30% Progress
+    const score = Math.round((chapter.accuracy * 0.7) + (chapter.progress * 0.3));
+    if (score > 85) return { label: 'Expert', color: 'text-emerald-500', bg: 'bg-emerald-50' };
+    if (score > 65) return { label: 'Stable', color: 'text-indigo-500', bg: 'bg-indigo-50' };
+    if (score > 40) return { label: 'Developing', color: 'text-amber-500', bg: 'bg-amber-50' };
+    return { label: 'Critical', color: 'text-rose-500', bg: 'bg-rose-50' };
+  };
+
   const handleFinalSubmit = async () => {
     if (!activeTest) return;
-    
-    // Safety check: ensure we don't submit twice
     if (isSubmitted) return;
 
     let score = 0;
@@ -77,11 +83,9 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
       accuracy: Math.round((correct / (activeTest.questionIds.length || 1)) * 100)
     };
 
-    // Transition state
     setIsSubmitted(true);
     setViewingResult(result);
 
-    // Sync with global history
     const updatedHistory = [result, ...data.testHistory];
     setData({ ...data, testHistory: updatedHistory });
     await api.saveEntity('Result', result);
@@ -102,14 +106,12 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
     }
   };
 
-  // UI 1: ACTIVE EXAM INTERFACE
   if (testMode && activeTest && !isSubmitted) {
     const questions = data.questions.filter(q => activeTest.questionIds.includes(q.id));
     const currentQ = questions[currentIdx];
 
     return (
       <div className="fixed inset-0 z-[100] bg-slate-50 flex flex-col font-sans overflow-hidden animate-in fade-in">
-        {/* Unified Header with only ONE Submit button */}
         <div className="h-16 bg-white border-b border-slate-200 px-6 md:px-10 flex items-center justify-between shrink-0 shadow-sm">
           <div className="flex items-center gap-6">
             <button 
@@ -140,7 +142,6 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
         </div>
 
         <div className="flex-1 flex overflow-hidden">
-          {/* Main Question Component */}
           <div className="flex-1 overflow-y-auto bg-white p-8 md:p-16 lg:p-24 flex flex-col items-center">
             <div className="max-w-4xl w-full space-y-12">
                <div className="flex justify-between items-center pb-8 border-b border-slate-100">
@@ -183,7 +184,6 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
             </div>
           </div>
 
-          {/* Clean Sidebar: Palette Only */}
           <div className="w-80 bg-slate-50 border-l border-slate-200 flex flex-col hidden lg:flex">
              <div className="p-8 bg-white border-b border-slate-100">
                 <h3 className="text-xs font-black uppercase text-slate-400 tracking-[0.2em] mb-8">Question Palette</h3>
@@ -229,7 +229,6 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
           </div>
         </div>
 
-        {/* Question-level Footer Actions */}
         <div className="h-20 bg-white border-t border-slate-200 px-8 md:px-12 flex items-center justify-between shrink-0">
            <button 
             disabled={currentIdx === 0} 
@@ -261,7 +260,6 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
     );
   }
 
-  // UI 2: SCORECARD / RESULT SUMMARY (Only visible after submission)
   if (viewingResult) {
     const testSource = data.mockTests.find(t => t.id === viewingResult.testId);
     const questions = data.questions.filter(q => testSource?.questionIds.includes(q.id));
@@ -283,7 +281,6 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
 
         <div className="flex-1 overflow-y-auto p-6 md:p-12 lg:p-16">
            <div className="max-w-6xl mx-auto space-y-12 pb-32">
-              {/* Summary Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 text-center shadow-sm">
                    <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">Aggregate Score</div>
@@ -303,7 +300,6 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
                 </div>
               </div>
 
-              {/* Detailed Question Review */}
               <div className="bg-white rounded-[4rem] border border-slate-200 overflow-hidden shadow-sm">
                  <div className="p-12 border-b bg-slate-50/50 flex justify-between items-center">
                     <h3 className="text-3xl font-black italic text-slate-800 flex items-center gap-6"><ListFilter className="w-10 h-10 text-indigo-600" /> Response Analysis</h3>
@@ -353,7 +349,6 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
     )
   }
 
-  // UI 3: MAIN HUB (Library and Historical scores)
   return (
     <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in duration-500 pb-20 px-4">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-10">
@@ -432,40 +427,75 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
              </table>
           </div>
         ) : (
-          <div className="bg-white rounded-[3rem] border border-slate-200 shadow-sm p-12 space-y-12">
-             <div className="flex justify-between items-center border-b pb-10 border-slate-100">
-                <h3 className="text-3xl font-black italic text-slate-900 tracking-tighter flex items-center gap-6"><Activity className="w-10 h-10 text-indigo-600" /> Syllabus Tracker</h3>
+          <div className="space-y-10">
+             <div className="bg-indigo-900 p-12 rounded-[4rem] text-white shadow-2xl flex flex-col md:flex-row justify-between items-center gap-10 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-[3s]"><TrendingUp className="w-80 h-80" /></div>
+                <div className="space-y-4 relative z-10">
+                   <h3 className="text-3xl font-black italic tracking-tighter uppercase leading-none">Intelligence Tracking.</h3>
+                   <p className="text-indigo-200 text-sm max-w-lg font-medium">Drill down into every chapter to identify time-sink areas and confidence gaps. Precision is your only edge.</p>
+                </div>
+                <div className="flex gap-6 relative z-10">
+                   <div className="bg-white/10 backdrop-blur-md px-8 py-4 rounded-[2rem] border border-white/10 text-center">
+                      <div className="text-[10px] font-black uppercase text-indigo-400 tracking-widest">Active Units</div>
+                      <div className="text-3xl font-black">{data.chapters.filter(c => c.status !== 'NOT_STARTED').length}</div>
+                   </div>
+                </div>
              </div>
+
              <div className="grid grid-cols-1 gap-8">
-                {data.chapters.map(c => (
-                  <div key={c.id} className="p-10 bg-slate-50/50 rounded-[2.5rem] border border-slate-100 flex flex-col xl:flex-row justify-between items-center gap-12 group hover:bg-white hover:shadow-2xl transition-all duration-500">
-                     <div className="flex-1 space-y-4 w-full">
-                        <div className="flex items-center gap-5">
-                           <span className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest ${
-                             c.subject === 'Physics' ? 'bg-blue-100 text-blue-600' : c.subject === 'Chemistry' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
-                           }`}>{c.subject}</span>
-                           <h4 className="text-2xl font-black text-slate-800 italic tracking-tighter leading-none">{c.name}</h4>
-                        </div>
-                        <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden shadow-inner">
-                           <div className={`h-full transition-all duration-1000 ${c.accuracy > 70 ? 'bg-emerald-500' : 'bg-indigo-600'}`} style={{ width: `${c.progress}%` }}></div>
-                        </div>
-                     </div>
-                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8 shrink-0 xl:border-l xl:pl-12 border-slate-200 w-full xl:w-auto">
-                        {[
-                          { icon: BookOpen, label: 'Theory', val: c.timeSpentNotes, color: 'indigo' },
-                          { icon: Eye, label: 'Visuals', val: c.timeSpentVideos, color: 'amber' },
-                          { icon: Target, label: 'Drills', val: c.timeSpentPractice, color: 'emerald' },
-                          { icon: History, label: 'Attempts', val: c.timeSpentTests, color: 'rose' }
-                        ].map((stat, si) => (
-                          <div key={si} className="flex flex-col items-center gap-2">
-                             <stat.icon className="w-5 h-5 text-slate-300 group-hover:text-indigo-400 transition-colors" />
-                             <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</div>
-                             <div className="text-sm font-black text-slate-800 tabular-nums">{Math.round((stat.val || 0) / 60)}m</div>
+                {data.chapters.map(c => {
+                  const conf = calculateConfidence(c);
+                  return (
+                    <div key={c.id} className="p-10 bg-white rounded-[3rem] border border-slate-200 flex flex-col xl:flex-row items-center gap-12 group hover:border-indigo-400 hover:shadow-2xl transition-all duration-500 relative overflow-hidden">
+                       <div className="flex-1 space-y-6 w-full relative z-10">
+                          <div className="flex flex-wrap items-center gap-5">
+                             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border shadow-inner ${
+                               c.subject === 'Physics' ? 'bg-blue-50 text-blue-600 border-blue-100' : c.subject === 'Chemistry' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'
+                             }`}>
+                                <BookOpen className="w-6 h-6" />
+                             </div>
+                             <div>
+                                <h4 className="text-2xl font-black text-slate-800 italic tracking-tighter leading-none">{c.name}</h4>
+                                <div className="flex items-center gap-3 mt-2">
+                                   <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{c.subject}</span>
+                                   <div className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${conf.bg} ${conf.color}`}>{conf.label} Confidence</div>
+                                </div>
+                             </div>
                           </div>
-                        ))}
-                     </div>
-                  </div>
-                ))}
+                          <div className="space-y-3">
+                             <div className="flex justify-between text-[10px] font-black uppercase text-slate-400">
+                                <span>Mastery Progress</span>
+                                <span className="text-slate-800">{c.progress}%</span>
+                             </div>
+                             <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                                <div className={`h-full transition-all duration-1000 ${c.accuracy > 70 ? 'bg-emerald-500' : 'bg-indigo-600'}`} style={{ width: `${c.progress}%` }}></div>
+                             </div>
+                          </div>
+                       </div>
+                       
+                       <div className="grid grid-cols-2 md:grid-cols-4 gap-12 shrink-0 xl:border-l xl:pl-12 border-slate-100 w-full xl:w-auto relative z-10">
+                          {[
+                            { icon: BookOpen, label: 'Theory', val: c.timeSpentNotes, color: 'indigo' },
+                            { icon: Eye, label: 'Lectures', val: c.timeSpentVideos, color: 'amber' },
+                            { icon: Target, label: 'Drills', val: c.timeSpentPractice, color: 'emerald' },
+                            { icon: History, label: 'Exams', val: c.timeSpentTests, color: 'rose' }
+                          ].map((stat, si) => (
+                            <div key={si} className="flex flex-col items-center gap-2 group/stat">
+                               <div className="w-10 h-10 bg-slate-50 text-slate-300 rounded-xl flex items-center justify-center group-hover/stat:bg-indigo-600 group-hover/stat:text-white transition-all shadow-sm">
+                                  <stat.icon className="w-4 h-4" />
+                               </div>
+                               <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</div>
+                               <div className="text-lg font-black text-slate-900 tabular-nums">{Math.round((stat.val || 0) / 60)}m</div>
+                            </div>
+                          ))}
+                       </div>
+
+                       <div className="absolute top-1/2 -translate-y-1/2 -right-10 opacity-0 group-hover:opacity-10 transition-opacity pointer-events-none">
+                          <Activity className="w-40 h-40 text-indigo-600" />
+                       </div>
+                    </div>
+                  )
+                })}
              </div>
           </div>
         )}

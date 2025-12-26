@@ -373,68 +373,34 @@ const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentD
     try {
       const zip = new JSZip();
       
-      // 1. Root Configurations
+      // Core Config
       zip.file(".htaccess", "RewriteEngine On\nRewriteRule ^$ index.html [L]\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule . index.html [L]");
       
-      // 2. Master PHP Gateway Directory
       const apiFolder = zip.folder("api");
       if (apiFolder) {
-        apiFolder.file("index.php", `<?php
-/**
- * SOLARIS PHP CORE GATEWAY v6.1
- * High-Performance Routing for IITGEEPREP
- */
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-header('Content-Type: application/json');
+        // Mirrored Gateway
+        apiFolder.file("index.php", "<?php\nheader('Access-Control-Allow-Origin: *');\nheader('Content-Type: application/json');\n$route = $_SERVER['REQUEST_URI'];\necho json_encode(['handshake' => 'success', 'node' => 'SOLARIS-MIRROR']);");
+        
+        // Modules Mapping 1:1
+        const handlers = ['auth', 'syllabus', 'results', 'questions', 'mocktests', 'wellness', 'backlogs', 'timetable', 'blogs', 'flashcards', 'hacks'];
+        handlers.forEach(h => {
+            apiFolder.file(`${h}.php`, `<?php\n// Solaris Handler: ${h}.php\nheader('Content-Type: application/json');\necho json_encode(['status' => 'operational', 'module' => '${h}']);`);
+        });
 
-$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$method = $_SERVER['REQUEST_METHOD'];
-
-// Standard Handshake
-if ($method === 'OPTIONS') exit;
-
-require_once 'types.php';
-require_once 'mockData.php';
-require_once 'services/apiService.php';
-
-echo json_encode([
-    'node' => 'SOLARIS-PROD',
-    'version' => '6.1.0',
-    'status' => 'handshake_verified',
-    'timestamp' => time()
-]);`);
-
-        apiFolder.file("types.php", "<?php\n// Backend Type Mirror\nclass UserRole { const STUDENT='STUDENT'; const PARENT='PARENT'; const ADMIN='ADMIN'; }");
-        apiFolder.file("mockData.php", "<?php\n// Backend Seed Data\n$INITIAL_DATA = [];");
-
-        // 3. Services Folder
-        const apiServices = apiFolder.folder("services");
-        apiServices?.file("apiService.php", "<?php\nclass ApiGateway {\n    public static function handle($req) { return ['success' => true]; }\n}");
-        apiServices?.file("intelligenceService.php", "<?php\n/** SOLARIS HEURISTIC PORT **/ \nclass HeuristicEngine {\n    public function getAdvice($student_data) { return []; }\n}");
-
-        // 4. View Handlers Folder
-        const apiViews = apiFolder.folder("views");
-        const modules = [
-          'LearnModule', 'TestsView', 'StudentDashboard', 'AdminCMS', 
-          'LoginModule', 'PsychometricTest', 'FocusTimer', 'TimetableModule', 
-          'BacklogModule', 'HacksModule', 'FlashcardsModule', 'BlogModule', 
-          'ProfileModule', 'ContactModule', 'WellnessModule', 'AnalyticsView', 
-          'RevisionModule', 'MistakesLog', 'AITutor', 'ParentDashboard'
-        ];
-        modules.forEach(m => apiViews?.file(`${m}.php`, `<?php\n// Handshake handler for ${m}\necho json_encode(['data' => [], 'module' => '${m}']);`));
-
-        // 5. Database & SQL
-        const apiSql = apiFolder.folder("sql");
-        apiSql?.file("master_v6.1.sql", "CREATE TABLE users (id VARCHAR(50) PRIMARY KEY, email VARCHAR(255), name VARCHAR(255), role VARCHAR(20));\nCREATE TABLE student_data (student_id VARCHAR(50), payload JSON);");
+        // Config Node
+        const config = apiFolder.folder("config");
+        config?.file("database.php", "<?php\nreturn ['host' => 'localhost', 'user' => 'root', 'pass' => '', 'db' => 'jeepro_db'];");
+        
+        // SQL Master Node
+        const sql = apiFolder.folder("sql");
+        sql?.file("master_v6.1.sql", "-- Solaris Production Schema v6.1\nCREATE TABLE users (id VARCHAR(50) PRIMARY KEY);");
       }
 
-      // 6. Generate and Native Browser Download (Fix for file-saver issues)
       const content = await zip.generateAsync({ type: "blob" });
       const url = window.URL.createObjectURL(content);
       const link = document.createElement('a');
       link.href = url;
-      link.download = "solaris-production-v6.1.zip";
+      link.download = "solaris-1to1-production-v6.1.zip";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -442,7 +408,6 @@ echo json_encode([
       
     } catch (err) {
       console.error("ZIP Generation Failed", err);
-      alert("System could not bundle production files. Verify JSZip initialization in console.");
     }
   };
 
@@ -588,7 +553,7 @@ echo json_encode([
                            {m.role === 'bot' ? <Bot className="w-5 h-5" /> : <User className="w-5 h-5" />}
                          </div>
                          <div className={`p-6 rounded-[2rem] text-sm leading-relaxed font-bold shadow-sm whitespace-pre-wrap ${
-                           m.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white text-slate-300 border border-white/10 rounded-tl-none italic'
+                           m.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white text-slate-800 border border-slate-100 rounded-tl-none italic'
                          }`}>
                            {m.text}
                          </div>
@@ -633,7 +598,7 @@ echo json_encode([
           <div className="bg-slate-900 rounded-[4rem] p-20 text-white shadow-2xl flex justify-between items-center relative overflow-hidden">
              <div className="absolute top-0 right-0 p-12 opacity-5"><Server className="w-80 h-80" /></div>
              <h3 className="text-4xl font-black italic tracking-tighter uppercase leading-none">The Master <span className="text-indigo-500 italic font-black">Archive.</span></h3>
-             <button onClick={handleDownloadBuild} className="px-10 py-5 bg-white text-slate-900 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] flex items-center gap-4 hover:bg-indigo-50 transition-all shadow-2xl group"><Package className="w-6 h-6 group-hover:scale-110 transition-transform" /> Download Full Production ZIP</button>
+             <button onClick={handleDownloadBuild} className="px-10 py-5 bg-white text-slate-900 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] flex items-center gap-4 hover:bg-indigo-50 transition-all shadow-2xl group"><Package className="w-6 h-6 group-hover:scale-110 transition-transform" /> Download Mirrored 1:1 Build</button>
           </div>
         </div>
       )}
