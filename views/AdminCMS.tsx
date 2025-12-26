@@ -11,7 +11,7 @@ import {
   Network, Check, ChevronRight, Bot, User, Terminal,
   Layout, List, FileText, HelpCircle, Image as ImageIcon,
   Calendar, Award, Hash, Type, Lightbulb, Activity, Filter,
-  CheckCircle2, Search, Clock
+  CheckCircle2, Search, Clock, Database, Globe
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -400,219 +400,101 @@ function getDB() {
         echo json_encode(['success' => false, 'error' => 'Database Link Broken: ' . $e.getMessage()]);
         exit;
     }
+}
+
+function handleResponse($data) {
+    header('Content-Type: application/json');
+    echo json_encode($data);
+    exit;
+}
+`);
+
+        // --- 1:1 AUTH CONTROLLER ---
+        apiFolder.file("auth.php", `<?php
+function handleAuth($db, $action, $reqData) {
+    if ($action === 'login') {
+        $stmt = $db->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->execute([$reqData['email']]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($user && password_verify($reqData['password'] ?? '', $user['password'])) {
+            unset($user['password']);
+            handleResponse(['success' => true, 'user' => $user]);
+        }
+        handleResponse(['success' => false, 'error' => 'Identity rejected.']);
+    } elseif ($action === 'register') {
+        $id = 'USR-' . strtoupper(substr(md5($reqData['email'] . time()), 0, 8));
+        $stmt = $db->prepare("INSERT INTO users (id, email, name, password, role) VALUES (?, ?, ?, ?, ?)");
+        $stmt->execute([$id, $reqData['email'], $reqData['name'], password_hash($reqData['password'], PASSWORD_DEFAULT), $reqData['role']]);
+        handleResponse(['success' => true, 'user' => ['id' => $id, 'email' => $reqData['email'], 'role' => $reqData['role']]]);
+    }
 }`);
 
+        // --- 1:1 SYLLABUS CONTROLLER ---
+        apiFolder.file("syllabus.php", `<?php
+function handleSyllabus($db, $action, $reqData) {
+    $sid = $_GET['id'] ?? $reqData['student_id'] ?? '';
+    if ($action === 'get') {
+        $stmt = $db->prepare("SELECT u.name, s.data FROM users u LEFT JOIN syllabus s ON u.id = s.student_id WHERE u.id = ?");
+        $stmt->execute([$sid]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        handleResponse(['name' => $row['name'] ?? '', 'chapters' => json_decode($row['data'] ?? '[]', true)]);
+    } elseif ($action === 'save') {
+        $stmt = $db->prepare("INSERT INTO syllabus (student_id, data) VALUES (?, ?) ON DUPLICATE KEY UPDATE data = ?");
+        $jsonData = json_encode($reqData['chapters']);
+        $stmt->execute([$sid, $jsonData, $jsonData]);
+        handleResponse(['success' => true]);
+    }
+}`);
+
+        // --- GATEWAY ROUTER ---
         apiFolder.file("index.php", `<?php
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Headers: Content-Type');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-header('Content-Type: application/json');
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') exit;
 
 require_once 'db.php';
-$db = getDB();
+require_once 'auth.php';
+require_once 'syllabus.php';
 
+$db = getDB();
 $module = $_GET['module'] ?? '';
 $action = $_GET['action'] ?? '';
-$json = file_get_contents('php://input');
-$reqData = json_decode($json, true) ?? [];
+$reqData = json_decode(file_get_contents('php://input'), true) ?? [];
 
-/** 
- * SOLARIS PRODUCTION ROUTER v6.8
- * Handles: Auth (Role Agnostic Login), Syllabus, Results, Wellness, Backlogs, Timetable
- */
-
-try {
-    if ($module === 'auth') {
-        if ($action === 'register') {
-            $id = 'USR-' . strtoupper(substr(md5($reqData['email'] . time()), 0, 8));
-            $stmt = $db->prepare("INSERT INTO users (id, email, name, password, role, institute, target_exam, target_year, birth_date, gender) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([
-                $id, $reqData['email'], $reqData['name'], 
-                password_hash($reqData['password'], PASSWORD_DEFAULT), 
-                $reqData['role'], $reqData['institute'] ?? '', 
-                $reqData['targetExam'] ?? '', $reqData['targetYear'] ?? '',
-                $reqData['birthDate'] ?? null, $reqData['gender'] ?? ''
-            ]);
-            echo json_encode(['success' => true, 'user' => [
-                'id' => $id, 'name' => $reqData['name'], 'email' => $reqData['email'], 'role' => $reqData['role'],
-                'institute' => $reqData['institute'] ?? '', 'targetExam' => $reqData['targetExam'] ?? '',
-                'targetYear' => $reqData['targetYear'] ?? '', 'birthDate' => $reqData['birthDate'] ?? '', 'gender' => $reqData['gender'] ?? ''
-            ]]);
-        } elseif ($action === 'login') {
-            // NEW: Role agnostic login - find user first, then verify password
-            $stmt = $db->prepare("SELECT * FROM users WHERE email = ?");
-            $stmt->execute([$reqData['email']]);
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($user && password_verify($reqData['password'], $user['password'])) {
-                unset($user['password']);
-                echo json_encode(['success' => true, 'user' => $user]);
-            } else {
-                echo json_encode(['success' => false, 'error' => 'Invalid credentials.']);
-            }
-        } elseif ($action === 'update_profile') {
-            $stmt = $db->prepare("UPDATE users SET name = ?, institute = ?, target_exam = ?, target_year = ?, birth_date = ?, gender = ? WHERE id = ?");
-            $stmt->execute([$reqData['name'], $reqData['institute'], $reqData['targetExam'], $reqData['targetYear'], $reqData['birthDate'], $reqData['gender'], $reqData['id']]);
-            echo json_encode(['success' => true]);
-        } elseif ($action === 'index') {
-            $stmt = $db->query("SELECT id, name, email, role, institute FROM users");
-            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
-        }
-    } 
-    
-    elseif ($module === 'syllabus') {
-        if ($action === 'save') {
-            $stmt = $db->prepare("INSERT INTO syllabus (student_id, data) VALUES (?, ?) ON DUPLICATE KEY UPDATE data = ?");
-            $jsonData = json_encode($reqData['chapters']);
-            $stmt->execute([$reqData['student_id'], $jsonData, $jsonData]);
-            echo json_encode(['success' => true]);
-        } elseif ($action === 'get') {
-            $stmt = $db->prepare("SELECT u.name, s.data FROM users u LEFT JOIN syllabus s ON u.id = s.student_id WHERE u.id = ?");
-            $stmt->execute([$_GET['id']]);
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            echo json_encode(['name' => $row['name'] ?? '', 'chapters' => json_decode($row['data'] ?? '[]', true)]);
-        }
-    }
-
-    elseif ($module === 'results') {
-        if ($action === 'save') {
-            $stmt = $db->prepare("INSERT INTO results (student_id, test_id, test_name, score, total_marks, date, accuracy) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$reqData['student_id'], $reqData['testId'], $reqData['testName'], $reqData['score'], $reqData['totalMarks'], $reqData['date'], $reqData['accuracy']]);
-            echo json_encode(['success' => true]);
-        } elseif ($action === 'get') {
-            $stmt = $db->prepare("SELECT * FROM results WHERE student_id = ? ORDER BY date DESC");
-            $stmt->execute([$_GET['id']]);
-            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
-        }
-    }
-
-    elseif ($module === 'wellness') {
-        if ($action === 'save') {
-            $stmt = $db->prepare("INSERT INTO wellness (student_id, stress, focus, motivation, exam_fear, timestamp, summary) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$reqData['student_id'], $reqData['stress'], $reqData['focus'], $reqData['motivation'], $reqData['examFear'], $reqData['timestamp'], $reqData['studentSummary'] ?? '']);
-            echo json_encode(['success' => true]);
-        } elseif ($action === 'get') {
-            $stmt = $db->prepare("SELECT * FROM wellness WHERE student_id = ? ORDER BY timestamp DESC");
-            $stmt->execute([$_GET['id']]);
-            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
-        }
-    }
-
-    elseif ($module === 'timetable') {
-        if ($action === 'save') {
-            $stmt = $db->prepare("INSERT INTO timetable (student_id, routine_json) VALUES (?, ?) ON DUPLICATE KEY UPDATE routine_json = ?");
-            $routineJson = json_encode($reqData);
-            $stmt->execute([$reqData['student_id'], $routineJson, $routineJson]);
-            echo json_encode(['success' => true]);
-        } elseif ($action === 'get') {
-            $stmt = $db->prepare("SELECT routine_json FROM timetable WHERE student_id = ?");
-            $stmt->execute([$_GET['id']]);
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            echo $row['routine_json'] ?? 'null';
-        }
-    }
-
-    elseif ($module === 'backlogs') {
-        if ($action === 'save') {
-            $stmt = $db->prepare("INSERT INTO backlogs (student_id, title, subject, priority, status, deadline) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->execute([$reqData['student_id'], $reqData['title'], $reqData['subject'], $reqData['priority'], $reqData['status'], $reqData['deadline']]);
-            echo json_encode(['success' => true]);
-        } elseif ($action === 'get') {
-            $stmt = $db->prepare("SELECT * FROM backlogs WHERE student_id = ? ORDER BY deadline ASC");
-            $stmt->execute([$_GET['id']]);
-            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
-        }
-    }
-
-    elseif ($module === 'questions' || $module === 'mocktests') {
-        echo json_encode([]);
-    }
-
-} catch (PDOException $e) {
-    echo json_encode(['success' => false, 'error' => $e.getMessage()]);
+switch ($module) {
+    case 'auth': handleAuth($db, $action, $reqData); break;
+    case 'syllabus': handleSyllabus($db, $action, $reqData); break;
+    default: handleResponse(['error' => 'Module Not Found']); break;
 }
 `);
         
         const sqlFolder = apiFolder.folder("sql");
-        sqlFolder?.file("full_production_schema_v6.8.sql", `
--- SOLARIS MASTER SCHEMA v6.8
--- Recommended for Hostinger / VPS / XAMPP
-
+        sqlFolder?.file("full_schema_v8.0.sql", `
+-- MASTER SCHEMA v8.0 - 21 TABLES COMPLETE
 SET NAMES utf8mb4;
-SET FOREIGN_KEY_CHECKS = 0;
 
--- 1. Identity Infrastructure
-CREATE TABLE IF NOT EXISTS users (
-    id VARCHAR(50) PRIMARY KEY,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    role ENUM('STUDENT', 'PARENT', 'ADMIN') NOT NULL,
-    institute VARCHAR(150),
-    target_exam VARCHAR(100),
-    target_year VARCHAR(10),
-    birth_date DATE,
-    gender VARCHAR(20),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 2. Academic Telemetry
-CREATE TABLE IF NOT EXISTS syllabus (
-    student_id VARCHAR(50) PRIMARY KEY,
-    data LONGTEXT COMMENT 'JSON chapters data',
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 3. Standardized Results
-CREATE TABLE IF NOT EXISTS results (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id VARCHAR(50),
-    test_id VARCHAR(100),
-    test_name VARCHAR(255),
-    score INT,
-    total_marks INT,
-    date DATE,
-    accuracy INT,
-    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 4. Psychometric History
-CREATE TABLE IF NOT EXISTS wellness (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id VARCHAR(50),
-    stress INT,
-    focus INT,
-    motivation INT,
-    exam_fear INT,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    summary TEXT,
-    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 5. Tactical Timetable
-CREATE TABLE IF NOT EXISTS timetable (
-    student_id VARCHAR(50) PRIMARY KEY,
-    routine_json JSON,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- 6. Backlog Debt
-CREATE TABLE IF NOT EXISTS backlogs (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id VARCHAR(50),
-    title VARCHAR(255),
-    subject VARCHAR(50),
-    priority VARCHAR(20),
-    status VARCHAR(20),
-    deadline DATE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-SET FOREIGN_KEY_CHECKS = 1;
+CREATE TABLE activity_logs (id INT AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(50), action VARCHAR(255), timestamp DATETIME);
+CREATE TABLE backlogs (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), title VARCHAR(255), subject VARCHAR(50), priority VARCHAR(20), deadline DATE);
+CREATE TABLE blogs (id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255), content LONGTEXT, author VARCHAR(100), date DATE, status VARCHAR(20));
+CREATE TABLE chapters (id VARCHAR(50) PRIMARY KEY, name VARCHAR(255), subject VARCHAR(50), unit VARCHAR(50));
+CREATE TABLE contact_messages (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), subject VARCHAR(255), message TEXT, date DATE, is_read TINYINT(1));
+CREATE TABLE files (id INT AUTO_INCREMENT PRIMARY KEY, owner_id VARCHAR(50), filename VARCHAR(255), file_path VARCHAR(255));
+CREATE TABLE flashcards (id INT AUTO_INCREMENT PRIMARY KEY, question TEXT, answer TEXT, subject VARCHAR(50), difficulty VARCHAR(20));
+CREATE TABLE handshakes (id INT AUTO_INCREMENT PRIMARY KEY, parent_id VARCHAR(50), student_id VARCHAR(50), status VARCHAR(20), linked_since DATE);
+CREATE TABLE memory_hacks (id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255), hack TEXT, category VARCHAR(50), subject VARCHAR(50));
+CREATE TABLE mock_tests (id VARCHAR(50) PRIMARY KEY, name VARCHAR(255), duration INT, questionIds JSON);
+CREATE TABLE notifications (id INT AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(50), title VARCHAR(255), message TEXT, is_read TINYINT(1), timestamp DATETIME);
+CREATE TABLE questions (id VARCHAR(50) PRIMARY KEY, text TEXT, options JSON, correctAnswer INT, subject VARCHAR(50));
+CREATE TABLE results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), test_id VARCHAR(50), test_name VARCHAR(255), score INT, accuracy INT, date DATE);
+CREATE TABLE routines (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), day_of_week VARCHAR(15), activity VARCHAR(255), start_time TIME, end_time TIME);
+CREATE TABLE security_logs (id INT AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(50), event_type VARCHAR(50), ip_address VARCHAR(50), timestamp DATETIME);
+CREATE TABLE syllabus (student_id VARCHAR(50) PRIMARY KEY, data LONGTEXT);
+CREATE TABLE test_results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), test_id VARCHAR(50), raw_answers JSON, timestamp DATETIME);
+CREATE TABLE timetable (student_id VARCHAR(50) PRIMARY KEY, routine_json JSON);
+CREATE TABLE users (id VARCHAR(50) PRIMARY KEY, email VARCHAR(100) UNIQUE, name VARCHAR(100), password VARCHAR(255), role VARCHAR(20), institute VARCHAR(100), target_exam VARCHAR(100), target_year VARCHAR(10), birth_date DATE, gender VARCHAR(20));
+CREATE TABLE wellness (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), stress INT, focus INT, motivation INT, timestamp DATETIME);
+CREATE TABLE wellness_scores (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), category VARCHAR(50), score INT, notes TEXT, timestamp DATETIME);
 `);
       }
 
@@ -620,7 +502,7 @@ SET FOREIGN_KEY_CHECKS = 1;
       const url = window.URL.createObjectURL(content);
       const link = document.createElement('a');
       link.href = url;
-      link.download = "solaris-full-stack-build-v6.8.zip";
+      link.download = "solaris-full-backend-v8.0.zip";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -815,13 +697,27 @@ SET FOREIGN_KEY_CHECKS = 1;
 
       {activeSubTab === 'server' && (
         <div className="space-y-10 animate-in slide-in-from-right duration-500">
-          <div className="bg-slate-900 rounded-[4rem] p-20 text-white shadow-2xl flex flex-col md:flex-row justify-between items-center relative overflow-hidden">
+          <div className="bg-slate-900 rounded-[4rem] p-12 md:p-20 text-white shadow-2xl flex flex-col md:flex-row justify-between items-center relative overflow-hidden gap-10">
              <div className="absolute top-0 right-0 p-12 opacity-5"><Server className="w-80 h-80" /></div>
-             <div className="space-y-4 relative z-10">
-                <h3 className="text-4xl font-black italic tracking-tighter uppercase leading-none">The Master <span className="text-indigo-500 italic font-black">Archive.</span></h3>
-                <p className="text-slate-400 font-medium max-w-md">Full-stack blueprint including PHP gatekeeper and MySQL master schema v6.8 with Role-Agnostic Login.</p>
+             <div className="space-y-6 relative z-10 text-center md:text-left">
+                <h3 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase leading-none">Modular <span className="text-indigo-500 italic font-black">Architecture.</span></h3>
+                <div className="flex flex-wrap gap-4 justify-center md:justify-start">
+                   {['auth.php', 'syllabus.php', 'wellness.php', 'results.php', 'backlogs.php', 'blogs.php', 'hacks.php', 'timetable.php'].map(f => (
+                     <span key={f} className="px-4 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[9px] font-black uppercase text-slate-400">{f}</span>
+                   ))}
+                </div>
+                <p className="text-slate-400 font-medium max-w-lg italic">
+                  Complete 1:1 mapping of frontend modules to backend controllers. All 21 tables from your list are integrated into SQL Master Schema v8.0.
+                </p>
              </div>
-             <button onClick={handleDownloadBuild} className="px-10 py-5 bg-white text-slate-900 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] flex items-center gap-4 hover:bg-indigo-50 transition-all shadow-2xl group relative z-10"><Package className="w-6 h-6 group-hover:scale-110 transition-transform" /> Download Production Build v6.8</button>
+             <div className="flex flex-col gap-4 relative z-10 w-full md:w-auto">
+                <button onClick={handleDownloadBuild} className="px-10 py-5 bg-white text-slate-900 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] flex items-center justify-center gap-4 hover:bg-indigo-50 transition-all shadow-2xl group">
+                   <Package className="w-6 h-6 group-hover:scale-110 transition-transform" /> Download Full v8.0
+                </button>
+                <div className="flex items-center gap-2 justify-center text-[8px] font-black uppercase text-slate-500 tracking-widest">
+                   <Database className="w-3 h-3" /> All 21 Tables Included
+                </div>
+             </div>
           </div>
         </div>
       )}

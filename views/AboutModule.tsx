@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   BookOpen, Target, CalendarClock, ClipboardList, 
   Brain, Award, Cpu, Network, Fingerprint, Activity,
-  Sparkles, Zap, ShieldCheck, ChevronRight, BarChart3, RotateCw, ArrowRight
+  Sparkles, Zap, ShieldCheck, ChevronRight, BarChart3, RotateCw as LucideRotateCw, ArrowRight as LucideArrowRight
 } from 'lucide-react';
 
 const AboutModule: React.FC = () => {
@@ -32,7 +32,7 @@ const AboutModule: React.FC = () => {
 
           <div className="pt-6 md:pt-10 flex flex-col sm:flex-row justify-center gap-4 md:gap-8 px-4">
              <div className="px-10 md:px-16 py-6 md:py-8 bg-[#5d5fef] text-white rounded-[1.5rem] md:rounded-[2rem] font-black text-[10px] md:text-xs uppercase tracking-[0.5em] shadow-[0_20px_60px_-15px_rgba(93,95,239,0.5)] hover:scale-105 active:scale-95 transition-all cursor-pointer group flex items-center justify-center gap-4">
-                Initialize Protocol <ArrowRight className="w-4 md:w-5 h-4 md:h-5 group-hover:translate-x-2 transition-transform" />
+                Initialize Protocol <LucideArrowRight className="w-4 md:w-5 h-4 md:h-5 group-hover:translate-x-2 transition-transform" />
              </div>
              <div className="px-10 md:px-16 py-6 md:py-8 bg-[#161a2e] border border-[#2d3656] text-[#7d8cb8] rounded-[1.5rem] md:rounded-[2rem] font-black text-[10px] md:text-xs uppercase tracking-[0.5em] hover:bg-[#1e2440] hover:text-white transition-all cursor-pointer shadow-sm text-center">
                 Explore The Engine
@@ -53,7 +53,7 @@ const AboutModule: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
             {[
               { title: 'Pulse Heatmaps', icon: BarChart3, desc: 'Stop guessing your stability. Dynamic heatmaps use real-time accuracy data to visualize mastered units vs "Retention Decays".' },
-              { title: 'Neural Spacing', icon: RotateCw, desc: 'Logic engines flag concept expiration exactly when they leave your long-term memory buffer. Retain 90% of the syllabus until D-Day.' },
+              { title: 'Neural Spacing', icon: LucideRotateCw, desc: 'Logic engines flag concept expiration exactly when they leave your long-term memory buffer. Retain 90% of the syllabus until D-Day.' },
               { title: 'Psychometric Guard', icon: Brain, desc: 'We monitor cognitive load and stress levels. If burnout is detected, the gateway automatically pivots to "Active Recovery".' },
               { title: 'Error Ledgers', icon: ClipboardList, desc: 'Classification system for errors: conceptual gaps, calculation slips, or time-pressure artifacts. Focus only on what hurts the rank.' },
               { title: 'Syllabus Burn-down', icon: Target, desc: 'A precision roadmap of your total academic debt. See exactly where your trajectory sits relative to the 2025 exam window.' },
@@ -132,13 +132,5 @@ const AboutModule: React.FC = () => {
     </div>
   );
 };
-
-const RotateCw = (props: any) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-);
-
-const ArrowRight = (props: any) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-);
 
 export default AboutModule;

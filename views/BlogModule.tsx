@@ -47,8 +47,8 @@ const BlogModule: React.FC<BlogModuleProps> = ({ data }) => {
     }
   ];
 
-  if (selectedBlog || (selectedBlog && selectedBlog.id === 'b1')) {
-    const blog = selectedBlog || data.blogs[0];
+  if (selectedBlog) {
+    const blog = selectedBlog;
     return (
       <div className="bg-[#0a0c1a] min-h-screen text-white pt-20 px-6 max-w-5xl mx-auto space-y-16 animate-in slide-in-from-bottom-8 duration-700 pb-40">
         <button 
