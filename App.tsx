@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { UserRole, StudentData, UserAccount } from './types';
 import { INITIAL_STUDENT_DATA } from './mockData';
@@ -90,7 +91,7 @@ const App: React.FC = () => {
   };
 
   const BottomNav = () => (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#0a0c1a]/95 backdrop-blur-xl border-t border-[#1e2440] px-6 py-3 flex justify-between items-center z-[100]">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-6 py-3 flex justify-between items-center z-[100] shadow-2xl">
       {[
         { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
         { id: 'learn', label: 'Study', icon: BookOpen },
@@ -101,10 +102,10 @@ const App: React.FC = () => {
         <button
           key={item.id}
           onClick={() => setActiveTab(item.id)}
-          className={`flex flex-col items-center gap-1 transition-all ${activeTab === item.id ? 'text-[#5d5fef]' : 'text-slate-500'}`}
+          className={`flex flex-col items-center gap-1 transition-all ${activeTab === item.id ? 'text-blue-600' : 'text-slate-400'}`}
         >
           <item.icon className="w-5 h-5" />
-          <span className="text-[9px] font-black uppercase tracking-widest">{item.label}</span>
+          <span className="text-[9px] font-bold uppercase tracking-widest">{item.label}</span>
         </button>
       ))}
     </div>
@@ -155,33 +156,32 @@ const App: React.FC = () => {
       case 'examguide': return <ExamGuideModule />;
       case 'contact': return <ContactModule data={studentData} />;
       case 'login': return <LoginModule onLoginSuccess={onLoginSuccess} onCancel={() => setActiveTab('about')} onNavigate={setActiveTab} />;
-      default: return <LandingPage onLogin={() => setActiveTab('login')} studentData={studentData} setStudentData={syncStudentData} />;
+      default: return <AboutModule />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0c1a] font-sans flex flex-col overflow-x-hidden">
+    <div className="min-h-screen bg-white font-sans flex flex-col overflow-x-hidden">
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
       <main className="flex-1 flex flex-col items-center w-full">
-        <div className="w-full max-w-[1600px]">
+        <div className="w-full">
           {renderPublicContent()}
         </div>
       </main>
-      <footer className="py-20 border-t border-[#1e2440] bg-[#0a0c1a] relative z-10 px-6">
-         <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
+      <footer className="py-20 border-t border-slate-100 bg-white relative z-10 px-6">
+         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
             <div className="flex flex-col items-center md:items-start gap-4">
-              <div className="flex items-center gap-3">
-                 <TrendingUp className="w-6 h-6 text-[#5d5fef]" />
-                 <span className="font-black tracking-tighter text-2xl uppercase italic text-white">IITGEE<span className="text-[#5d5fef]">PREP</span></span>
+              <div className="flex items-center gap-1">
+                 <span className="font-black tracking-tight text-2xl uppercase text-[#2b4c8c]">IITGRRPREP</span>
               </div>
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#4a5578] text-center md:text-left">Operational Intelligence Gateway v6.7</p>
+              <p className="text-xs font-bold text-slate-400">Your trusted gateway to Growth, Rigor, and Results.</p>
             </div>
             <div className="flex flex-wrap justify-center gap-8 md:gap-12">
                {['About', 'Features', 'Privacy', 'Compliance'].map(link => (
-                 <button key={link} className="text-[9px] font-black uppercase text-[#4a5578] tracking-widest hover:text-white transition-colors">{link}</button>
+                 <button key={link} className="text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors">{link}</button>
                ))}
             </div>
-            <p className="text-[9px] font-black uppercase tracking-widest text-[#2d3656] text-center md:text-right">&copy; 2025 Solaris Hub Intelligence.</p>
+            <p className="text-xs font-bold text-slate-300">&copy; 2025 IITGRRPREP Platform.</p>
          </div>
       </footer>
     </div>

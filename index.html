@@ -1,35 +1,62 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JEE-Prep Tracker | Solaris Hub</title>
+    <title>IITGRRPREP | The Engineering Apex</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0a0c1a; margin: 0; padding: 0; }
+        :root {
+            --midnight: #0a1128;
+            --growth: #82c341;
+            --porcelain: #ffffff;
+            --shadow-lux: 0 20px 50px -12px rgba(10, 17, 40, 0.08);
+        }
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: var(--porcelain); 
+            margin: 0; 
+            padding: 0; 
+            color: #1e293b;
+            scroll-behavior: smooth;
+        }
+        .font-space { font-family: 'Space Grotesk', sans-serif; }
+        
         #root:empty::before {
-            content: 'Initializing Academic Node...';
+            content: 'INITIALIZING IITGRRPREP...';
             display: flex;
             align-items: center;
             justify-content: center;
             height: 100vh;
-            color: #5d5fef;
+            color: var(--midnight);
             font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-            font-size: 12px;
+            font-size: 11px;
+            letter-spacing: 0.5em;
         }
-        /* Custom scrollbar for tactical feel */
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .elegant-shadow { shadow: var(--shadow-lux); }
+        
+        .cloud-bg {
+            background-color: #f8fafc;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(202,100%,91%,0.4) 0, transparent 50%), 
+                radial-gradient(at 100% 100%, hsla(140,80%,90%,0.3) 0, transparent 50%);
+        }
+
+        /* Custom Scrollbar for Elegance */
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #0a0c1a; }
-        ::-webkit-scrollbar-thumb { background: #1e2440; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #5d5fef; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
     </style>
-    <script>
-      window.SHOW_DEMO_LOGINS = true;
-      window.DISABLE_DEMO_LOGINS = false;
-    </script>
 <script type="importmap">
 {
   "imports": {
@@ -47,7 +74,7 @@
 }
 </script>
 </head>
-<body class="text-white selection:bg-[#5d5fef]/30">
+<body class="selection:bg-indigo-100 antialiased">
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
 </body>

@@ -26,37 +26,37 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, handle
   }, [setActiveTab]);
 
   const studentLinks = [
-    { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
-    { id: 'learn', label: 'Syllabus', icon: BookOpen },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'learn', label: 'My Syllabus', icon: BookOpen },
     { id: 'aitutor', label: 'AI Tutor', icon: Bot },
-    { id: 'tests', label: 'Tests', icon: FileText },
-    { id: 'psychometric', label: 'Psychometric Test', icon: Brain },
-    { id: 'focus', label: 'Focus', icon: Timer },
+    { id: 'tests', label: 'Tests & Exams', icon: FileText },
+    { id: 'psychometric', label: 'Mindset Test', icon: Brain },
+    { id: 'focus', label: 'Focus Timer', icon: Timer },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'timetable', label: 'Timetable', icon: Calendar },
+    { id: 'timetable', label: 'Schedule', icon: Calendar },
     { id: 'revision', label: 'Revision', icon: RefreshCw },
-    { id: 'mistakes', label: 'Mistakes', icon: AlertCircle },
-    { id: 'flashcards', label: 'Cards', icon: Layers },
+    { id: 'mistakes', label: 'My Mistakes', icon: AlertCircle },
+    { id: 'flashcards', label: 'Memory Cards', icon: Layers },
     { id: 'backlogs', label: 'Backlogs', icon: ListChecks },
-    { id: 'hacks', label: 'Hacks', icon: Lightbulb },
+    { id: 'hacks', label: 'Study Hacks', icon: Lightbulb },
     { id: 'wellness', label: 'Wellness', icon: Heart },
-    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'profile', label: 'Profile Settings', icon: User },
   ];
 
   const adminLinks = [
-    { id: 'admin-overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'admin-overview', label: 'Admin Overview', icon: LayoutDashboard },
     { id: 'admin-users', label: 'User Management', icon: Users },
-    { id: 'admin-syllabus', label: 'Syllabus Master', icon: BookOpen },
+    { id: 'admin-syllabus', label: 'Syllabus Editor', icon: BookOpen },
     { id: 'admin-questions', label: 'Question Bank', icon: FileCode },
-    { id: 'admin-tests', label: 'Mock Tests', icon: FileText },
-    { id: 'admin-flashcards', label: 'Flashcards', icon: Layers },
-    { id: 'admin-hacks', label: 'Memory Hacks', icon: Lightbulb },
-    { id: 'admin-blogs', label: 'Blog Admin', icon: PenTool },
-    { id: 'admin-system', label: 'System Hub', icon: Settings },
+    { id: 'admin-tests', label: 'Mock Test Admin', icon: FileText },
+    { id: 'admin-flashcards', label: 'Card Manager', icon: Layers },
+    { id: 'admin-hacks', label: 'Hack Manager', icon: Lightbulb },
+    { id: 'admin-blogs', label: 'Blog Manager', icon: PenTool },
+    { id: 'admin-system', label: 'System Settings', icon: Settings },
   ];
 
   const parentLinks = [
-    { id: 'parent-status', label: 'Live Pulse', icon: Target },
+    { id: 'parent-status', label: 'Student Pulse', icon: Target },
     { id: 'parent-analytics', label: 'Performance', icon: BarChart3 },
     { id: 'parent-syllabus', label: 'Syllabus', icon: BookOpen },
     { id: 'parent-psychometric', label: 'Mental State', icon: Brain },
@@ -73,9 +73,9 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, handle
           </div>
           <div>
             <div className="leading-tight text-sm font-black tracking-tighter">
-              {role === UserRole.ADMIN ? 'ADMIN_HUB' : role === UserRole.PARENT ? 'FAMILY_HUB' : 'IITGEEPREP'}
+              {role === UserRole.ADMIN ? 'ADMIN CENTER' : role === UserRole.PARENT ? 'FAMILY PORTAL' : 'IITGRRPREP'}
             </div>
-            <div className="text-[7px] font-black tracking-[0.4em] text-indigo-400 uppercase">Operational v5.6.2</div>
+            <div className="text-[7px] font-black tracking-[0.4em] text-indigo-400 uppercase">Academic Hub v6.0</div>
           </div>
         </h1>
       </div>

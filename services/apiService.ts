@@ -1,3 +1,4 @@
+
 import { StudentData, UserRole, UserAccount, Chapter, TestResult, BacklogItem, Question, MockTest, RoutineConfig } from '../types';
 import { INITIAL_STUDENT_DATA } from '../mockData';
 
@@ -6,7 +7,13 @@ const API_CONFIG = {
   MODE_KEY: 'jeepro_datasource_mode'
 };
 
-const DEMO_IDS = ['163110', 'P-4402', 'ADMIN-001'];
+const DEMO_USERS: Record<string, UserAccount> = {
+  'ishu@gmail.com': { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2024-01-01' },
+  'parent@demo.in': { id: 'P-4402', name: 'Mr. Ramesh Sharma', email: 'parent@demo.in', role: UserRole.PARENT, createdAt: '2024-01-01' },
+  'admin@demo.in': { id: 'ADMIN-001', name: 'System Admin', email: 'admin@demo.in', role: UserRole.ADMIN, createdAt: '2024-01-01' }
+};
+
+const DEMO_IDS = Object.values(DEMO_USERS).map(u => u.id);
 
 const getBlankStudentData = (id: string, name: string): StudentData => ({
   ...INITIAL_STUDENT_DATA,
@@ -56,6 +63,11 @@ export const api = {
   },
 
   async login(credentials: { email: string; role: UserRole; password?: string }) {
+    // INTERCEPT DEMO USERS for local testing without backend
+    if (this.getMode() === 'MOCK' && DEMO_USERS[credentials.email]) {
+      return { success: true, user: DEMO_USERS[credentials.email] };
+    }
+
     try {
       const res = await fetch(`${API_CONFIG.BASE_URL}auth/login`, {
         method: 'POST', 
@@ -68,6 +80,10 @@ export const api = {
       }
       return result;
     } catch(e: any) { 
+      // Fallback for demo users if network fails
+      if (DEMO_USERS[credentials.email]) {
+        return { success: true, user: DEMO_USERS[credentials.email] };
+      }
       return { success: false, error: "Uplink Failed: " + (e.message || "Database unreachable.") }; 
     }
   },
@@ -85,6 +101,11 @@ export const api = {
       }
       return result;
     } catch(e: any) { 
+      // If we are in MOCK mode, simulate registration success
+      if (this.getMode() === 'MOCK') {
+          const mockUser = { id: 'USR-' + Math.random().toString(36).substr(2, 5), name: data.name, email: data.email, role: data.role, createdAt: new Date().toISOString() };
+          return { success: true, user: mockUser };
+      }
       return { success: false, error: "Registration Failed: " + (e.message || "Server error.") }; 
     }
   },
@@ -108,7 +129,7 @@ export const api = {
   async getStudentData(studentId: string): Promise<StudentData> {
     const isDemo = DEMO_IDS.includes(studentId);
     
-    if (this.getMode() === 'LIVE' || !isDemo) {
+    if (this.getMode() === 'LIVE' && !isDemo) {
       try {
         const [sRes, bRes, wRes, rRes, qRes, tRes, rtRes] = await Promise.all([
           fetch(`${API_CONFIG.BASE_URL}syllabus/get?id=${studentId}`),
@@ -190,6 +211,7 @@ export const api = {
          return Array.isArray(data) ? data : [];
        } catch(e) { return []; }
      }
-     return [];
+     // In mock mode, return the demo users
+     return Object.values(DEMO_USERS);
   }
 };

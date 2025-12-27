@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { StudentData, MockTest, Question, TestResult, Chapter } from '../types';
 import { api } from '../services/apiService';
+import { calculateConfidenceLevel } from '../services/intelligenceService';
 import { 
   Clock, Target, Trophy, ArrowLeft, Award, Zap, 
   ListFilter, History, X, BookOpen, BarChart, 
@@ -22,17 +24,20 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(0);
+  
+  // Safe initialization of timeLeft
+  const [timeLeft, setTimeLeft] = useState(initialTest && initialTest.duration ? initialTest.duration * 60 : 0);
   const [viewingResult, setViewingResult] = useState<TestResult | null>(null);
 
   useEffect(() => {
+    // Ensure we don't auto-submit if the duration hasn't been set yet or if testMode is false
     if (testMode && timeLeft > 0 && !isSubmitted) {
       const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
       return () => clearInterval(timer);
-    } else if (timeLeft === 0 && testMode && !isSubmitted) {
+    } else if (timeLeft <= 0 && testMode && !isSubmitted && activeTest && activeTest.duration > 0) {
       handleFinalSubmit();
     }
-  }, [testMode, timeLeft, isSubmitted]);
+  }, [testMode, timeLeft, isSubmitted, activeTest]);
 
   const startTest = (test: MockTest) => {
     setActiveTest(test);
@@ -42,15 +47,6 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
     setIsSubmitted(false);
     setTimeLeft(test.duration * 60);
     setViewingResult(null);
-  };
-
-  const calculateConfidence = (chapter: Chapter) => {
-    // Confidence = 70% Accuracy + 30% Progress
-    const score = Math.round((chapter.accuracy * 0.7) + (chapter.progress * 0.3));
-    if (score > 85) return { label: 'Expert', color: 'text-emerald-500', bg: 'bg-emerald-50' };
-    if (score > 65) return { label: 'Stable', color: 'text-indigo-500', bg: 'bg-indigo-50' };
-    if (score > 40) return { label: 'Developing', color: 'text-amber-500', bg: 'bg-amber-50' };
-    return { label: 'Critical', color: 'text-rose-500', bg: 'bg-rose-50' };
   };
 
   const handleFinalSubmit = async () => {
@@ -81,7 +77,7 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
       date: new Date().toISOString().split('T')[0],
       chapterIds: activeTest.chapterIds,
       accuracy: Math.round((correct / (activeTest.questionIds.length || 1)) * 100),
-      category: activeTest.category // Crucial: Store category to differentiate results
+      category: activeTest.category || 'ADMIN'
     };
 
     setIsSubmitted(true);
@@ -100,10 +96,14 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
 
   const handleExitTest = () => {
     if (confirm("Are you sure you want to exit? Your progress in this test will be lost forever.")) {
-      setTestMode(false);
-      setActiveTest(null);
-      setAnswers({});
-      setCurrentIdx(0);
+      if (onExit) {
+        onExit();
+      } else {
+        setTestMode(false);
+        setActiveTest(null);
+        setAnswers({});
+        setCurrentIdx(0);
+      }
     }
   };
 
@@ -262,7 +262,7 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
   }
 
   if (viewingResult) {
-    const testSource = data.mockTests.find(t => t.id === viewingResult.testId);
+    const testSource = data.mockTests.find(t => t.id === viewingResult.testId) || (initialTest && initialTest.id === viewingResult.testId ? initialTest : null);
     const questions = data.questions.filter(q => testSource?.questionIds.includes(q.id));
 
     return (
@@ -273,10 +273,18 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
              <h2 className="text-sm font-black text-slate-800 uppercase italic tracking-tighter">Graded Result: {viewingResult.testName}</h2>
            </div>
            <button 
-            onClick={() => { setViewingResult(null); setTestMode(false); setIsSubmitted(false); }} 
+            onClick={() => { 
+              if (onExit) {
+                onExit();
+              } else {
+                setViewingResult(null); 
+                setTestMode(false); 
+                setIsSubmitted(false); 
+              }
+            }} 
             className="text-[10px] font-black text-white uppercase tracking-widest bg-slate-900 px-8 py-2.5 rounded-lg hover:bg-black transition-all shadow-xl"
            >
-            Back to Library
+            {onExit ? 'Return to Syllabus' : 'Back to Library'}
            </button>
         </div>
 
@@ -448,7 +456,7 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
 
              <div className="grid grid-cols-1 gap-8">
                 {data.chapters.map(c => {
-                  const conf = calculateConfidence(c);
+                  const conf = calculateConfidenceLevel(c.progress, c.accuracy);
                   return (
                     <div key={c.id} className="p-10 bg-white rounded-[3rem] border border-slate-200 flex flex-col xl:flex-row items-center gap-12 group hover:border-indigo-400 hover:shadow-2xl transition-all duration-500 relative overflow-hidden">
                        <div className="flex-1 space-y-6 w-full relative z-10">
@@ -462,7 +470,7 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
                                 <h4 className="text-2xl font-black text-slate-800 italic tracking-tighter leading-none">{c.name}</h4>
                                 <div className="flex items-center gap-3 mt-2">
                                    <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{c.subject}</span>
-                                   <div className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${conf.bg} ${conf.color}`}>{conf.label} Confidence</div>
+                                   <div className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${conf.bg} ${conf.color} ${conf.border}`}>{conf.label} Confidence</div>
                                 </div>
                              </div>
                           </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import JSZip from 'jszip';
 import { StudentData, UserAccount, Subject, ChapterStatus, Question, MockTest, Chapter } from '../types';
@@ -171,7 +172,7 @@ const CreationHub = ({ type, item, onClose, onSave, questions = [], chapters = [
                   <h3 className="text-3xl font-black italic tracking-tighter text-slate-900 uppercase leading-none">
                      {item ? 'Modify' : 'Create'} <span className="text-indigo-600">{type}.</span>
                   </h3>
-                  <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mt-1">Universal Persistence Hub</p>
+                  <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mt-1">Platform Control Hub</p>
                </div>
             </div>
             <button onClick={onClose} className="p-4 bg-white text-slate-400 hover:text-slate-900 rounded-2xl transition-all border border-slate-100"><X className="w-6 h-6" /></button>
@@ -229,8 +230,8 @@ const CreationHub = ({ type, item, onClose, onSave, questions = [], chapters = [
                  <InputGroup label="Article Title" icon={Type}>
                     <input name="title" value={formData.title} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black italic text-slate-800" placeholder="Mastering Thermodynamics..." />
                  </InputGroup>
-                 <InputGroup label="Author Node" icon={User}>
-                    <input name="author" value={formData.author} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800" />
+                 <InputGroup label="Author" icon={User}>
+                    <input name="author" value={formData.author} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black italic text-slate-800" />
                  </InputGroup>
                  <div className="md:col-span-2">
                     <InputGroup label="Content (HTML Supported)" icon={FileText}>
@@ -346,8 +347,8 @@ const CreationHub = ({ type, item, onClose, onSave, questions = [], chapters = [
                   <InputGroup label="Entry Primary Data" icon={Type}>
                      <input name={type === 'Flashcard' ? 'question' : 'title'} value={formData.title || formData.question || formData.name} onChange={(e) => setFormData({...formData, title: e.target.value, name: e.target.value, question: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black italic text-slate-800" placeholder="Enter content name..." />
                   </InputGroup>
-                  <InputGroup label="Supporting Intelligence" icon={FileText}>
-                     <textarea name={type === 'Flashcard' ? 'answer' : 'description'} value={formData.description || formData.answer || formData.hack} onChange={(e) => setFormData({...formData, description: e.target.value, answer: e.target.value, hack: e.target.value})} rows={6} className="w-full bg-slate-50 border-none rounded-3xl p-8 text-sm font-medium text-slate-600 shadow-inner" placeholder="Detailed payload..." />
+                  <InputGroup label="Supporting Info" icon={FileText}>
+                     <textarea name={type === 'Flashcard' ? 'answer' : 'description'} value={formData.description || formData.answer || formData.hack} onChange={(e) => setFormData({...formData, description: e.target.value, answer: e.target.value, hack: e.target.value})} rows={6} className="w-full bg-slate-50 border-none rounded-3xl p-8 text-sm font-medium text-slate-600 shadow-inner" placeholder="Detailed content..." />
                   </InputGroup>
                </div>
             )}
@@ -364,9 +365,9 @@ const CreationHub = ({ type, item, onClose, onSave, questions = [], chapters = [
 
 const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentData) => void }) => {
   const [activeSubTab, setActiveSubTab] = useState<'ai' | 'server' | 'tester'>('ai');
-  const [activeModelId, setActiveModelId] = useState(data.aiTutorModel || 'gemini-flash');
+  const [activeModelId, setActiveModelId] = useState(data.aiTutorModel || 'gemini-3-flash');
 
-  const [testerModelId, setTesterModelId] = useState('gemini-flash');
+  const [testerModelId, setTesterModelId] = useState('gemini-3-flash');
   const [testerSubject, setTesterSubject] = useState<Subject>('Physics');
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
@@ -393,13 +394,11 @@ const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentD
   const handleDownloadBuild = async () => {
     try {
       const zip = new JSZip();
-      
       zip.file(".htaccess", "RewriteEngine On\nRewriteRule ^$ index.html [L]\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule . index.html [L]");
       
       const apiFolder = zip.folder("api");
       if (apiFolder) {
         apiFolder.file(".htaccess", "RewriteEngine On\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule ^([^/]+)/?([^/]+)?$ index.php?module=$1&action=$2 [L,QSA]");
-
         const configFolder = apiFolder.folder("config");
         configFolder?.file("database.php", `<?php
 return [
@@ -408,7 +407,6 @@ return [
     'user' => 'root',
     'pass' => ''
 ];`);
-
         apiFolder.file("db.php", `<?php
 function getDB() {
     $config = require 'config/database.php';
@@ -418,19 +416,16 @@ function getDB() {
         return $pdo;
     } catch(PDOException $e) {
         header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'error' => 'Database Link Broken: ' . $e.getMessage()]);
+        echo json_encode(['success' => false, 'error' => 'Database connection failed: ' . $e.getMessage()]);
         exit;
     }
 }
-
 function handleResponse($data) {
     header('Content-Type: application/json');
     echo json_encode($data);
     exit;
 }
 `);
-
-        // --- 1:1 AUTH CONTROLLER ---
         apiFolder.file("auth.php", `<?php
 function handleAuth($db, $action, $reqData) {
     if ($action === 'login') {
@@ -441,16 +436,31 @@ function handleAuth($db, $action, $reqData) {
             unset($user['password']);
             handleResponse(['success' => true, 'user' => $user]);
         }
-        handleResponse(['success' => false, 'error' => 'Identity rejected.']);
+        handleResponse(['success' => false, 'error' => 'Invalid credentials.']);
     } elseif ($action === 'register') {
         $id = 'USR-' . strtoupper(substr(md5($reqData['email'] . time()), 0, 8));
-        $stmt = $db->prepare("INSERT INTO users (id, email, name, password, role) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$id, $reqData['email'], $reqData['name'], password_hash($reqData['password'], PASSWORD_DEFAULT), $reqData['role']]);
-        handleResponse(['success' => true, 'user' => ['id' => $id, 'email' => $reqData['email'], 'role' => $reqData['role']]]);
+        $stmt = $db->prepare("INSERT INTO users (id, email, name, password, role, institute, target_exam, target_year) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([
+            $id, 
+            $reqData['email'], 
+            $reqData['name'], 
+            password_hash($reqData['password'], PASSWORD_DEFAULT), 
+            $reqData['role'],
+            $reqData['institute'] ?? '',
+            $reqData['targetExam'] ?? '',
+            $reqData['targetYear'] ?? ''
+        ]);
+        handleResponse(['success' => true, 'user' => [
+            'id' => $id, 
+            'email' => $reqData['email'], 
+            'name' => $reqData['name'],
+            'role' => $reqData['role'],
+            'institute' => $reqData['institute'] ?? '',
+            'targetExam' => $reqData['targetExam'] ?? '',
+            'targetYear' => $reqData['targetYear'] ?? ''
+        ]]);
     }
 }`);
-
-        // --- 1:1 SYLLABUS CONTROLLER ---
         apiFolder.file("syllabus.php", `<?php
 function handleSyllabus($db, $action, $reqData) {
     $sid = $_GET['id'] ?? $reqData['student_id'] ?? '';
@@ -466,56 +476,29 @@ function handleSyllabus($db, $action, $reqData) {
         handleResponse(['success' => true]);
     }
 }`);
-
-        // --- GATEWAY ROUTER ---
         apiFolder.file("index.php", `<?php
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: Content-Type');
 header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') exit;
-
 require_once 'db.php';
 require_once 'auth.php';
 require_once 'syllabus.php';
-
 $db = getDB();
 $module = $_GET['module'] ?? '';
 $action = $_GET['action'] ?? '';
 $reqData = json_decode(file_get_contents('php://input'), true) ?? [];
-
 switch ($module) {
     case 'auth': handleAuth($db, $action, $reqData); break;
     case 'syllabus': handleSyllabus($db, $action, $reqData); break;
     default: handleResponse(['error' => 'Module Not Found']); break;
 }
 `);
-        
         const sqlFolder = apiFolder.folder("sql");
-        sqlFolder?.file("full_schema_v8.0.sql", `
--- MASTER SCHEMA v8.0 - 21 TABLES COMPLETE
+        sqlFolder?.file("full_schema_v8.5.sql", `-- MASTER SCHEMA v8.5
 SET NAMES utf8mb4;
-
-CREATE TABLE activity_logs (id INT AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(50), action VARCHAR(255), timestamp DATETIME);
-CREATE TABLE backlogs (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), title VARCHAR(255), subject VARCHAR(50), priority VARCHAR(20), deadline DATE);
-CREATE TABLE blogs (id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255), content LONGTEXT, author VARCHAR(100), date DATE, status VARCHAR(20));
-CREATE TABLE chapters (id VARCHAR(50) PRIMARY KEY, name VARCHAR(255), subject VARCHAR(50), unit VARCHAR(50));
-CREATE TABLE contact_messages (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), subject VARCHAR(255), message TEXT, date DATE, is_read TINYINT(1));
-CREATE TABLE files (id INT AUTO_INCREMENT PRIMARY KEY, owner_id VARCHAR(50), filename VARCHAR(255), file_path VARCHAR(255));
-CREATE TABLE flashcards (id INT AUTO_INCREMENT PRIMARY KEY, question TEXT, answer TEXT, subject VARCHAR(50), difficulty VARCHAR(20));
-CREATE TABLE handshakes (id INT AUTO_INCREMENT PRIMARY KEY, parent_id VARCHAR(50), student_id VARCHAR(50), status VARCHAR(20), linked_since DATE);
-CREATE TABLE memory_hacks (id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255), hack TEXT, category VARCHAR(50), subject VARCHAR(50));
-CREATE TABLE mock_tests (id VARCHAR(50) PRIMARY KEY, name VARCHAR(255), duration INT, questionIds JSON);
-CREATE TABLE notifications (id INT AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(50), title VARCHAR(255), message TEXT, is_read TINYINT(1), timestamp DATETIME);
-CREATE TABLE questions (id VARCHAR(50) PRIMARY KEY, text TEXT, options JSON, correctAnswer INT, subject VARCHAR(50));
-CREATE TABLE results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), test_id VARCHAR(50), test_name VARCHAR(255), score INT, accuracy INT, date DATE);
-CREATE TABLE routines (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), day_of_week VARCHAR(15), activity VARCHAR(255), start_time TIME, end_time TIME);
-CREATE TABLE security_logs (id INT AUTO_INCREMENT PRIMARY KEY, user_id VARCHAR(50), event_type VARCHAR(50), ip_address VARCHAR(50), timestamp DATETIME);
-CREATE TABLE syllabus (student_id VARCHAR(50) PRIMARY KEY, data LONGTEXT);
-CREATE TABLE test_results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), test_id VARCHAR(50), raw_answers JSON, timestamp DATETIME);
-CREATE TABLE timetable (student_id VARCHAR(50) PRIMARY KEY, routine_json JSON);
 CREATE TABLE users (id VARCHAR(50) PRIMARY KEY, email VARCHAR(100) UNIQUE, name VARCHAR(100), password VARCHAR(255), role VARCHAR(20), institute VARCHAR(100), target_exam VARCHAR(100), target_year VARCHAR(10), birth_date DATE, gender VARCHAR(20));
-CREATE TABLE wellness (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), stress INT, focus INT, motivation INT, timestamp DATETIME);
-CREATE TABLE wellness_scores (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), category VARCHAR(50), score INT, notes TEXT, timestamp DATETIME);
+CREATE TABLE syllabus (student_id VARCHAR(50) PRIMARY KEY, data LONGTEXT);
 `);
       }
 
@@ -523,7 +506,7 @@ CREATE TABLE wellness_scores (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARC
       const url = window.URL.createObjectURL(content);
       const link = document.createElement('a');
       link.href = url;
-      link.download = "solaris-full-backend-v8.0.zip";
+      link.download = "solaris-full-backend-v8.5.zip";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -536,17 +519,11 @@ CREATE TABLE wellness_scores (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARC
 
   const handleTestSend = async () => {
     if (!input.trim() || isTyping) return;
-    
     const userMsg = input;
     setInput('');
     setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setIsTyping(true);
-
-    const testContext: StudentData = {
-      ...data,
-      aiTutorModel: testerModelId
-    };
-
+    const testContext: StudentData = { ...data, aiTutorModel: testerModelId };
     setTimeout(async () => {
       const reply = await chatWithTutor([], `${testerSubject} Context: ${userMsg}`, testerModelId, testContext);
       setMessages(prev => [...prev, { role: 'bot', text: reply }]);
@@ -566,7 +543,7 @@ CREATE TABLE wellness_scores (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARC
         <div className="space-y-10 animate-in fade-in duration-500">
           <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-6">
              <div className="space-y-2">
-                <h3 className="text-2xl font-black italic text-slate-900 uppercase">Global Architecture Control</h3>
+                <h3 className="text-2xl font-black italic text-slate-900 uppercase">Global Intelligence Control</h3>
                 <p className="text-xs font-bold text-slate-400">Select the underlying engine for all student academic interactions.</p>
              </div>
              <div className="flex items-center gap-3 bg-emerald-50 px-6 py-2.5 rounded-2xl border border-emerald-100">
@@ -575,35 +552,30 @@ CREATE TABLE wellness_scores (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARC
              </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {Object.entries(MODEL_CONFIGS).map(([id, config]) => (
               <button 
                 key={id}
                 onClick={() => handleModelSelect(id)}
-                className={`text-left p-8 rounded-[2.5rem] bg-white border-2 transition-all relative group h-64 flex flex-col justify-between ${
-                  activeModelId === id ? 'border-indigo-600 ring-4 ring-indigo-50 shadow-xl' : 'border-slate-100 hover:border-indigo-200 hover:shadow-lg'
+                className={`text-left p-10 rounded-[2.5rem] bg-white border-2 transition-all relative group flex flex-col justify-between h-56 ${
+                  activeModelId === id ? 'border-blue-600 ring-4 ring-blue-50 shadow-xl' : 'border-slate-100 hover:border-slate-200'
                 }`}
               >
-                {activeModelId === id && (
-                  <div className="absolute top-6 right-6 bg-indigo-600 text-white p-1.5 rounded-full shadow-lg"><Check className="w-4 h-4" /></div>
-                )}
-                <div className="space-y-4">
-                  <div className={`px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest w-fit ${
-                    config.color === 'blue' ? 'bg-blue-50 text-blue-600' :
-                    config.color === 'purple' ? 'bg-purple-50 text-purple-600' :
-                    config.color === 'indigo' ? 'bg-indigo-50 text-indigo-600' :
-                    config.color === 'teal' ? 'bg-teal-50 text-teal-600' :
-                    config.color === 'emerald' ? 'bg-emerald-50 text-emerald-600' :
+                <div className="space-y-5">
+                  <div className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest w-fit shadow-sm ${
+                    config.tag === 'SPEED' ? 'bg-blue-50 text-blue-600' :
+                    config.tag === 'REASONING' ? 'bg-purple-50 text-purple-600' :
+                    config.tag === 'GENERAL' ? 'bg-violet-50 text-violet-600' :
+                    config.tag === 'LOGIC' ? 'bg-cyan-50 text-cyan-600' :
+                    config.tag === 'MATH' ? 'bg-emerald-50 text-emerald-600' :
                     'bg-orange-50 text-orange-600'
                   }`}>
                     {config.tag}
                   </div>
-                  <h4 className="text-xl font-black text-slate-800 tracking-tighter italic">{config.name}</h4>
-                  <p className="text-xs text-slate-400 font-medium leading-relaxed italic">{config.desc}</p>
-                </div>
-                <div className="flex items-center gap-2 pt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                   <div className="text-[8px] font-black uppercase text-indigo-600 tracking-widest">Select Node</div>
-                   <ChevronRight className="w-3 h-3 text-indigo-600" />
+                  <div className="space-y-2">
+                    <h4 className="text-2xl font-black text-slate-900 tracking-tight leading-none italic">{config.name}</h4>
+                    <p className="text-sm text-slate-400 font-medium leading-relaxed italic">{config.desc}</p>
+                  </div>
                 </div>
               </button>
             ))}
@@ -642,7 +614,6 @@ CREATE TABLE wellness_scores (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARC
 
            <div className="h-[600px] bg-slate-900 rounded-[3.5rem] border border-slate-800 shadow-2xl flex flex-col overflow-hidden relative">
               <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_right,#1e1b4b_0%,transparent_70%)] opacity-30 pointer-events-none"></div>
-              
               <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/20 backdrop-blur-md relative z-10">
                  <div className="flex items-center gap-4">
                     <div className="flex gap-1.5">
@@ -652,19 +623,15 @@ CREATE TABLE wellness_scores (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARC
                     </div>
                     <div className="h-4 w-px bg-white/10 mx-2"></div>
                     <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
-                       <Terminal className="w-3.5 h-3.5" /> Heuristic Debug Console
+                       <Terminal className="w-3.5 h-3.5" /> Intelligence Debug Console
                     </div>
                  </div>
-                 <div className="text-[9px] font-black uppercase text-indigo-400 bg-indigo-400/10 px-4 py-1.5 rounded-full border border-indigo-400/20">
-                    Engine Link: {MODEL_CONFIGS[testerModelId]?.tag}
-                 </div>
               </div>
-
               <div ref={scrollRef} className="flex-1 overflow-y-auto p-10 space-y-10 relative z-10 custom-scrollbar">
                  {messages.length === 0 && (
                    <div className="h-full flex flex-col items-center justify-center text-center opacity-30 space-y-4">
                       <Network className="w-16 h-16" />
-                      <p className="text-[10px] font-black uppercase tracking-[0.4em]">Awaiting Local Link...</p>
+                      <p className="text-[10px] font-black uppercase tracking-[0.4em]">Awaiting Intelligence Link...</p>
                    </div>
                  )}
                  {messages.map((m, i) => (
@@ -692,24 +659,10 @@ CREATE TABLE wellness_scores (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARC
                    </div>
                  )}
               </div>
-
               <div className="p-8 border-t border-white/5 bg-black/40 relative z-10">
                  <div className="flex gap-4 max-w-4xl mx-auto">
-                    <input 
-                       type="text"
-                       value={input}
-                       onChange={(e) => setInput(e.target.value)}
-                       onKeyDown={(e) => e.key === 'Enter' && handleTestSend()}
-                       placeholder={`Test local ${MODEL_CONFIGS[testerModelId]?.name} output...`}
-                       className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm font-bold text-white focus:ring-4 focus:ring-indigo-500/20 transition-all outline-none"
-                    />
-                    <button 
-                       onClick={handleTestSend}
-                       disabled={isTyping}
-                       className="w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center hover:bg-indigo-700 transition-all shadow-2xl disabled:opacity-50"
-                    >
-                       <Send className="w-5 h-5" />
-                    </button>
+                    <input type="text" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleTestSend()} placeholder={`Test local ${MODEL_CONFIGS[testerModelId]?.name} output...`} className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm font-bold text-white focus:ring-4 focus:ring-indigo-500/20 transition-all outline-none" />
+                    <button onClick={handleTestSend} disabled={isTyping} className="w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center hover:bg-indigo-700 transition-all shadow-2xl disabled:opacity-50"><Send className="w-5 h-5" /></button>
                  </div>
               </div>
            </div>
@@ -722,22 +675,10 @@ CREATE TABLE wellness_scores (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARC
              <div className="absolute top-0 right-0 p-12 opacity-5"><Server className="w-80 h-80" /></div>
              <div className="space-y-6 relative z-10 text-center md:text-left">
                 <h3 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase leading-none">Modular <span className="text-indigo-500 italic font-black">Architecture.</span></h3>
-                <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                   {['auth.php', 'syllabus.php', 'wellness.php', 'results.php', 'backlogs.php', 'blogs.php', 'hacks.php', 'timetable.php'].map(f => (
-                     <span key={f} className="px-4 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[9px] font-black uppercase text-slate-400">{f}</span>
-                   ))}
-                </div>
-                <p className="text-slate-400 font-medium max-w-lg italic">
-                  Complete 1:1 mapping of frontend modules to backend controllers. All 21 tables from your list are integrated into SQL Master Schema v8.0.
-                </p>
+                <p className="text-slate-400 font-medium max-w-lg italic">Complete 1:1 mapping of frontend modules to backend controllers.</p>
              </div>
              <div className="flex flex-col gap-4 relative z-10 w-full md:w-auto">
-                <button onClick={handleDownloadBuild} className="px-10 py-5 bg-white text-slate-900 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] flex items-center justify-center gap-4 hover:bg-indigo-50 transition-all shadow-2xl group">
-                   <Package className="w-6 h-6 group-hover:scale-110 transition-transform" /> Download Full v8.0
-                </button>
-                <div className="flex items-center gap-2 justify-center text-[8px] font-black uppercase text-slate-500 tracking-widest">
-                   <Database className="w-3 h-3" /> All 21 Tables Included
-                </div>
+                <button onClick={handleDownloadBuild} className="px-10 py-5 bg-white text-slate-900 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] flex items-center justify-center gap-4 hover:bg-indigo-50 transition-all shadow-2xl group"><Package className="w-6 h-6 group-hover:scale-110 transition-transform" /> Download v8.5 Build</button>
              </div>
           </div>
         </div>
@@ -775,16 +716,10 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
                 type === 'MockTest' ? 'mockTests' :
                 type === 'Flashcard' ? 'flashcards' :
                 type === 'MemoryHack' ? 'memoryHacks' : 'blogs';
-    
     const currentList = [...(data[key as keyof StudentData] as any[])];
     const index = currentList.findIndex(e => e.id === entity.id);
-    
-    if (index > -1) {
-      currentList[index] = entity;
-    } else {
-      currentList.push(entity);
-    }
-    
+    if (index > -1) currentList[index] = entity;
+    else currentList.push(entity);
     setData({ ...data, [key]: currentList });
     setIsCreating(false);
     setEditingItem(null);
@@ -794,28 +729,17 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     <div className="pb-20 max-w-7xl mx-auto space-y-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-white p-8 rounded-[3rem] border border-slate-200 shadow-sm mx-4">
         <div className="space-y-2">
-          <div className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.4em] flex items-center gap-3">
-             <ShieldCheck className="w-4 h-4" /> Solaris Control: System Administration
-          </div>
-          <h2 className="text-5xl font-black text-slate-900 tracking-tighter italic leading-none uppercase">Central <span className="text-indigo-600 font-black">Commander.</span></h2>
+          <div className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.4em] flex items-center gap-3"><ShieldCheck className="w-4 h-4" /> Solaris Admin: Portal Management</div>
+          <h2 className="text-5xl font-black text-slate-900 tracking-tighter italic leading-none uppercase">Central <span className="text-indigo-600 font-black">Control.</span></h2>
         </div>
-        
         <div className="flex items-center gap-3 bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 shadow-inner">
            <div className="text-right">
               <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Active Database</div>
-              <div className={`text-[10px] font-black uppercase ${mode === 'LIVE' ? 'text-emerald-600' : 'text-slate-500'}`}>
-                 {mode === 'LIVE' ? 'Production (MySQL)' : 'Sandbox (Memory)'}
-              </div>
+              <div className={`text-[10px] font-black uppercase ${mode === 'LIVE' ? 'text-emerald-600' : 'text-slate-500'}`}>{mode === 'LIVE' ? 'Production (MySQL)' : 'Sandbox (Memory)'}</div>
            </div>
-           <button 
-              onClick={() => api.setMode(mode === 'MOCK' ? 'LIVE' : 'MOCK')}
-              className={`w-14 h-8 rounded-full p-1 transition-all duration-300 relative ${mode === 'LIVE' ? 'bg-emerald-500' : 'bg-slate-300'}`}
-           >
-              <div className={`w-6 h-6 bg-white rounded-full shadow-lg transition-transform duration-300 ${mode === 'LIVE' ? 'translate-x-6' : 'translate-x-0'}`}></div>
-           </button>
+           <button onClick={() => api.setMode(mode === 'MOCK' ? 'LIVE' : 'MOCK')} className={`w-14 h-8 rounded-full p-1 transition-all duration-300 relative ${mode === 'LIVE' ? 'bg-emerald-500' : 'bg-slate-300'}`}><div className={`w-6 h-6 bg-white rounded-full shadow-lg transition-transform duration-300 ${mode === 'LIVE' ? 'translate-x-6' : 'translate-x-0'}`}></div></button>
         </div>
       </div>
-
       <div className="space-y-12 animate-in fade-in duration-700">
         {activeTab === 'admin-overview' && <Overview data={data} />}
         {activeTab === 'admin-users' && <UserManagement />}
@@ -827,19 +751,8 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
         {activeTab === 'admin-blogs' && <EntityList title="Resource Articles" type="Blog" data={data.blogs} icon={PenTool} color="indigo" btnLabel="New Post" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Blog'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-system' && <SystemHub data={data} setData={setData} />}
       </div>
-
-      {isCreating && (
-        <CreationHub 
-          type={creationType} 
-          item={editingItem} 
-          onClose={() => setIsCreating(false)} 
-          onSave={(entity: any) => handleSaveEntity(creationType, entity)}
-          questions={data.questions}
-          chapters={data.chapters}
-        />
-      )}
+      {isCreating && <CreationHub type={creationType} item={editingItem} onClose={() => setIsCreating(false)} onSave={(entity: any) => handleSaveEntity(creationType, entity)} questions={data.questions} chapters={data.chapters} />}
     </div>
   );
 };
-
 export default AdminCMS;

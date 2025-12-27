@@ -1,134 +1,217 @@
+
 import React from 'react';
 import { 
-  BookOpen, Target, CalendarClock, ClipboardList, 
-  Brain, Award, Cpu, Network, Fingerprint, Activity,
-  Sparkles, Zap, ShieldCheck, ChevronRight, BarChart3, RotateCw as LucideRotateCw, ArrowRight as LucideArrowRight
+  Rocket, ClipboardList, BarChart2, BookOpen, Lightbulb, 
+  Target, Award, ShieldCheck, Zap, Cpu, GraduationCap, ChevronRight,
+  TrendingUp, Activity, ShieldAlert, Sparkles, Box, Compass,
+  LayoutDashboard, FileText, CheckCircle2, LineChart, ArrowRight
 } from 'lucide-react';
 
 const AboutModule: React.FC = () => {
   return (
-    <div className="bg-[#0a0c1a] text-white min-h-screen selection:bg-[#5d5fef]/20">
-      <div className="max-w-[1600px] mx-auto py-12 md:py-24 px-6 md:px-16 space-y-24 md:space-y-48 animate-in fade-in duration-1000">
-        
-        {/* --- HERO SECTION --- */}
-        <section className="relative text-center space-y-10 md:space-y-16 pt-10">
-          <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[300px] md:w-[1000px] h-[300px] md:h-[1000px] bg-indigo-500/10 blur-[160px] rounded-full pointer-events-none -z-10"></div>
+    <div className="bg-white min-h-screen">
+      {/* --- HERO SECTION: "ABOUT US" MIX --- */}
+      <section className="cloud-bg py-24 px-6 md:px-12 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16 lg:gap-24 relative z-10">
           
-          <div className="flex justify-center">
-            <div className="inline-flex items-center gap-3 px-6 md:px-8 py-2 md:py-3 bg-[#161a2e] border border-[#2d3656] rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-[0.5em] text-indigo-400 shadow-2xl">
-               <Sparkles className="w-3 md:w-4 h-3 md:h-4" /> Global Intelligence Node 01
+          {/* Left Side: Messaging */}
+          <div className="lg:w-1/2 space-y-8 text-center lg:text-left">
+            <div className="space-y-4">
+              <h2 className="text-indigo-600 font-black text-xs uppercase tracking-[0.4em] italic flex items-center justify-center lg:justify-start gap-2">
+                <Sparkles className="w-4 h-4" /> The Engineering Standard
+              </h2>
+              <h1 className="text-6xl md:text-8xl font-black text-[#0a1128] tracking-tighter leading-[0.9] uppercase italic font-space">
+                About <span className="text-[#82c341]">Us.</span>
+              </h1>
+              <h3 className="text-2xl md:text-3xl font-bold text-slate-700 tracking-tight leading-snug">
+                Helping Students Succeed in <br className="hidden md:block" />
+                <span className="text-indigo-900 italic uppercase">IIT-JEE Preparation</span>
+              </h3>
             </div>
-          </div>
-          
-          <div className="space-y-6">
-            <h1 className="text-4xl md:text-8xl lg:text-[11rem] font-black tracking-tighter italic leading-[0.9] md:leading-[0.8] uppercase text-white">
-              DATA-DRIVEN <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-b from-[#5d5fef] to-[#1e2440]">DOMINANCE.</span>
-            </h1>
-            <p className="text-[#7d8cb8] max-w-4xl mx-auto leading-relaxed text-lg md:text-2xl lg:text-3xl font-medium italic px-4 md:px-6">
-              "Generic preparation leads to linear results. High-frequency architecture leads to IIT. Track every performance vector in real-time."
+            
+            <p className="text-slate-500 text-lg md:text-xl font-medium leading-relaxed max-w-2xl mx-auto lg:mx-0 italic">
+              "At <span className="text-indigo-600 font-black uppercase">iitgrrprep</span>, our mission is to provide students with the tools they need to succeed in one of the most competitive exams in India. We are dedicated to making preparation organized, effective, and attainable."
             </p>
-          </div>
 
-          <div className="pt-6 md:pt-10 flex flex-col sm:flex-row justify-center gap-4 md:gap-8 px-4">
-             <div className="px-10 md:px-16 py-6 md:py-8 bg-[#5d5fef] text-white rounded-[1.5rem] md:rounded-[2rem] font-black text-[10px] md:text-xs uppercase tracking-[0.5em] shadow-[0_20px_60px_-15px_rgba(93,95,239,0.5)] hover:scale-105 active:scale-95 transition-all cursor-pointer group flex items-center justify-center gap-4">
-                Initialize Protocol <LucideArrowRight className="w-4 md:w-5 h-4 md:h-5 group-hover:translate-x-2 transition-transform" />
-             </div>
-             <div className="px-10 md:px-16 py-6 md:py-8 bg-[#161a2e] border border-[#2d3656] text-[#7d8cb8] rounded-[1.5rem] md:rounded-[2rem] font-black text-[10px] md:text-xs uppercase tracking-[0.5em] hover:bg-[#1e2440] hover:text-white transition-all cursor-pointer shadow-sm text-center">
-                Explore The Engine
-             </div>
-          </div>
-        </section>
-
-        {/* --- INFORMATION ARCHITECTURE --- */}
-        <section className="space-y-16 md:space-y-24">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-10">
-            <div className="space-y-4 md:space-y-6">
-              <div className="text-[10px] md:text-[12px] font-black uppercase text-indigo-400 tracking-[0.6em]">The Mastery Matrix</div>
-              <h2 className="text-4xl md:text-7xl lg:text-8xl font-black italic tracking-tighter leading-none text-white uppercase">Operational <br />Intelligence.</h2>
-            </div>
-            <p className="text-[#4a5578] font-medium text-base md:text-xl max-w-md md:text-right italic leading-relaxed">"Optimizing the six fundamental dimensions of JEE performance through localized heuristics."</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
-            {[
-              { title: 'Pulse Heatmaps', icon: BarChart3, desc: 'Stop guessing your stability. Dynamic heatmaps use real-time accuracy data to visualize mastered units vs "Retention Decays".' },
-              { title: 'Neural Spacing', icon: LucideRotateCw, desc: 'Logic engines flag concept expiration exactly when they leave your long-term memory buffer. Retain 90% of the syllabus until D-Day.' },
-              { title: 'Psychometric Guard', icon: Brain, desc: 'We monitor cognitive load and stress levels. If burnout is detected, the gateway automatically pivots to "Active Recovery".' },
-              { title: 'Error Ledgers', icon: ClipboardList, desc: 'Classification system for errors: conceptual gaps, calculation slips, or time-pressure artifacts. Focus only on what hurts the rank.' },
-              { title: 'Syllabus Burn-down', icon: Target, desc: 'A precision roadmap of your total academic debt. See exactly where your trajectory sits relative to the 2025 exam window.' },
-              { title: 'Sentinel Link', icon: ShieldCheck, desc: 'Secure data handshakes allow parents to view live velocity logs and wellness scores, replacing friction with transparent synergy.' },
-            ].map((tool, i) => (
-              <div key={i} className="bg-[#161a2e] p-8 md:p-14 rounded-[3rem] md:rounded-[5rem] border border-[#2d3656] hover:border-[#5d5fef]/40 transition-all duration-700 hover:shadow-[0_0_80px_rgba(0,0,0,0.6)] group relative overflow-hidden">
-                <div className="absolute -right-8 -bottom-8 md:-right-12 md:-bottom-12 opacity-[0.03] group-hover:opacity-[0.08] group-hover:scale-110 transition-all duration-1000">
-                  <tool.icon className="w-32 md:w-64 h-32 md:h-64" />
-                </div>
-                <div className="w-14 h-14 md:w-20 md:h-20 bg-[#0d1021] border border-[#1e2440] text-indigo-400 rounded-[1.2rem] md:rounded-[2rem] flex items-center justify-center mb-8 md:mb-12 group-hover:scale-110 group-hover:bg-[#5d5fef] group-hover:text-white transition-all shadow-inner">
-                  <tool.icon className="w-6 md:w-9 h-6 md:h-9" />
-                </div>
-                <h3 className="text-xl md:text-3xl font-black mb-4 md:mb-6 italic tracking-tighter text-white uppercase">{tool.title}</h3>
-                <p className="text-[#7d8cb8] text-sm md:text-lg leading-relaxed font-medium transition-colors group-hover:text-slate-300">
-                  {tool.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* --- PHILOSOPHY SECTION --- */}
-        <section className="bg-[#0d1021] rounded-[3.5rem] md:rounded-[6rem] p-8 md:p-16 lg:p-32 grid grid-cols-1 lg:grid-cols-2 gap-16 md:gap-24 items-center border border-[#1e2440] shadow-2xl relative overflow-hidden group">
-           <div className="absolute top-0 right-0 p-20 opacity-[0.02] rotate-12 group-hover:scale-110 transition-transform duration-[4s]"><Fingerprint className="w-[300px] md:w-[700px] h-[300px] md:h-[700px] text-white" /></div>
-           <div className="space-y-8 md:space-y-12 relative z-10">
-              <h2 className="text-4xl md:text-8xl font-black tracking-tighter leading-[1] md:leading-[0.9] italic text-white uppercase">SYSTEM: <br /> <span className="text-[#5d5fef]">Architecture.</span></h2>
-              <div className="space-y-6 md:space-y-10">
-                <p className="text-[#7d8cb8] text-lg md:text-2xl font-bold leading-relaxed">
-                  Success isn't about working harder—it's about <span className="text-indigo-400 underline decoration-indigo-400/30 decoration-4 md:decoration-8 underline-offset-[8px] md:underline-offset-[16px] italic">eliminating performance friction.</span>
-                </p>
-                <div className="space-y-4 md:space-y-8">
-                   <div className="flex gap-4 md:gap-8">
-                      <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#5d5fef] rounded-full mt-2 md:mt-3 shrink-0 shadow-[0_0_10px_#5d5fef]"></div>
-                      <p className="text-[#4a5578] font-medium text-base md:text-xl italic leading-relaxed">Aspirants often fail because their performance data is siloed across thousands of disorganized notebook pages.</p>
+            <div className="flex flex-wrap justify-center lg:justify-start gap-6 pt-4">
+              <button 
+                onClick={() => window.dispatchEvent(new CustomEvent('changeTab', { detail: 'login' }))}
+                className="px-12 py-6 bg-[#0a1128] text-white rounded-[2.5rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:scale-105 transition-all flex items-center gap-4 group"
+              >
+                Get Started <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+              <div className="flex -space-x-4 items-center">
+                 {[1,2,3,4].map(i => (
+                   <div key={i} className="w-10 h-10 rounded-full border-4 border-white bg-slate-200 overflow-hidden shadow-lg">
+                      <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="User" />
                    </div>
-                   <div className="flex gap-4 md:gap-8">
-                      <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-[#5d5fef] rounded-full mt-2 md:mt-3 shrink-0 shadow-[0_0_10px_#5d5fef]"></div>
-                      <p className="text-[#4a5578] font-medium text-base md:text-xl italic leading-relaxed">We unify your academic pulse into a single gateway that identifies roadblocks before they impact your mock tests.</p>
-                   </div>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-3 md:gap-5 pt-4 md:pt-8">
-                 {["Zero-Latency Sync", "Burnout Defense", "Heuristic Optimization"].map((tag, i) => (
-                   <span key={i} className="px-5 py-2 md:px-7 md:py-3 bg-[#161a2e] rounded-xl md:rounded-2xl text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] border border-[#2d3656] text-indigo-400">{tag}</span>
                  ))}
+                 <span className="pl-6 text-[9px] font-black text-slate-400 uppercase tracking-widest">15k+ Linked Nodes</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Right Side: Sophisticated Graphic Mix */}
+          <div className="lg:w-1/2 relative">
+             <div className="relative w-full max-w-lg aspect-square mx-auto">
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-emerald-500/10 rounded-[5rem] blur-3xl opacity-40"></div>
+                
+                {/* Floating Elements from Image concept */}
+                <div className="absolute -top-6 -right-6 p-8 bg-white rounded-[3rem] shadow-2xl border border-slate-100 animate-bounce duration-[6s] z-20">
+                    <Lightbulb className="text-[#82c341] w-10 h-10" />
+                </div>
+                <div className="absolute -bottom-8 -left-8 p-10 bg-[#0a1128] rounded-[3.5rem] shadow-2xl border border-white/10 text-white animate-pulse z-20">
+                   <Target className="w-10 h-10 text-indigo-400" />
+                </div>
+
+                <div className="relative z-10 w-full h-full bg-white/40 backdrop-blur-md rounded-[6rem] border border-white/50 shadow-[0_50px_100px_-20px_rgba(10,17,40,0.15)] flex items-center justify-center overflow-hidden group">
+                    <img 
+                      src="https://img.freepik.com/free-vector/flat-hand-drawn-patient-doctor-illustration_23-2148858204.jpg?t=st=1720000000~exp=1720003600~hmac=..." 
+                      alt="Student Learning Illustration" 
+                      className="w-4/5 h-4/5 object-contain group-hover:scale-110 transition-transform duration-[5s] opacity-90 mix-blend-multiply"
+                      style={{ filter: 'hue-rotate(220deg)' }} // Shifting colors to match our theme
+                    />
+                </div>
+             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* --- WHY CHOOSE SECTION: TRIPLE CARD MIX --- */}
+      <section className="py-32 px-6 md:px-12 bg-white">
+        <div className="max-w-7xl mx-auto space-y-24">
+           <div className="text-center space-y-4">
+              <h2 className="text-4xl md:text-6xl font-black text-[#0a1128] tracking-tighter uppercase italic leading-none">
+                Why Choose <span className="text-[#82c341]">IITGRRPREP?</span>
+              </h2>
+              <div className="h-1 w-24 bg-[#82c341] mx-auto rounded-full"></div>
+              <p className="text-slate-400 font-black text-xs uppercase tracking-[0.4em] mt-6">Our Commitment to Excellence</p>
+              <p className="text-slate-500 text-lg max-w-3xl mx-auto font-medium leading-relaxed italic">
+                We understand the unique challenges students face. Our platform is designed to ease the preparation process by providing precision tracking and deep analytical tools.
+              </p>
+           </div>
+
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+              {[
+                { 
+                  title: 'Effective Tracking', 
+                  desc: 'Monitor your progress in Physics, Chemistry, and Maths with high-frequency telemetry and heatmaps.', 
+                  icon: Activity,
+                  color: 'indigo'
+                },
+                { 
+                  title: 'Personalized Plans', 
+                  desc: 'Receive structure and daily study protocols tailored to your specific neural focus and speed.', 
+                  icon: ClipboardList,
+                  color: 'emerald'
+                },
+                { 
+                  title: 'Comprehensive Analysis', 
+                  desc: 'Analyze your mock test scores to identify conceptual drift and stabilize your performance curve.', 
+                  icon: LineChart,
+                  color: 'rose'
+                }
+              ].map((item, i) => (
+                <div key={i} className="group bg-[#f8fafc] p-12 rounded-[4.5rem] border border-slate-100 hover:bg-[#0a1128] hover:text-white transition-all duration-700 shadow-sm hover:shadow-2xl hover:-translate-y-4">
+                   <div className={`w-20 h-20 bg-white rounded-[2rem] shadow-xl flex items-center justify-center mb-10 transition-all group-hover:scale-110 group-hover:bg-indigo-500 group-hover:text-white`}>
+                      <item.icon className="w-10 h-10" />
+                   </div>
+                   <h4 className="text-2xl font-black tracking-tight uppercase italic leading-none mb-6">{item.title}</h4>
+                   <p className="text-slate-500 group-hover:text-slate-300 text-base leading-relaxed font-medium italic">"{item.desc}"</p>
+                   <div className="mt-10 pt-10 border-t border-slate-200/50 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-[#82c341]">Activate Node</span>
+                      <ChevronRight className="w-5 h-5 text-indigo-400" />
+                   </div>
+                </div>
+              ))}
+           </div>
+        </div>
+      </section>
+
+      {/* --- IDENTITY SECTION --- */}
+      <section className="py-32 px-6 md:px-12 bg-slate-50 border-y border-slate-100">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-20">
+           <div className="lg:w-1/2">
+              <div className="bg-[#0a1128] p-16 rounded-[4.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] space-y-12 relative overflow-hidden group">
+                 <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:rotate-12 transition-transform duration-[5s]"><Cpu className="w-80 h-80 text-white" /></div>
+                 
+                 <div className="flex justify-between items-center relative z-10">
+                    <h3 className="text-2xl font-black text-indigo-400 italic uppercase">System Sync.</h3>
+                    <div className="bg-white/10 text-emerald-400 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/10 animate-pulse">Active Live Feed</div>
+                 </div>
+                 
+                 <div className="space-y-8 relative z-10">
+                    {[
+                      { label: 'JEE Advanced Logic', val: 92, color: 'bg-indigo-500' },
+                      { label: 'Numerical Precision', val: 88, color: 'bg-[#82c341]' },
+                      { label: 'Exam Stoicism', val: 95, color: 'bg-emerald-500' }
+                    ].map((stat, i) => (
+                      <div key={i} className="space-y-3">
+                         <div className="flex justify-between items-end">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</span>
+                            <span className="text-xl font-black text-white">{stat.val}%</span>
+                         </div>
+                         <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden shadow-inner">
+                            <div className={`h-full ${stat.color} transition-all duration-[2s]`} style={{ width: `${stat.val}%` }}></div>
+                         </div>
+                      </div>
+                    ))}
+                 </div>
+                 <div className="pt-10 border-t border-white/5 text-center relative z-10">
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em] italic">Synchronizing results in real-time.</p>
+                 </div>
               </div>
            </div>
            
-           <div className="bg-[#161a2e] p-10 md:p-20 rounded-[3rem] md:rounded-[5rem] shadow-2xl text-center space-y-8 md:space-y-12 border border-[#2d3656] relative z-10 hover:-rotate-1 transition-transform duration-700">
-              <div className="w-20 h-20 md:w-28 md:h-28 bg-[#0d1021] text-indigo-400 rounded-[2rem] md:rounded-[3rem] flex items-center justify-center mx-auto border border-[#1e2440] shadow-inner">
-                 <Cpu className="w-8 md:w-12 h-8 md:h-12" />
+           <div className="lg:w-1/2 space-y-10">
+              <div className="space-y-6">
+                <h2 className="text-5xl md:text-7xl font-black text-[#0a1128] tracking-tighter leading-[0.9] uppercase italic font-space">
+                   Beyond the <br /> <span className="text-[#82c341]">IIT Barrier.</span>
+                </h2>
+                <p className="text-slate-500 text-2xl font-medium leading-relaxed italic">
+                  "Training at the 'IIT Rigor' level makes national exams like BITSAT or VITEEE straightforward. One protocol, infinite gateways."
+                </p>
               </div>
-              <div className="space-y-4 md:space-y-6">
-                 <h3 className="text-2xl md:text-4xl font-black italic text-white tracking-tight uppercase">Identity Handshake</h3>
-                 <p className="text-[#4a5578] text-base md:text-xl font-medium leading-relaxed italic px-2 md:px-6">
-                    "Track the past to own the present. Engineer the future to dominate the curve. All systems operational."
-                 </p>
-              </div>
-              <div className="flex justify-center gap-3 md:gap-4 pt-6 md:pt-10">
-                 <div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-[#5d5fef] animate-pulse shadow-[0_0_20px_rgba(93,95,239,1)]"></div>
-                 <div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-[#1e2440]"></div>
-                 <div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-[#1e2440]"></div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                 {[
+                   { title: 'BITSAT Speed', sub: 'High-Velocity Drills', icon: Zap },
+                   { title: 'CET Coverage', sub: 'National Mapping', icon: Compass },
+                   { title: 'VITEEE Protocol', sub: 'Mastery Tracks', icon: Box },
+                   { title: 'Result Synergy', sub: 'Performance Link', icon: Award }
+                 ].map((feat, i) => (
+                   <div key={i} className="flex gap-6 items-center p-8 bg-white border border-slate-200 rounded-[3rem] hover:border-indigo-400 transition-all cursor-default shadow-sm hover:shadow-md">
+                      <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600"><feat.icon className="w-7 h-7" /></div>
+                      <div>
+                        <div className="text-base font-black italic tracking-tight text-slate-800">{feat.title}</div>
+                        <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{feat.sub}</div>
+                      </div>
+                   </div>
+                 ))}
               </div>
            </div>
-        </section>
+        </div>
+      </section>
 
-        {/* --- CLOSING CTA --- */}
-        <section className="text-center py-16 md:py-24 bg-gradient-to-b from-transparent to-[#0d1021] rounded-[3.5rem] md:rounded-[6rem] border border-[#1e2440]/50 relative overflow-hidden group">
-           <div className="absolute inset-0 bg-[#5d5fef]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
-           <h2 className="text-4xl md:text-7xl font-black italic tracking-tighter uppercase mb-10 md:mb-16 relative z-10">Ready to Initialize?</h2>
-           <button className="px-10 py-6 md:px-20 md:py-10 bg-white text-slate-900 rounded-[1.5rem] md:rounded-[2.5rem] font-black uppercase text-[10px] md:text-sm tracking-[0.5em] md:tracking-[0.6em] hover:bg-indigo-500 hover:text-white transition-all shadow-2xl relative z-10 active:scale-95">
-              ESTABLISH UPLINK NOW
-           </button>
-        </section>
-      </div>
+      {/* --- REFINED CTA --- */}
+      <section className="py-40 px-6 md:px-12 bg-white text-center relative">
+         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-24 bg-slate-100"></div>
+         <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-8">
+            <div className="w-24 h-24 bg-indigo-50 rounded-[2.5rem] shadow-xl flex items-center justify-center mx-auto text-indigo-600 border border-indigo-100">
+               <ShieldCheck className="w-12 h-12" />
+            </div>
+            <div className="space-y-4">
+               <h2 className="text-5xl md:text-8xl font-black text-[#0a1128] tracking-tighter uppercase italic leading-none">The Future is <br /><span className="text-[#82c341]">Engineered.</span></h2>
+               <p className="text-slate-400 text-xl md:text-2xl font-medium italic leading-relaxed max-w-2xl mx-auto">"Join the elite aspirants who refuse to settle for mediocre preparation systems."</p>
+            </div>
+            <button 
+              onClick={() => window.dispatchEvent(new CustomEvent('changeTab', { detail: 'login' }))}
+              className="px-16 py-8 bg-[#0a1128] text-white rounded-[3rem] font-black text-sm uppercase tracking-[0.5em] shadow-[0_30px_60px_-15px_rgba(10,17,40,0.4)] hover:scale-110 transition-all hover:bg-black active:scale-95 flex items-center justify-center gap-4 mx-auto"
+            >
+              Sign Up Today <ArrowRight className="w-5 h-5" />
+            </button>
+         </div>
+      </section>
     </div>
   );
 };

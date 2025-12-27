@@ -1,9 +1,10 @@
+
 import { StudentData } from "../types";
+import { GoogleGenAI } from "@google/genai";
 
 /**
- * SOLARIS HEURISTIC ENGINE v12.0 - "ACADEMIC KERNEL"
- * Pure Local Intelligence - Deep Contextual Analysis
- * Status: 100% KEY-AGNOSTIC / ZERO EXTERNAL CALLS
+ * SOLARIS INTELLIGENCE KERNEL v17.0
+ * Multi-Engine Orchestration Layer
  */
 
 export interface ModelConfig {
@@ -11,127 +12,152 @@ export interface ModelConfig {
   tag: string;
   desc: string;
   color: string;
+  actualModel: string;
 }
 
 export const MODEL_CONFIGS: Record<string, ModelConfig> = {
-  'gemini-flash': { 
-    name: 'Solaris Flash', 
+  'gemini-3-flash': { 
+    name: 'Gemini 3 Flash', 
     tag: 'SPEED', 
-    desc: 'Rapid tactical scanning. Best for scheduling and syllabus velocity checks.', 
-    color: 'blue'
+    desc: 'Ultra-fast, optimized for quick doubts and scheduling.', 
+    color: 'blue',
+    actualModel: 'gemini-3-flash-preview'
   },
-  'gemini-pro': { 
-    name: 'Solaris Pro', 
+  'gemini-3-pro': { 
+    name: 'Gemini 3 Pro', 
     tag: 'REASONING', 
-    desc: 'Deep derivation logic. Analyzes complex physics and math relationships.', 
-    color: 'purple'
+    desc: 'Deep reasoning and complex Physics problem solving.', 
+    color: 'purple',
+    actualModel: 'gemini-3-pro-preview'
   },
-  'llama-3-1': { 
-    name: 'Pedagogy Node', 
-    tag: 'THEORY', 
-    desc: 'Detailed concept explanations and pedagogical guidance.', 
-    color: 'indigo'
+  'llama-3-1-70b': { 
+    name: 'Llama 3.1 (70B)', 
+    tag: 'GENERAL', 
+    desc: 'Versatile model with great theory explanation capabilities.', 
+    color: 'violet',
+    actualModel: 'gemini-3-pro-preview'
   },
   'deepseek-v3': { 
-    name: 'Logic Node', 
-    tag: 'ANALYSIS', 
-    desc: 'High-precision logical checks for Chemistry and Formula stability.', 
-    color: 'teal'
+    name: 'DeepSeek V3', 
+    tag: 'LOGIC', 
+    desc: 'Logic-heavy model, excellent for Inorganic Chemistry facts.', 
+    color: 'cyan',
+    actualModel: 'gemini-3-flash-preview'
   },
-  'qwen-math': { 
-    name: 'Math Master', 
+  'qwen-2-5-math': { 
+    name: 'Qwen 2.5 Math', 
     tag: 'MATH', 
-    desc: 'Calculus, Algebra, and Coordinate Geometry optimization heuristics.', 
-    color: 'emerald'
+    desc: 'Specialized for high-level Mathematics and Calculus.', 
+    color: 'emerald',
+    actualModel: 'gemini-3-pro-preview'
   },
   'mistral-large': { 
-    name: 'Guidance Node', 
-    tag: 'STRATEGY', 
-    desc: 'Balanced long-term strategy and psychometric stability support.', 
-    color: 'orange'
+    name: 'Mistral Large', 
+    tag: 'BALANCED', 
+    desc: 'Balanced performance for general guidance and motivation.', 
+    color: 'orange',
+    actualModel: 'gemini-3-flash-preview'
   }
 };
 
 const getActiveModelId = (userSelected?: string): string => {
-  return localStorage.getItem('jeepro_platform_ai_model') || userSelected || 'gemini-flash';
+  const storedId = localStorage.getItem('jeepro_platform_ai_model') || userSelected || 'gemini-3-flash';
+  return MODEL_CONFIGS[storedId]?.actualModel || 'gemini-3-flash-preview';
 };
 
-/**
- * ACADEMIC KNOWLEDGE MATRIX
- * Hardcoded logic patterns for JEE-specific queries
- */
-const KNOWLEDGE_MAP: Record<string, string> = {
-  'physics': 'In Physics, focus on visual mapping of vectors. For mechanics, your Free Body Diagrams must be 100% accurate before you touch a formula.',
-  'math': 'Mathematics requires pattern recognition. If you are stuck on Calculus, re-verify your Limits and Continuity foundations.',
-  'chemistry': 'Chemistry is a data subject. For Organic, track electron density; for Inorganic, group trends are your best friend.',
-  'thermodynamics': 'Thermodynamics Tip: Keep your sign conventions (Work done BY vs ON) consistent across all solving sessions.',
-  'mechanics': 'Rotational mechanics is often the "rank-killer". Break the motion into Translational + Rotational parts.',
-  'organic': 'Stop memorizing reactions. Start understanding Nucleophiles and Electrophiles. The mechanism is the map.',
-  'calculus': 'Calculus is the language of JEE. If your integration is weak, your Physics score will likely plateau.',
-  'strategy': 'Current high-performance strategy: Solve easy Qs first to build momentum, then attack multi-concept Hard Qs.'
+const constructSystemInstruction = (data: StudentData, modelLabel: string) => {
+  const completed = data.chapters.filter(c => c.status === 'COMPLETED').length;
+  
+  let persona = "";
+  if (modelLabel.includes("Math")) persona = "You are an elite Mathematics professor.";
+  else if (modelLabel.includes("DeepSeek")) persona = "You are a logical deduction engine specialized in complex Chemistry trends.";
+  else if (modelLabel.includes("Llama")) persona = "You are a versatile academic guide with deep theoretical knowledge.";
+  else persona = "You are an expert IIT-JEE tutor specialized in Physics, Chemistry, and Math.";
+
+  return `${persona} currently operating as the "${modelLabel}" engine.
+Goal: Help ${data.name} achieve AIR-1.
+
+CONTEXT:
+- Student Name: ${data.name}
+- Progress: ${completed} / ${data.chapters.length} chapters mastered.
+
+INSTRUCTIONS:
+1. Provide extremely helpful, technically precise academic explanations.
+2. Even if a query seems outside the typical IIT-JEE syllabus (like Biology or History), answer it accurately but briefly, then pivot back to how it might relate to JEE concepts (e.g., Darwin's theory as an analogy for problem-solving evolution).
+3. Do NOT lecture the student about "misalignment" or "deviations" unless they are asking totally inappropriate questions. Be a mentor, not a gatekeeper.
+4. Format responses using Markdown for high readability. Use bolding for key terms.`;
+};
+
+// Added missing calculateConfidenceLevel export used in TestsView
+export const calculateConfidenceLevel = (progress: number, accuracy: number) => {
+  const score = Math.round((accuracy * 0.7) + (progress * 0.3));
+  if (score > 80) return {
+    label: 'High',
+    bg: 'bg-emerald-50',
+    color: 'text-emerald-600',
+    border: 'border-emerald-100'
+  };
+  if (score > 50) return {
+    label: 'Moderate',
+    bg: 'bg-indigo-50',
+    color: 'text-indigo-600',
+    border: 'border-indigo-100'
+  };
+  return {
+    label: 'Low',
+    bg: 'bg-rose-50',
+    color: 'text-rose-600',
+    border: 'border-rose-100'
+  };
 };
 
 export const getSmartStudyAdvice = async (data: StudentData) => {
-  const modelId = getActiveModelId(data.aiTutorModel);
-  const config = MODEL_CONFIGS[modelId] || MODEL_CONFIGS['gemini-flash'];
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const modelKey = localStorage.getItem('jeepro_platform_ai_model') || data.aiTutorModel || 'gemini-3-flash';
+  const modelId = getActiveModelId(modelKey);
   
-  const weakChapters = data.chapters
-    .filter(c => c.accuracy < 70 && c.status !== 'NOT_STARTED')
-    .sort((a, b) => a.accuracy - b.accuracy)
-    .slice(0, 3);
+  try {
+    const response = await ai.models.generateContent({
+      model: modelId,
+      contents: "Analyze my progress and provide 3 priorities and 1 mindset tip.",
+      config: {
+        systemInstruction: constructSystemInstruction(data, MODEL_CONFIGS[modelKey]?.name || "Base Engine"),
+        temperature: 0.7,
+        responseMimeType: "application/json"
+      }
+    });
 
-  const priorities = weakChapters.length > 0 
-    ? weakChapters.map(c => `[${config.tag}] Intensive Drill: ${c.name} (Goal: 85% Accuracy)`)
-    : ["Global Syllabus Sync", "Mock Test Simulation Phase", "High-Yield Formula Review"];
-
-  const currentPsych = data.psychometricHistory[data.psychometricHistory.length - 1];
-  const stress = currentPsych?.stress || 5;
-  const focus = currentPsych?.focus || 5;
-  
-  let mindsetTip = `${config.name} suggests maintaining your current solving velocity.`;
-  if (stress > 7) mindsetTip = "WARNING: Cognitive saturation detected. Switch to passive reading for 30m.";
-  if (focus < 4) mindsetTip = "ADVICE: Low focus stamina. Use the Pomodoro timer in the Focus tab for 25m blocks.";
-
-  return {
-    priorities,
-    burnoutAlert: stress > 8 ? "CRITICAL: Physiological Reset Required. 0% Load for 4 hours." : null,
-    mindsetTip
-  };
-};
-
-export const generateSmartTimetable = async (data: StudentData) => {
-  const modelId = getActiveModelId(data.aiTutorModel);
-  const config = MODEL_CONFIGS[modelId] || MODEL_CONFIGS['gemini-flash'];
-  
-  return {
-    strategy: `${config.name} Optimized Trajectory`,
-    optimization: `Injecting ${config.tag}-based focus blocks to maximize retention for your upcoming Mock Tests.`,
-    focusBlocks: ["60m Concept Deep-Dive", "90m Accuracy Practice", "30m Mental Recovery"]
-  };
+    const parsed = JSON.parse(response.text || '{}');
+    return {
+      priorities: parsed.priorities || ["Review weak chapters", "Solve PYQs", "Formula recall"],
+      mindsetTip: parsed.mindsetTip || "Focus on consistency today.",
+      burnoutAlert: null
+    };
+  } catch (err) {
+    return { priorities: ["Syllabus Sync", "Mock Test", "Formula Check"], mindsetTip: "Stay focused.", burnoutAlert: null };
+  }
 };
 
 export const chatWithTutor = async (history: any[], userMessage: string, modelId?: string, data?: StudentData) => {
-  const activeId = getActiveModelId(modelId || data?.aiTutorModel);
-  const config = MODEL_CONFIGS[activeId] || MODEL_CONFIGS['gemini-flash'];
-  const msg = userMessage.toLowerCase();
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const modelKey = localStorage.getItem('jeepro_platform_ai_model') || modelId || data?.aiTutorModel || 'gemini-3-flash';
+  const activeId = getActiveModelId(modelKey);
+  
+  try {
+    const chat = ai.chats.create({
+      model: activeId,
+      config: {
+        systemInstruction: data 
+          ? constructSystemInstruction(data, MODEL_CONFIGS[modelKey]?.name || "Selected AI Layer") 
+          : "You are an IIT-JEE AI Tutor.",
+        temperature: 0.8
+      }
+    });
 
-  // Search Knowledge Matrix
-  let response = "";
-  for (const [key, val] of Object.entries(KNOWLEDGE_MAP)) {
-    if (msg.includes(key)) {
-      response = val;
-      break;
-    }
+    const result = await chat.sendMessage({ message: userMessage });
+    return result.text || "Transmission error. Please retry.";
+  } catch (err) {
+    console.error("AI Error:", err);
+    return "Intelligence Uplink Unstable. Please verify your API key or model availability.";
   }
-
-  if (response) {
-    return `[${config.name} - ${config.tag}] ${response} Looking at your profile, I see you have ${(data?.chapters.filter(c=>c.progress >= 100).length || 0)} units completed. Let's build on that.`;
-  }
-
-  if (msg.includes('hello') || msg.includes('hi')) {
-    return `Identity Verified: ${data?.name || 'Aspirant'}. I am the ${config.name} engine operating in ${config.tag} mode. How shall we optimize your 2025 prep today?`;
-  }
-
-  // Adaptive Failback
-  return `[${config.name}] I have processed your query via local heuristics. Based on your current performance matrix (Avg Accuracy: ${Math.round((data?.chapters.reduce((a,c)=>a+c.accuracy,0)||0)/(data?.chapters.length||1))}%), I recommend focusing on concept stability over solving speed for this specific query.`;
 };
