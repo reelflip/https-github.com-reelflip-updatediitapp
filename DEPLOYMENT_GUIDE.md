@@ -1,7 +1,7 @@
 
-# IITGEEPREP: Production Deployment Protocol v6.0
+# IITGEEPREP: Production Deployment Protocol v20.0
 
-Follow these strict directory mappings to deploy the application to a production server (Hostinger, XAMPP, or VPS).
+Follow these strict directory mappings and security steps to deploy the high-performance academic engine.
 
 ---
 
@@ -13,15 +13,12 @@ Your server's root folder (usually `public_html` or `htdocs`) MUST look like thi
 /public_html/ (Server Root)
 ├── assets/             (Optimized frontend assets from 'dist/assets/')
 ├── api/                (CORE BACKEND GATEWAY)
-│   ├── config/         (database.php - Update DB credentials here)
-│   ├── controllers/    (Relational logic nodes)
-│   ├── core/           (MVC Router & Base Controller)
-│   ├── models/         (SQL Mapping Layer)
-│   ├── sql/            (master_schema_v6.0.sql - IMPORT THIS FIRST)
-│   ├── index.php       (Main Handshake Entry)
-│   └── .htaccess       (Apache rewrite rules for clean URLs)
-├── index.html          (The main single-page entry)
-└── [Other static files]
+│   ├── config/         (database.php - CONFIGURE DB HERE)
+│   ├── controllers/    (Functional logic controllers)
+│   ├── sql/            (master_schema_v20.sql - IMPORT FIRST)
+│   └── index.php       (Main API Router)
+├── index.html          (Main frontend entry point)
+└── .htaccess           (For URL rewriting if using clean paths)
 ```
 
 ---
@@ -29,34 +26,34 @@ Your server's root folder (usually `public_html` or `htdocs`) MUST look like thi
 ## 2. Step-by-Step Execution
 
 ### Phase A: Frontend Build
-1. Open your terminal in the project root.
-2. Run `npm run build`. This creates the `dist/` directory.
-3. Upload everything inside `dist/` to your server's root.
+1. Run `npm run build` in your local project root.
+2. Upload the contents of the `dist/` folder to your server's root.
 
 ### Phase B: Backend API
-1. Log in as **Admin** on your platform.
+1. Log in as **Admin** on your platform (Demo key: `admin@demo.in`).
 2. Go to **System Hub** -> **Deployment Blueprint**.
-3. Download the **Production ZIP**.
-4. Create an `api/` folder on your server and extract the ZIP there.
+3. Download the **Production ZIP (v20)**.
+4. Upload and extract the ZIP inside the `api/` folder on your server.
 
-### Phase C: SQL Database
-1. Open **phpMyAdmin** on your server.
-2. Create a new database (e.g., `u123_jeepro_db`).
-3. Import the `api/sql/master_schema_v6.0.sql` file.
-4. Edit `api/config/database.php` with your database `host`, `username`, `password`, and `dbname`.
+### Phase C: SQL Database Initialization
+1. Open **phpMyAdmin**.
+2. Create a database named `iitgrrprep_v20`.
+3. Import `api/sql/master_schema_v20.sql`.
+4. Edit `api/config/database.php` with your production MySQL credentials.
 
 ---
 
 ## 3. Global Activation
 
 1. Visit your live domain.
-2. Log in with the Master Key: `admin@jeepro.in`.
-3. In the header, toggle **"Production (MySQL)"**.
-4. The system will immediately start syncing all student telemetry to the relational database.
+2. Sign in as Admin.
+3. In the header toggle, switch to **"Production (MySQL)"**.
+4. The frontend will now bypass mock storage and perform real-time SQL persistence via the PHP gateway.
 
 ---
 
-## 4. Key Configurations
-- **PHP Requirements:** 8.2 or 8.3 (Ensures compatibility with typed models).
-- **SSL Certificate:** Mandatory for secure data handshakes between parents and students.
-- **Vite Base Path:** Ensure `vite.config.ts` has `base: './'` for subdirectory support.
+## 4. Hardening & Requirements
+- **PHP Version:** 8.2+ is mandatory for proper Typed Response handling.
+- **SSL (HTTPS):** Mandatory. The "Family Handshake" and "Login" modules require encryption for data integrity.
+- **Vite Config:** Ensure `base: './'` is set in `vite.config.ts` if deploying to a subfolder.
+- **Security Note:** In production, rename the `admin@demo.in` account and set a strong master key via the SQL `users` table.

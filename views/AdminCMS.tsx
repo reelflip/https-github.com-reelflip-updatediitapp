@@ -186,19 +186,19 @@ const CreationHub = ({ type, item, onClose, onSave, questions = [], chapters = [
                         <input name="name" value={formData.name} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black italic text-slate-800" placeholder="e.g. Thermodynamics" />
                     </InputGroup>
                     <InputGroup label="Unit Identification" icon={Hash}>
-                        <input name="unit" value={formData.unit} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800" placeholder="e.g. UNIT 03" />
+                        <input name="unit" value={formData.unit} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black italic text-slate-800" placeholder="e.g. UNIT 03" />
                     </InputGroup>
                  </div>
 
                  <InputGroup label="Subject Vertical" icon={BookOpen}>
-                    <select name="subject" value={formData.subject} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800">
+                    <select name="subject" value={formData.subject} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black italic text-slate-800">
                        <option value="Physics">Physics</option>
                        <option value="Chemistry">Chemistry</option>
                        <option value="Mathematics">Mathematics</option>
                     </select>
                  </InputGroup>
                  <InputGroup label="Preparation Status" icon={Activity}>
-                    <select name="status" value={formData.status} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800">
+                    <select name="status" value={formData.status} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black italic text-slate-800">
                        <option value="NOT_STARTED">Not Started</option>
                        <option value="LEARNING">Learning Phase</option>
                        <option value="REVISION">Revision Phase</option>
@@ -287,7 +287,7 @@ const CreationHub = ({ type, item, onClose, onSave, questions = [], chapters = [
                        <input name="name" value={formData.name} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black italic text-slate-800" placeholder="JEE Main Mock #4" />
                     </InputGroup>
                     <InputGroup label="Duration (Mins)" icon={Clock}>
-                       <input type="number" name="duration" value={formData.duration} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800" />
+                       <input type="number" name="duration" value={formData.duration} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black italic text-slate-800" />
                     </InputGroup>
                     <InputGroup label="Difficulty" icon={Zap}>
                        <select name="difficulty" value={formData.difficulty} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800">
@@ -395,24 +395,34 @@ const SystemHub = ({ data, setData }: { data: StudentData, setData: (d: StudentD
     try {
       const zip = new JSZip();
       const apiFolder = zip.folder("api");
-      if (apiFolder) {
+      const configFolder = apiFolder?.folder("config");
+      const controllerFolder = apiFolder?.folder("controllers");
+      const sqlFolder = apiFolder?.folder("sql");
+      
+      if (apiFolder && configFolder && controllerFolder && sqlFolder) {
         
-        // 1. config.php
-        apiFolder.file("config.php", `<?php
+        // 1. config/database.php
+        configFolder.file("database.php", `<?php
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'iitgrrprep_db');
+define('DB_NAME', 'iitgrrprep_v20');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 
-function getDB() {
-    try {
-        $pdo = new PDO("mysql:host=".DB_HOST.";dbname=".DB_NAME.";charset=utf8mb4", DB_USER, DB_PASS);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        return $pdo;
-    } catch(PDOException $e) {
-        header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-        exit;
+class Database {
+    private static $instance = null;
+    public static function getConnection() {
+        if (self::$instance === null) {
+            try {
+                self::$instance = new PDO("mysql:host=".DB_HOST.";dbname=".DB_NAME.";charset=utf8mb4", DB_USER, DB_PASS);
+                self::$instance->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                self::$instance->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+            } catch(PDOException $e) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'error' => 'DATABASE_CONNECT_FAULT: ' . $e->getMessage()]);
+                exit;
+            }
+        }
+        return self::$instance;
     }
 }
 
@@ -429,186 +439,199 @@ $input = json_decode(file_get_contents('php://input'), true) ?? [];
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') exit;
 `);
 
-        // 2. index.php
-        apiFolder.file("index.php", `<?php
-require_once 'config.php';
-response(['message' => 'IITGRRPREP Engine v18.0 Active']);
-`);
+        // 2. controllers/UserController.php
+        controllerFolder.file("UserController.php", `<?php
+require_once __DIR__ . '/../config/database.php';
 
-        // 3. login.php
-        apiFolder.file("login.php", `<?php
-require_once 'config.php';
-$db = getDB();
-$stmt = $db->prepare("SELECT * FROM users WHERE email = ? AND role = ?");
-$stmt->execute([$input['email'] ?? '', $input['role'] ?? '']);
-$user = $stmt->fetch(PDO::FETCH_ASSOC);
-if ($user) {
-    unset($user['password']);
-    response(['success' => true, 'user' => $user]);
-}
-response(['success' => false, 'error' => 'IDENTITY_MISMATCH']);
-`);
+class UserController {
+    public static function login($email, $role) {
+        $db = Database::getConnection();
+        $stmt = $db->prepare("SELECT * FROM users WHERE email = ? AND role = ?");
+        $stmt->execute([$email, $role]);
+        $user = $stmt->fetch();
+        if ($user) {
+            return ['success' => true, 'user' => $user];
+        }
+        return ['success' => false, 'error' => 'USER_NOT_FOUND'];
+    }
 
-        // 4. register.php
-        apiFolder.file("register.php", `<?php
-require_once 'config.php';
-$db = getDB();
-$id = 'USR-' . strtoupper(substr(md5(uniqid()), 0, 8));
-$stmt = $db->prepare("INSERT INTO users (id, name, email, role, institute, target_exam, target_year) VALUES (?,?,?,?,?,?,?)");
-$stmt->execute([$id, $input['name'], $input['email'], $input['role'], $input['institute'], $input['targetExam'], $input['targetYear']]);
-response(['success' => true, 'user' => ['id' => $id, 'name' => $input['name'], 'email' => $input['email'], 'role' => $input['role']]]);
-`);
-
-        // 5. get_dashboard.php
-        apiFolder.file("get_dashboard.php", `<?php
-require_once 'config.php';
-$db = getDB();
-$sid = $_GET['id'] ?? '';
-$stmt = $db->prepare("SELECT u.*, 
-    (SELECT JSON_ARRAYAGG(JSON_OBJECT('id', chapter_id, 'progress', progress, 'accuracy', accuracy, 'status', status, 'timeSpentNotes', time_spent_notes, 'timeSpentVideos', time_spent_videos, 'timeSpentPractice', time_spent_practice)) FROM chapters WHERE student_id = u.id) as chapters,
-    (SELECT JSON_ARRAYAGG(JSON_OBJECT('id', id, 'time', start_time, 'label', label, 'type', type)) FROM timetable WHERE student_id = u.id) as timetable
-    FROM users u WHERE u.id = ?");
-$stmt->execute([$sid]);
-$row = $stmt->fetch(PDO::FETCH_ASSOC);
-if ($row) {
-    $row['chapters'] = json_decode($row['chapters'] ?? '[]', true);
-    $row['smartPlan'] = ['schedule' => json_decode($row['timetable'] ?? '[]', true)];
-    response(['success' => true, 'data' => $row]);
-}
-response(['success' => false]);
-`);
-
-        // 6. save_timetable.php
-        apiFolder.file("save_timetable.php", `<?php
-require_once 'config.php';
-$db = getDB();
-$sid = $input['student_id'] ?? '';
-$db->prepare("DELETE FROM timetable WHERE student_id = ?")->execute([$sid]);
-foreach ($input['tasks'] as $t) {
-    $stmt = $db->prepare("INSERT INTO timetable (student_id, start_time, label, type) VALUES (?,?,?,?)");
-    $stmt->execute([$sid, $t['time'], $slot['label'] ?? $t['label'], $t['type']]);
-}
-response(['success' => true]);
-`);
-
-        // 7. sync_progress.php
-        apiFolder.file("sync_progress.php", `<?php
-require_once 'config.php';
-$db = getDB();
-$sid = $input['student_id'] ?? '';
-$cid = $input['chapter_id'] ?? '';
-$stmt = $db->prepare("INSERT INTO chapters (student_id, chapter_id, progress, accuracy, time_spent_notes, time_spent_videos, time_spent_practice) 
-    VALUES (?,?,?,?,?,?,?) 
-    ON DUPLICATE KEY UPDATE 
-    progress=VALUES(progress), accuracy=VALUES(accuracy), 
-    time_spent_notes=time_spent_notes+VALUES(time_spent_notes), 
-    time_spent_videos=time_spent_videos+VALUES(time_spent_videos), 
-    time_spent_practice=time_spent_practice+VALUES(time_spent_practice)");
-$stmt->execute([$sid, $cid, $input['progress'], $input['accuracy'], $input['notesDelta'] ?? 0, $input['videoDelta'] ?? 0, $input['practiceDelta'] ?? 0]);
-response(['success' => true]);
-`);
-
-        // 8. test_db.php (Connectivity verification)
-        apiFolder.file("test_db.php", `<?php
-require_once 'config.php';
-try {
-    $db = getDB();
-    response(['success' => true, 'message' => 'Uplink Established', 'db' => DB_NAME]);
-} catch(Exception $e) {
-    response(['success' => false, 'error' => $e->getMessage()]);
+    public static function register($data) {
+        $db = Database::getConnection();
+        $id = 'USR-' . strtoupper(substr(md5(uniqid()), 0, 8));
+        $stmt = $db->prepare("INSERT INTO users (id, name, email, role, institute, target_exam, target_year) VALUES (?,?,?,?,?,?,?)");
+        $stmt->execute([$id, $data['name'], $data['email'], $data['role'], $data['institute'], $data['targetExam'], $data['targetYear']]);
+        return ['success' => true, 'user' => ['id' => $id, 'name' => $data['name'], 'role' => $data['role']]];
+    }
 }
 `);
 
-        // 9. track_visit.php (Analytics)
-        apiFolder.file("track_visit.php", `<?php
-require_once 'config.php';
-$db = getDB();
-$sid = $input['student_id'] ?? 'GUEST';
-$stmt = $db->prepare("INSERT INTO analytics_visits (student_id, ip, agent) VALUES (?,?,?)");
-$stmt->execute([$sid, $_SERVER['REMOTE_ADDR'], $_SERVER['HTTP_USER_AGENT']]);
-response(['success' => true]);
-`);
+        // 3. controllers/AcademicController.php
+        controllerFolder.file("AcademicController.php", `<?php
+require_once __DIR__ . '/../config/database.php';
 
-        // Stubs for all remaining requested PHP files from image
-        const stubs = [
-            'contact.php', 'get_admin_stats.php', 'get_common.php', 'get_psychometric.php', 
-            'google_login.php', 'manage_backlogs.php', 'manage_broadcasts.php', 'manage_contact.php', 
-            'manage_content.php', 'manage_goals.php', 'manage_mistakes.php', 'manage_notes.php', 
-            'manage_settings.php', 'manage_syllabus.php', 'manage_tests.php', 'manage_users.php', 
-            'manage_videos.php', 'recover.php', 'respond_request.php', 'save_attempt.php', 
-            'save_psychometric.php', 'send_request.php'
+class AcademicController {
+    public static function getDashboard($studentId) {
+        $db = Database::getConnection();
+        
+        // Fetch User
+        $stmt = $db->prepare("SELECT * FROM users WHERE id = ?");
+        $stmt->execute([$studentId]);
+        $user = $stmt->fetch();
+        if (!$user) return ['success' => false, 'error' => 'NOT_FOUND'];
+
+        // Fetch Chapters
+        $stmt = $db->prepare("SELECT * FROM chapters WHERE student_id = ?");
+        $stmt->execute([$studentId]);
+        $chapters = $stmt->fetchAll();
+
+        // Fetch Test History
+        $stmt = $db->prepare("SELECT * FROM test_results WHERE student_id = ? ORDER BY date DESC");
+        $stmt->execute([$studentId]);
+        $history = $stmt->fetchAll();
+
+        // Fetch Psychometric
+        $stmt = $db->prepare("SELECT * FROM psychometric_history WHERE student_id = ? ORDER BY timestamp DESC LIMIT 5");
+        $stmt->execute([$studentId]);
+        $psych = $stmt->fetchAll();
+
+        return [
+            'success' => true,
+            'data' => array_merge($user, [
+                'chapters' => $chapters,
+                'testHistory' => $history,
+                'psychometricHistory' => $psych
+            ])
         ];
+    }
 
-        stubs.forEach(f => {
-            if (!apiFolder.file(f)) {
-                apiFolder.file(f, `<?php
-require_once 'config.php';
-// Production Endpoint: ${f}
-response(['success' => true, 'module' => '${f}', 'status' => 'Relational Layer Verified']);
+    public static function syncChapter($studentId, $chapterId, $metrics) {
+        $db = Database::getConnection();
+        $stmt = $db->prepare("INSERT INTO chapters (student_id, chapter_id, progress, accuracy, status) 
+            VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE progress=VALUES(progress), accuracy=VALUES(accuracy), status=VALUES(status)");
+        $stmt->execute([$studentId, $chapterId, $metrics['progress'], $metrics['accuracy'], $metrics['status']]);
+        return ['success' => true];
+    }
+}
 `);
-            }
-        });
 
-        // Massive SQL Master Schema
-        const sqlFolder = apiFolder.folder("sql");
-        sqlFolder?.file("full_production_schema_v18.sql", `
--- RELATIONAL INTELLIGENCE SYSTEM v18.0
+        // 4. Main Entry - api/index.php
+        apiFolder.file("index.php", `<?php
+require_once 'config/database.php';
+require_once 'controllers/UserController.php';
+require_once 'controllers/AcademicController.php';
+
+$path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$parts = explode('/', trim($path, '/'));
+$action = $_GET['action'] ?? '';
+
+// Simple Router
+if (strpos($path, 'login.php') !== false) {
+    response(UserController::login($input['email'], $input['role']));
+} elseif (strpos($path, 'register.php') !== false) {
+    response(UserController::register($input));
+} elseif (strpos($path, 'get_dashboard.php') !== false) {
+    response(AcademicController::getDashboard($_GET['id']));
+} elseif (strpos($path, 'sync_progress.php') !== false) {
+    response(AcademicController::syncChapter($input['student_id'], $input['chapter_id'], $input));
+} else {
+    response(['message' => 'SOLARIS CORE v20.0 - GATEWAY ACTIVE']);
+}
+`);
+
+        // 5. master_schema_v20.sql
+        sqlFolder.file("master_schema_v20.sql", `
+-- SOLARIS PRODUCTION ENGINE v20.0
 SET NAMES utf8mb4;
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id VARCHAR(50) PRIMARY KEY,
     email VARCHAR(100) UNIQUE NOT NULL,
     name VARCHAR(100) NOT NULL,
     password VARCHAR(255),
     role ENUM('STUDENT', 'PARENT', 'ADMIN') NOT NULL,
-    routine_data JSON,
     institute VARCHAR(100),
     target_exam VARCHAR(100),
     target_year VARCHAR(10),
+    birth_date DATE,
+    gender VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE chapters (
+CREATE TABLE IF NOT EXISTS chapters (
     student_id VARCHAR(50),
     chapter_id VARCHAR(50),
+    subject VARCHAR(50),
+    name VARCHAR(255),
     progress INT DEFAULT 0,
     accuracy INT DEFAULT 0,
     status VARCHAR(20) DEFAULT 'NOT_STARTED',
-    time_spent_notes INT DEFAULT 0,
-    time_spent_videos INT DEFAULT 0,
-    time_spent_practice INT DEFAULT 0,
+    time_spent INT DEFAULT 0,
     PRIMARY KEY (student_id, chapter_id),
     FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE timetable (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id VARCHAR(50),
-    start_time VARCHAR(20),
-    label VARCHAR(255),
-    type VARCHAR(20),
-    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE test_results (
+CREATE TABLE IF NOT EXISTS test_results (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id VARCHAR(50),
     test_id VARCHAR(50),
     test_name VARCHAR(255),
     score INT,
+    total_marks INT,
     accuracy INT,
     category VARCHAR(20),
     date DATE,
     FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE analytics_visits (
+CREATE TABLE IF NOT EXISTS psychometric_history (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id VARCHAR(50),
-    visit_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ip VARCHAR(45),
-    agent TEXT
+    stress INT,
+    focus INT,
+    motivation INT,
+    exam_fear INT,
+    timestamp DATE,
+    student_summary TEXT,
+    parent_advice TEXT,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS backlogs (
+    id VARCHAR(50) PRIMARY KEY,
+    student_id VARCHAR(50),
+    title VARCHAR(255),
+    subject VARCHAR(50),
+    priority VARCHAR(20),
+    status VARCHAR(20),
+    deadline DATE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS global_questions (
+    id VARCHAR(50) PRIMARY KEY,
+    topic_id VARCHAR(50),
+    subject VARCHAR(50),
+    text TEXT,
+    options JSON,
+    correct_answer INT,
+    explanation TEXT,
+    difficulty VARCHAR(20)
+);
+
+CREATE TABLE IF NOT EXISTS mock_tests (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(255),
+    duration INT,
+    total_marks INT,
+    difficulty VARCHAR(20),
+    category VARCHAR(20),
+    question_ids JSON,
+    chapter_ids JSON
+);
+
+-- SEED DATA
+INSERT INTO users (id, email, name, role) VALUES ('163110', 'ishu@gmail.com', 'Aryan Sharma', 'STUDENT');
+INSERT INTO chapters (student_id, chapter_id, subject, name, progress, accuracy) VALUES ('163110', 'p-units', 'Physics', 'Units & Measurements', 40, 85);
 `);
       }
 
@@ -616,7 +639,7 @@ CREATE TABLE analytics_visits (
       const url = window.URL.createObjectURL(content);
       const link = document.createElement('a');
       link.href = url;
-      link.download = "iitgrrprep-unified-backend-v18.0.zip";
+      link.download = "iitgrrprep-production-backend-v20.zip";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -784,10 +807,10 @@ CREATE TABLE analytics_visits (
              <div className="absolute top-0 right-0 p-12 opacity-5"><Server className="w-80 h-80" /></div>
              <div className="space-y-6 relative z-10 text-center md:text-left">
                 <h3 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase leading-none">Production <span className="text-indigo-500 italic font-black">Blueprint.</span></h3>
-                <p className="text-slate-400 font-medium max-w-lg italic">Complete 1:1 mapping of frontend models to backend controllers. All requested PHP endpoints and unified relational schema included.</p>
+                <p className="text-slate-400 font-medium max-w-lg italic">Complete 1:1 mapping of frontend models to backend controllers. All SQL tables (v20.0) and relational logic included in a single package.</p>
              </div>
              <div className="flex flex-col gap-4 relative z-10 w-full md:w-auto">
-                <button onClick={handleDownloadBuild} className="px-10 py-5 bg-white text-slate-900 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] flex items-center justify-center gap-4 hover:bg-indigo-50 transition-all shadow-2xl group"><Package className="w-6 h-6 group-hover:scale-110 transition-transform" /> Download Production ZIP</button>
+                <button onClick={handleDownloadBuild} className="px-10 py-5 bg-white text-slate-900 rounded-[2.5rem] font-black uppercase text-xs tracking-[0.3em] flex items-center justify-center gap-4 hover:bg-indigo-50 transition-all shadow-2xl group"><Package className="w-6 h-6 group-hover:scale-110 transition-transform" /> Download Production ZIP (v20)</button>
              </div>
           </div>
         </div>
