@@ -459,8 +459,19 @@ $db = Database::getConnection();
 $id = 'SOL-' . substr(str_shuffle('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 8);
 $hashed = password_hash($input['password'], PASSWORD_DEFAULT);
 try {
-    $stmt = $db->prepare("INSERT INTO users (id, email, name, password, role, institute, target_year) VALUES (?,?,?,?,?,?,?)");
-    $stmt->execute([$id, $input['email'], $input['name'], $hashed, $input['role'], $input['institute'] ?? '', $input['targetYear'] ?? '']);
+    $stmt = $db->prepare("INSERT INTO users (id, email, name, password, role, institute, target_exam, target_year, birth_date, gender) VALUES (?,?,?,?,?,?,?,?,?,?)");
+    $stmt->execute([
+        $id, 
+        $input['email'], 
+        $input['name'], 
+        $hashed, 
+        $input['role'], 
+        $input['institute'] ?? '', 
+        $input['targetExam'] ?? '', 
+        $input['targetYear'] ?? '', 
+        $input['birthDate'] ?? null, 
+        $input['gender'] ?? ''
+    ]);
     response(['success' => true, 'user' => ['id'=>$id, 'name'=>$input['name'], 'email'=>$input['email'], 'role'=>$input['role']]]);
 } catch(PDOException $e) { response(['success'=>false, 'error'=>'REGISTRATION_COLLISION'], 400); }`,
         "get_dashboard.php": `<?php require_once 'config.php';
@@ -471,6 +482,11 @@ $uData = $user->fetch();
 if (!$uData) response(['error' => 'NODE_NOT_FOUND'], 404);
 response(['success'=>true, 'data'=>[
     'id' => $id, 'name' => $uData['name'],
+    'institute' => $uData['institute'],
+    'targetExam' => $uData['target_exam'],
+    'targetYear' => $uData['target_year'],
+    'birthDate' => $uData['birth_date'],
+    'gender' => $uData['gender'],
     'chapters' => $db->query("SELECT * FROM chapters WHERE student_id='$id'")->fetchAll(),
     'backlogs' => $db->query("SELECT * FROM backlogs WHERE student_id='$id'")->fetchAll(),
     'flashcards' => $db->query("SELECT * FROM flashcards")->fetchAll(),
@@ -842,6 +858,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
         {activeTab === 'admin-questions' && <EntityList title="Question Bank" type="Question" data={data.questions} icon={Code2} color="emerald" btnLabel="Add Question" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Question'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-tests' && <EntityList title="Mock Test Suite" type="MockTest" data={data.mockTests} icon={Target} color="rose" btnLabel="Create Mock Test" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MockTest'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-flashcards' && <EntityList title="Revision Cards" type="Flashcard" data={data.flashcards} icon={Layers} color="blue" btnLabel="Add Card" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Flashcard'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-hacks' && <EntityList title="Memory Hacks" type="MemoryHack" data={data.memoryHacks} icon={Zap} color="amber" btnLabel="Add Hack" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MemoryHack'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-hacks' && <EntityList title="Memory Hacks" type="MemoryHack" data={data.memoryHacks} icon={Zap} color="amber" btnLabel="Add Hack" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MemoryHack'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-blogs' && <EntityList title="Resource Articles" type="Blog" data={data.blogs} icon={PenTool} color="indigo" btnLabel="New Post" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Blog'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-system' && <SystemHub data={data} setData={setData} />}
