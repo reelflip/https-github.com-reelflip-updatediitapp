@@ -3,9 +3,16 @@ import { StudentData } from "../types";
 import { GoogleGenAI } from "@google/genai";
 
 /**
- * SOLARIS INTELLIGENCE KERNEL v17.0
+ * SOLARIS INTELLIGENCE KERNEL v9.0
  * Multi-Engine Orchestration Layer
  */
+
+// Global declaration to resolve TS2580 while following platform security rules
+declare var process: {
+  env: {
+    API_KEY: string;
+  };
+};
 
 export interface ModelConfig {
   name: string;
@@ -83,12 +90,11 @@ CONTEXT:
 
 INSTRUCTIONS:
 1. Provide extremely helpful, technically precise academic explanations.
-2. Even if a query seems outside the typical IIT-JEE syllabus (like Biology or History), answer it accurately but briefly, then pivot back to how it might relate to JEE concepts (e.g., Darwin's theory as an analogy for problem-solving evolution).
-3. Do NOT lecture the student about "misalignment" or "deviations" unless they are asking totally inappropriate questions. Be a mentor, not a gatekeeper.
-4. Format responses using Markdown for high readability. Use bolding for key terms.`;
+2. Even if a query seems outside the typical IIT-JEE syllabus (like Biology or History), answer it accurately but briefly, then pivot back to how it might relate to JEE concepts.
+3. Do NOT lecture the student about "misalignment" unless necessary.
+4. Format responses using Markdown for high readability.`;
 };
 
-// Added missing calculateConfidenceLevel export used in TestsView
 export const calculateConfidenceLevel = (progress: number, accuracy: number) => {
   const score = Math.round((accuracy * 0.7) + (progress * 0.3));
   if (score > 80) return {
