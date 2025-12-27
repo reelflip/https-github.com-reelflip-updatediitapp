@@ -467,7 +467,18 @@ $id = 'SOL-' . substr(str_shuffle('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 8)
 $hashed = password_hash($input['password'] ?? 'pass', PASSWORD_DEFAULT);
 try {
     $stmt = $db->prepare("INSERT INTO users (id, email, name, password, role, institute, target_exam, target_year, birth_date, gender) VALUES (?,?,?,?,?,?,?,?,?,?)");
-    $stmt->execute([$id, $input['email'], $input['name'], $hashed, $input['role'], $input['institute'] ?? '', $input['targetExam'] ?? '', $input['targetYear'] ?? '', $input['birthDate'] ?? null, $input['gender'] ?? '']);
+    $stmt->execute([
+        $id, 
+        $input['email'], 
+        $input['name'], 
+        $hashed, 
+        $input['role'], 
+        $input['institute'] ?? '', 
+        $input['targetExam'] ?? '', 
+        $input['targetYear'] ?? '', 
+        $input['birthDate'] ?? null, 
+        $input['gender'] ?? ''
+    ]);
     response(['success' => true, 'user' => ['id'=>$id, 'name'=>$input['name'], 'email'=>$input['email'], 'role'=>$input['role']]]);
 } catch(PDOException $e) { response(['success'=>false, 'error'=>'REGISTRATION_COLLISION', 'msg'=>$e->getMessage()], 400); }`,
         "get_dashboard.php": `<?php require_once 'config.php';

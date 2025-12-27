@@ -17,19 +17,35 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
 
   useEffect(() => {
     const fetchAdvice = async () => {
+      if (!data || !data.chapters || data.chapters.length === 0) return;
       setLoadingAdvice(true);
-      const res = await getSmartStudyAdvice(data);
-      setAdvice(res);
+      try {
+        const res = await getSmartStudyAdvice(data);
+        setAdvice(res);
+      } catch (err) {
+        console.error("AI Advice failed", err);
+      }
       setLoadingAdvice(false);
     };
     fetchAdvice();
   }, [data]);
 
-  const totalTime = (Object.values(data.timeSummary) as number[]).reduce((a, b) => a + b, 0);
-  const confidenceIndex = Math.round(
-    (data.chapters.reduce((acc, c) => acc + c.accuracy, 0) / data.chapters.length + 
-    (10 - (data.psychometricHistory[data.psychometricHistory.length-1]?.stress || 5)) * 10) / 2
-  );
+  // Safe Accessors
+  const chapters = data?.chapters || [];
+  const psychHistory = data?.psychometricHistory || [];
+  const timeSummary = data?.timeSummary || { notes: 0, videos: 0, practice: 0, tests: 0 };
+
+  const totalTime = (Object.values(timeSummary) as number[]).reduce((a, b) => a + (b || 0), 0);
+  
+  const avgAccuracy = chapters.length > 0 
+    ? (chapters.reduce((acc, c) => acc + (c.accuracy || 0), 0) / chapters.length) 
+    : 0;
+    
+  const currentStress = psychHistory.length > 0 
+    ? (psychHistory[psychHistory.length - 1]?.stress || 5) 
+    : 5;
+
+  const confidenceIndex = Math.round((avgAccuracy + (10 - currentStress) * 10) / 2);
 
   const getForgettingColor = (accuracy: number) => {
     if (accuracy > 80) return '#10b981';
@@ -37,7 +53,9 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
     return '#f43f5e';
   };
 
-  const weakChapter = data.chapters.find(c => c.accuracy < 60) || data.chapters[0];
+  const weakChapter = chapters.length > 0 
+    ? (chapters.find(c => c.accuracy < 60) || null) 
+    : null;
 
   return (
     <div className="space-y-12 animate-in fade-in duration-700 pb-32">
@@ -47,14 +65,14 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
             <div className="w-12 h-12 bg-emerald-50 text-[#82c341] rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-inner"><Target className="w-6 h-6" /></div>
             <div>
                <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Confidence Index</div>
-               <div className="text-4xl font-black text-[#0a1128] font-space italic">{confidenceIndex}%</div>
+               <div className="text-4xl font-black text-[#0a1128] font-space italic">{confidenceIndex || 0}%</div>
             </div>
          </div>
          <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm flex flex-col justify-between group hover:border-indigo-400 transition-all">
             <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-inner"><Timer className="w-6 h-6" /></div>
             <div>
                <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Effort Log</div>
-               <div className="text-4xl font-black text-[#0a1128] font-space italic">{Math.round(totalTime / 60)}h</div>
+               <div className="text-4xl font-black text-[#0a1128] font-space italic">{Math.round(totalTime / 60) || 0}h</div>
             </div>
          </div>
          <div className="md:col-span-2 bg-[#0a1128] p-10 rounded-[3.5rem] text-white shadow-2xl relative overflow-hidden group">
@@ -62,11 +80,14 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
             <div className="relative z-10 flex h-full items-center justify-between gap-10">
                <div className="space-y-2">
                   <div className="text-[10px] font-black uppercase text-indigo-400 tracking-[0.4em] mb-4 flex items-center gap-3">
-                     <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]"></div> Active Session: {data.name}
+                     <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]"></div> Active Session: {data?.name || 'Guest'}
                   </div>
                   <h3 className="text-4xl font-black italic tracking-tighter uppercase font-space">Strategic <br /> <span className="text-[#82c341]">Dominance.</span></h3>
                </div>
-               <button className="p-6 bg-white/10 rounded-[2.5rem] border border-white/20 hover:bg-white hover:text-[#0a1128] transition-all shadow-xl">
+               <button 
+                  onClick={() => window.dispatchEvent(new CustomEvent('changeTab', { detail: 'learn' }))}
+                  className="p-6 bg-white/10 rounded-[2.5rem] border border-white/20 hover:bg-white hover:text-[#0a1128] transition-all shadow-xl"
+               >
                   <ChevronRight className="w-8 h-8" />
                </button>
             </div>
@@ -86,22 +107,28 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
                  </div>
               </div>
               <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={data.chapters} barGap={8}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" hide axisLine={false} tickLine={false} />
-                    <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'bold', fill: '#94a3b8'}} />
-                    <Tooltip 
-                      cursor={{fill: '#f8fafc'}}
-                      contentStyle={{borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.15)'}}
-                    />
-                    <Bar dataKey="accuracy" radius={[8, 8, 0, 0]} barSize={32}>
-                      {data.chapters.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={getForgettingColor(entry.accuracy)} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                {chapters.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chapters} barGap={8}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="name" hide axisLine={false} tickLine={false} />
+                      <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'bold', fill: '#94a3b8'}} />
+                      <Tooltip 
+                        cursor={{fill: '#f8fafc'}}
+                        contentStyle={{borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.15)'}}
+                      />
+                      <Bar dataKey="accuracy" radius={[8, 8, 0, 0]} barSize={32}>
+                        {chapters.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={getForgettingColor(entry.accuracy || 0)} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-slate-300 font-black uppercase text-[10px] tracking-widest border-2 border-dashed border-slate-50 rounded-[3rem]">
+                    Initialize Syllabus Tracking to Visualize Heatmap
+                  </div>
+                )}
               </div>
            </section>
 
@@ -109,17 +136,21 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
               <div className="bg-[#f8fafc] p-12 rounded-[4rem] border border-slate-100 shadow-inner space-y-10">
                  <h4 className="text-[10px] font-black uppercase text-[#0a1128] tracking-[0.4em] flex items-center gap-3"><Activity className="w-4 h-4 text-emerald-500" /> Mastery Projections</h4>
                  <div className="space-y-8">
-                    {data.chapters.slice(0, 3).map((ch, i) => (
-                      <div key={i} className="space-y-2">
-                         <div className="flex justify-between items-end">
-                            <span className="text-xs font-black text-slate-500 italic tracking-tight">{ch.name}</span>
-                            <span className="text-lg font-black text-[#0a1128]">{ch.progress}%</span>
-                         </div>
-                         <div className="w-full h-2 bg-white rounded-full overflow-hidden shadow-inner border border-slate-50">
-                            <div className="h-full bg-indigo-600 transition-all duration-[1.5s]" style={{ width: `${ch.progress}%` }}></div>
-                         </div>
-                      </div>
-                    ))}
+                    {chapters.length > 0 ? (
+                      chapters.slice(0, 3).map((ch, i) => (
+                        <div key={i} className="space-y-2">
+                           <div className="flex justify-between items-end">
+                              <span className="text-xs font-black text-slate-500 italic tracking-tight">{ch.name}</span>
+                              <span className="text-lg font-black text-[#0a1128]">{ch.progress}%</span>
+                           </div>
+                           <div className="w-full h-2 bg-white rounded-full overflow-hidden shadow-inner border border-slate-50">
+                              <div className="h-full bg-indigo-600 transition-all duration-[1.5s]" style={{ width: `${ch.progress}%` }}></div>
+                           </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-xs text-slate-400 italic">Tracking inactive. Go to Syllabus to start.</div>
+                    )}
                  </div>
               </div>
 
@@ -127,10 +158,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
                  <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-125 transition-transform duration-[5s]"><Box className="w-48 h-48" /></div>
                  <h4 className="text-[10px] font-black uppercase text-indigo-400 tracking-[0.4em] flex items-center gap-3"><Sparkles className="w-4 h-4 text-[#82c341]" /> Tactical Hint</h4>
                  <p className="text-xl font-medium leading-relaxed italic text-indigo-100 relative z-10">
-                   "Your drift in {weakChapter?.name} is caused by a focus gap in morning slots. Shift your Calculus drills to 08:00 AM for maximum retention."
+                   {weakChapter 
+                    ? `"Significant precision drift detected in ${weakChapter.name}. Switch from Theory to Drill-Session '09' for immediate stability."`
+                    : `"Establish your academic roadmap to unlock real-time tactical directives from the Solaris v9.5 kernel."`}
                  </p>
                  <button 
-                  onClick={() => window.dispatchEvent(new CustomEvent('changeTab', { detail: 'mistakes' }))}
+                  onClick={() => window.dispatchEvent(new CustomEvent('changeTab', { detail: 'learn' }))}
                   className="w-full py-5 bg-white text-[#0a1128] rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-2xl hover:scale-105 transition-all relative z-10"
                  >
                     Address Weak Zones
@@ -153,7 +186,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
               {loadingAdvice ? (
                 <div className="flex-1 flex flex-col items-center justify-center space-y-4">
                    <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Computing Logic...</p>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Syncing Intel...</p>
                 </div>
               ) : advice ? (
                 <div className="flex-1 flex flex-col justify-between space-y-12">
@@ -161,7 +194,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
                       <div>
                          <div className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-6">Immediate Priorities</div>
                          <div className="space-y-6">
-                            {advice.priorities.map((p: string, i: number) => (
+                            {(advice.priorities || []).map((p: string, i: number) => (
                               <div key={i} className="flex gap-5 group">
                                  <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px] font-black shrink-0 border border-indigo-100 transition-all group-hover:bg-[#0a1128] group-hover:text-white">0{i+1}</div>
                                  <p className="text-sm font-bold text-slate-600 italic leading-relaxed group-hover:text-[#0a1128] transition-colors">"{p}"</p>
@@ -172,15 +205,26 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
 
                       <div className="p-8 bg-[#f8fafc] rounded-[2.5rem] border border-slate-100 shadow-inner">
                          <div className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-4">Mindset State</div>
-                         <p className="text-base font-bold text-[#0a1128] italic leading-relaxed">"{advice.mindsetTip}"</p>
+                         <p className="text-base font-bold text-[#0a1128] italic leading-relaxed">"{advice.mindsetTip || "Focus on consistency today."}"</p>
                       </div>
                    </div>
 
                    <button className="w-full py-6 bg-slate-50 border border-slate-200 text-[#0a1128] rounded-[2rem] font-black text-[10px] uppercase tracking-[0.3em] hover:bg-[#0a1128] hover:text-white transition-all shadow-sm">
-                      Establish Sync
+                      Establish Direct Sync
                    </button>
                 </div>
-              ) : null}
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4">
+                   <Sparkles className="w-8 h-8 text-slate-200" />
+                   <p className="text-xs text-slate-400 font-bold italic">Waiting for Telemetry...</p>
+                   <button 
+                    onClick={() => window.dispatchEvent(new CustomEvent('changeTab', { detail: 'learn' }))}
+                    className="mt-4 px-6 py-2 bg-indigo-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest"
+                   >
+                    Setup Syllabus Node
+                   </button>
+                </div>
+              )}
            </section>
         </div>
       </div>

@@ -14,19 +14,20 @@ import {
 
 const AnalyticsView: React.FC<{ data: StudentData }> = ({ data }) => {
   const subjects: Subject[] = ['Physics', 'Chemistry', 'Mathematics'];
+  const chapters = data.chapters || [];
   
   const subjectMastery = subjects.map(s => {
-    const chapters = data.chapters.filter(c => c.subject === s);
-    const avgProgress = chapters.length > 0 ? Math.round(chapters.reduce((acc, c) => acc + c.progress, 0) / chapters.length) : 0;
-    const avgAccuracy = chapters.length > 0 ? Math.round(chapters.reduce((acc, c) => acc + (c.accuracy || 0), 0) / chapters.length) : 0;
+    const sChapters = chapters.filter(c => c.subject === s);
+    const avgProgress = sChapters.length > 0 ? Math.round(sChapters.reduce((acc, c) => acc + (c.progress || 0), 0) / sChapters.length) : 0;
+    const avgAccuracy = sChapters.length > 0 ? Math.round(sChapters.reduce((acc, c) => acc + (c.accuracy || 0), 0) / sChapters.length) : 0;
     return { subject: s, progress: avgProgress, accuracy: avgAccuracy };
   });
 
   // Activity Breakdown Data
-  const totalNotesTime = data.chapters.reduce((acc, c) => acc + (c.timeSpentNotes || 0), 0);
-  const totalVideoTime = data.chapters.reduce((acc, c) => acc + (c.timeSpentVideos || 0), 0);
-  const totalPracticeTime = data.chapters.reduce((acc, c) => acc + (c.timeSpentPractice || 0), 0);
-  const totalTestTime = data.chapters.reduce((acc, c) => acc + (c.timeSpentTests || 0), 0);
+  const totalNotesTime = chapters.reduce((acc, c) => acc + (c.timeSpentNotes || 0), 0);
+  const totalVideoTime = chapters.reduce((acc, c) => acc + (c.timeSpentVideos || 0), 0);
+  const totalPracticeTime = chapters.reduce((acc, c) => acc + (c.timeSpentPractice || 0), 0);
+  const totalTestTime = chapters.reduce((acc, c) => acc + (c.timeSpentTests || 0), 0);
 
   const activityDistribution = [
     { name: 'Theory (Notes)', value: totalNotesTime, color: '#6366f1', icon: BookOpen },
@@ -37,14 +38,17 @@ const AnalyticsView: React.FC<{ data: StudentData }> = ({ data }) => {
 
   const formatHrs = (s: number) => Math.round(s / 3600);
 
+  const totalEffort = chapters.reduce((a,c) => a + (c.timeSpent || 0), 0);
+  const avgAccuracyTotal = chapters.length > 0 ? Math.round(chapters.reduce((a,c) => a + (c.accuracy || 0), 0) / chapters.length) : 0;
+
   return (
     <div className="space-y-10 animate-in fade-in duration-700 pb-20">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Total Effort', val: `${formatHrs(data.chapters.reduce((a,c)=>a+c.timeSpent, 0))}h`, sub: 'Across 3 Subjects', icon: Clock, color: 'indigo' },
-          { label: 'Retention Strength', val: `${Math.round(data.chapters.reduce((a,c)=>a+c.accuracy,0)/data.chapters.length)}%`, sub: 'Avg Accuracy', icon: Brain, color: 'emerald' },
-          { label: 'Study Velocity', val: `${Math.round((totalPracticeTime+totalTestTime)/3600)}h`, sub: 'Active Problem Solving', icon: Activity, color: 'blue' },
-          { label: 'Passive Load', val: `${Math.round((totalNotesTime+totalVideoTime)/3600)}h`, sub: 'Theory & Lectures', icon: ShieldAlert, color: 'amber' },
+          { label: 'Total Effort', val: `${formatHrs(totalEffort)}h`, sub: 'Across 3 Subjects', icon: Clock, color: 'indigo' },
+          { label: 'Retention Strength', val: `${avgAccuracyTotal}%`, sub: 'Avg Accuracy', icon: Brain, color: 'emerald' },
+          { label: 'Study Velocity', val: `${Math.round((totalPracticeTime + totalTestTime) / 3600)}h`, sub: 'Active Problem Solving', icon: Activity, color: 'blue' },
+          { label: 'Passive Load', val: `${Math.round((totalNotesTime + totalVideoTime) / 3600)}h`, sub: 'Theory & Lectures', icon: ShieldAlert, color: 'amber' },
         ].map((kpi, i) => (
           <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm group hover:border-indigo-400 transition-all">
              <div className={`w-12 h-12 bg-${kpi.color}-50 text-${kpi.color}-600 rounded-2xl flex items-center justify-center mb-6`}><kpi.icon className="w-6 h-6" /></div>
@@ -83,24 +87,32 @@ const AnalyticsView: React.FC<{ data: StudentData }> = ({ data }) => {
            <p className="text-slate-400 text-xs mb-8">Effort distribution across modalities</p>
            
            <div className="h-64 relative flex-1">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={activityDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={8} dataKey="value">
-                    {activityDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={{borderRadius: '16px', background: '#1e293b', border: 'none', color: '#fff'}} itemStyle={{color: '#fff'}} formatter={(v:any) => `${Math.round(v/3600)}h`} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
-                 <div className="text-2xl font-black">LOGS</div>
-                 <div className="text-[8px] font-black uppercase text-slate-500">Master Stream</div>
-              </div>
+              {activityDistribution.length > 0 ? (
+                <>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={activityDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={8} dataKey="value">
+                        {activityDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{borderRadius: '16px', background: '#1e293b', border: 'none', color: '#fff'}} itemStyle={{color: '#fff'}} formatter={(v:any) => `${Math.round(v/3600)}h`} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none">
+                     <div className="text-2xl font-black">LOGS</div>
+                     <div className="text-[8px] font-black uppercase text-slate-500">Master Stream</div>
+                  </div>
+                </>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-slate-600 italic text-[10px] font-black uppercase tracking-widest text-center border border-white/5 rounded-3xl">
+                   No activity logged
+                </div>
+              )}
            </div>
 
            <div className="space-y-4 pt-6 border-t border-white/10">
-              {activityDistribution.map((d, i) => (
+              {activityDistribution.length > 0 ? activityDistribution.map((d, i) => (
                 <div key={i} className="flex justify-between items-center">
                    <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full" style={{backgroundColor: d.color}}></div>
@@ -108,7 +120,9 @@ const AnalyticsView: React.FC<{ data: StudentData }> = ({ data }) => {
                    </div>
                    <span className="text-xs font-black">{Math.round(d.value / 3600)}h</span>
                 </div>
-              ))}
+              )) : (
+                <p className="text-[9px] font-bold text-slate-500 uppercase italic">Waiting for student interaction data...</p>
+              )}
            </div>
         </div>
       </div>

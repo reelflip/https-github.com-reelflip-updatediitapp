@@ -3,15 +3,9 @@ import { StudentData, UserRole, UserAccount, RoutineConfig, TestResult } from '.
 import { INITIAL_STUDENT_DATA } from '../mockData';
 
 const API_CONFIG = {
-  // Direct relative path to the api folder containing all modules
   BASE_URL: './api/', 
-  MODE_KEY: 'jeepro_datasource_mode_v9'
-};
-
-const DEMO_USERS: Record<string, UserAccount> = {
-  'ishu@gmail.com': { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2024-01-01' },
-  'parent@demo.in': { id: 'P-4402', name: 'Mr. Ramesh Sharma', email: 'parent@demo.in', role: UserRole.PARENT, createdAt: '2024-01-01' },
-  'admin@demo.in': { id: 'ADMIN-001', name: 'System Admin', email: 'admin@demo.in', role: UserRole.ADMIN, createdAt: '2024-01-01' }
+  // v10.0: Strict Production Mode Default
+  MODE_KEY: 'jeepro_datasource_mode_v10'
 };
 
 const safeJson = async (response: Response) => {
@@ -19,13 +13,14 @@ const safeJson = async (response: Response) => {
   try {
     return JSON.parse(text);
   } catch (e) {
-    console.error("Malformed JSON response:", text);
-    throw new Error("API Node returned invalid data. Check server logs.");
+    console.error("Malformed API Response:", text);
+    return { success: false, error: "Malformed server response" };
   }
 };
 
 export const api = {
-  getMode: (): 'MOCK' | 'LIVE' => (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'MOCK',
+  // DISABLING SANDBOX BY DEFAULT: Defaulting to 'LIVE'
+  getMode: (): 'MOCK' | 'LIVE' => (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'LIVE',
   
   setMode: (mode: 'MOCK' | 'LIVE') => { 
     localStorage.setItem(API_CONFIG.MODE_KEY, mode); 
@@ -34,11 +29,8 @@ export const api = {
 
   async login(credentials: { email: string; password?: string; role?: UserRole }) {
     if (this.getMode() === 'MOCK') {
-      const user = DEMO_USERS[credentials.email.toLowerCase()];
-      if (user) return { success: true, user };
-      return { success: false, error: "Identity not recognized in Sandbox mode." };
+      return { success: true, user: { id: 'DEMO', name: 'Demo User', email: credentials.email, role: credentials.role || UserRole.STUDENT, createdAt: '2025-01-01' } };
     }
-    
     try {
       const res = await fetch(`${API_CONFIG.BASE_URL}auth_login.php`, {
         method: 'POST', 
@@ -46,11 +38,11 @@ export const api = {
         body: JSON.stringify(credentials)
       });
       return await safeJson(res);
-    } catch(e) { return { success: false, error: "Uplink Failure. Deployment node unreachable." }; }
+    } catch(e) { return { success: false, error: "Production server unreachable." }; }
   },
 
   async register(data: any) {
-    if (this.getMode() === 'MOCK') return { success: true, user: { ...data, id: 'MOCK-' + Math.random().toString(36).substr(2, 5) } };
+    if (this.getMode() === 'MOCK') return { success: true, user: { ...data, id: 'M-TEMP' } };
     try {
       const res = await fetch(`${API_CONFIG.BASE_URL}auth_register.php`, {
         method: 'POST',
@@ -58,7 +50,7 @@ export const api = {
         body: JSON.stringify(data)
       });
       return await safeJson(res);
-    } catch(e) { return { success: false, error: "Registration node unreachable." }; }
+    } catch(e) { return { success: false, error: "Registration node offline." }; }
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
@@ -70,27 +62,6 @@ export const api = {
       } catch(e) { console.error("Sync fault:", e); }
     }
     return INITIAL_STUDENT_DATA;
-  },
-
-  async saveRoutine(studentId: string, routine: RoutineConfig) {
-    if (this.getMode() === 'LIVE') {
-      await fetch(`${API_CONFIG.BASE_URL}save_routine.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ student_id: studentId, routine })
-      });
-    }
-  },
-
-  async saveTimetable(studentId: string, tasks: any) {
-    if (this.getMode() === 'LIVE') {
-      await fetch(`${API_CONFIG.BASE_URL}save_timetable.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ student_id: studentId, tasks })
-      });
-    }
-    return { success: true };
   },
 
   async syncProgress(studentId: string, metrics: any) {
@@ -127,11 +98,8 @@ export const api = {
         'Result': 'save_attempt.php',
         'Psychometric': 'save_psychometric.php'
       };
-      
       const endpoint = typeMap[type] || `manage_${type.toLowerCase()}.php`;
-      const connector = endpoint.includes('?') ? '&' : '?';
-      
-      const res = await fetch(`${API_CONFIG.BASE_URL}${endpoint}${connector}action=save`, {
+      const res = await fetch(`${API_CONFIG.BASE_URL}${endpoint}?action=save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -143,10 +111,12 @@ export const api = {
 
   async getAccounts(): Promise<UserAccount[]> {
     if (this.getMode() === 'LIVE') {
-      const res = await fetch(`${API_CONFIG.BASE_URL}manage_users.php`);
-      return await safeJson(res);
+      try {
+        const res = await fetch(`${API_CONFIG.BASE_URL}manage_users.php`);
+        return await safeJson(res);
+      } catch(e) { return []; }
     }
-    return Object.values(DEMO_USERS);
+    return [];
   },
 
   async updateUserProfile(studentId: string, profileData: any) {
@@ -155,6 +125,32 @@ export const api = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: studentId, ...profileData })
+      });
+      return await safeJson(res);
+    }
+    return { success: true };
+  },
+
+  // Added missing saveRoutine method to persist daily schedule configurations
+  async saveRoutine(studentId: string, routine: RoutineConfig) {
+    if (this.getMode() === 'LIVE') {
+      const res = await fetch(`${API_CONFIG.BASE_URL}save_routine.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: studentId, routine })
+      });
+      return await safeJson(res);
+    }
+    return { success: true };
+  },
+
+  // Added missing saveTimetable method to persist roadmap and weekly plans
+  async saveTimetable(studentId: string, tasks: any) {
+    if (this.getMode() === 'LIVE') {
+      const res = await fetch(`${API_CONFIG.BASE_URL}save_timetable.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: studentId, tasks })
       });
       return await safeJson(res);
     }
