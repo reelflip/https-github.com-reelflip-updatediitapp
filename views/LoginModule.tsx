@@ -14,6 +14,13 @@ interface LoginModuleProps {
   onNavigate?: (tab: string) => void;
 }
 
+// Global declaration to handle dynamic hiding in index.html
+declare global {
+  interface Window {
+    HIDE_DEMO_SIGNIN?: boolean;
+  }
+}
+
 const INSTITUTES = [
   "Allen Career Institute", "FIITJEE", "Resonance", "Aakash Institute",
   "Physics Wallah (PW)", "Narayana Educational Institutions", "Sri Chaitanya",
@@ -26,7 +33,6 @@ const NATIONAL_EXAMS = [
 
 const TARGET_YEARS = ["2025", "2026", "2027", "2028"];
 
-// Components moved outside to prevent re-creation and focus loss during typing
 const InputField = ({ icon: Icon, type, placeholder, value, onChange, label }: any) => (
   <div className="space-y-2">
     {label && <label className="text-[9px] font-black uppercase text-slate-400 ml-4 tracking-widest">{label}</label>}
@@ -145,7 +151,6 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
       
       <main className="flex-1 flex flex-col lg:flex-row items-center justify-center p-6 lg:p-12 gap-12 lg:gap-24 max-w-7xl mx-auto w-full relative z-10">
         
-        {/* LEFT BRANDING */}
         <div className="lg:w-1/2 flex flex-col items-center lg:items-start text-center lg:text-left space-y-8 animate-in slide-in-from-left duration-1000">
            <div className="space-y-4">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-50 border border-indigo-100 rounded-full shadow-sm">
@@ -170,7 +175,6 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
            </div>
         </div>
 
-        {/* RIGHT FORM */}
         <div className="w-full max-w-xl space-y-10 animate-in slide-in-from-right duration-1000 py-10">
            <div className="bg-white rounded-[4rem] p-8 md:p-12 space-y-8 relative overflow-hidden shadow-[0_40px_80px_-20px_rgba(0,0,0,0.08)] border border-slate-50 max-h-[90vh] overflow-y-auto custom-scrollbar">
               
@@ -181,7 +185,6 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.4em]">Integrated JEE Ecosystem</p>
               </div>
 
-              {/* ROLE TOGGLE (REGISTRATION ONLY) */}
               {isAuthMode === 'register' && (
                 <div className="flex bg-slate-50 p-1.5 rounded-[1.8rem] border border-slate-100 shadow-inner">
                    <button 
@@ -287,16 +290,19 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
                 </div>
               </div>
 
-              <div className="pt-8 border-t border-slate-50 space-y-6 pb-4">
-                 <div className="text-center text-[9px] font-black uppercase text-slate-300 tracking-[0.4em]">Simulated Quick Entry</div>
-                 <div className="flex gap-2">
-                    {[{ role: UserRole.STUDENT, email: 'ishu@gmail.com', label: 'Aspirant' }, { role: UserRole.PARENT, email: 'parent@demo.in', label: 'Guardian' }, { role: UserRole.ADMIN, email: 'admin@demo.in', label: 'Sentinel' }].map(demo => (
-                      <button key={demo.label} onClick={() => loginAsDemo(demo.email)} className="flex-1 py-3 bg-slate-50 rounded-2xl text-[9px] font-black uppercase tracking-widest text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-transparent hover:border-indigo-100">
-                         {demo.label}
-                      </button>
-                    ))}
-                 </div>
-              </div>
+              {/* SIMULATED QUICK ENTRY: Conditioned for visibility control via index.html flag */}
+              {!window.HIDE_DEMO_SIGNIN && (
+                <div className="pt-8 border-t border-slate-50 space-y-6 pb-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                   <div className="text-center text-[9px] font-black uppercase text-slate-300 tracking-[0.4em]">Simulated Quick Entry</div>
+                   <div className="flex gap-2">
+                      {[{ role: UserRole.STUDENT, email: 'ishu@gmail.com', label: 'Aspirant' }, { role: UserRole.PARENT, email: 'parent@demo.in', label: 'Guardian' }, { role: UserRole.ADMIN, email: 'admin@demo.in', label: 'Sentinel' }].map(demo => (
+                        <button key={demo.label} onClick={() => loginAsDemo(demo.email)} className="flex-1 py-3 bg-slate-50 rounded-2xl text-[9px] font-black uppercase tracking-widest text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all border border-transparent hover:border-indigo-100">
+                           {demo.label}
+                        </button>
+                      ))}
+                   </div>
+                </div>
+              )}
            </div>
         </div>
       </main>

@@ -42,14 +42,27 @@ const App: React.FC = () => {
     try {
       const savedUser = localStorage.getItem('jeepro_user');
       const savedData = localStorage.getItem('jeepro_student_data');
-      if (savedUser) {
+      
+      if (savedUser && savedUser !== 'undefined') {
         const parsedUser = JSON.parse(savedUser);
-        setUser(parsedUser);
-        setRole(parsedUser.role);
-        if (savedData) setStudentData(JSON.parse(savedData));
-        else loadUserData(parsedUser);
+        if (parsedUser && parsedUser.id) {
+          setUser(parsedUser);
+          setRole(parsedUser.role);
+          
+          if (savedData && savedData !== 'undefined') {
+            const parsedData = JSON.parse(savedData);
+            if (parsedData && parsedData.chapters) {
+              setStudentData(parsedData);
+            } else {
+              loadUserData(parsedUser);
+            }
+          } else {
+            loadUserData(parsedUser);
+          }
+        }
       }
     } catch (e) {
+      console.error("Storage Recovery Failed:", e);
       localStorage.removeItem('jeepro_user');
       localStorage.removeItem('jeepro_student_data');
     }
@@ -72,7 +85,10 @@ const App: React.FC = () => {
     setRole(authenticatedUser.role);
     localStorage.setItem('jeepro_user', JSON.stringify(authenticatedUser));
     loadUserData(authenticatedUser);
-    setActiveTab(authenticatedUser.role === UserRole.ADMIN ? 'admin-overview' : authenticatedUser.role === UserRole.PARENT ? 'parent-status' : 'dashboard');
+    
+    const targetTab = authenticatedUser.role === UserRole.ADMIN ? 'admin-overview' : 
+                      authenticatedUser.role === UserRole.PARENT ? 'parent-status' : 'dashboard';
+    setActiveTab(targetTab);
   };
 
   const handleLogout = () => {
@@ -174,14 +190,14 @@ const App: React.FC = () => {
               <div className="flex items-center gap-1">
                  <span className="font-black tracking-tight text-2xl uppercase text-[#2b4c8c]">IITGRRPREP</span>
               </div>
-              <p className="text-xs font-bold text-slate-400">Solaris v9.0: Global Engineering Ecosystem.</p>
+              <p className="text-xs font-bold text-slate-400">Solaris v10.5: Elite Engineering Ecosystem.</p>
             </div>
             <div className="flex flex-wrap justify-center gap-8 md:gap-12">
                {['About', 'Features', 'Privacy', 'Deployment'].map(link => (
                  <button key={link} className="text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors">{link}</button>
                ))}
             </div>
-            <p className="text-xs font-bold text-slate-300">&copy; 2025 Solaris Ultimate v9.0. Built for Toppers.</p>
+            <p className="text-xs font-bold text-slate-300">&copy; 2025 Solaris Ultimate v10.5. Built for Toppers.</p>
          </div>
       </footer>
     </div>
