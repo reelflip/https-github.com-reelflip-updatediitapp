@@ -1,326 +1,386 @@
+
 import React, { useState, useMemo } from 'react';
-import { StudentData, RoutineConfig, Chapter } from '../types';
+import { StudentData, RoutineConfig, Chapter, Subject } from '../types';
 import { 
   Calendar, Clock, Coffee, Zap, Moon, Sun, School, BookOpen, 
-  Settings2, Target, TrendingUp, ChevronRight, Sparkles, Save, 
-  AlertCircle, Loader2, Brain, ArrowRight, Flag, CalendarDays, 
-  CheckCircle2, ListTodo, BarChart, GraduationCap
+  Settings2, Target, TrendingUp, Sparkles, Save, 
+  AlertCircle, Loader2, Brain, Flag, CalendarDays, 
+  CheckCircle2, ListTodo, GraduationCap, RefreshCw, Map, ChevronRight,
+  CalendarCheck, Trash2, Edit3, ArrowRight, Tag
 } from 'lucide-react';
 import { api } from '../services/apiService';
 
-interface TimetableModuleProps {
-  data: StudentData;
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+interface RoadmapWeek {
+  weekNumber: number;
+  startDate: string;
+  endDate: string;
+  phase: 'LEARNING' | 'REVISION' | 'MOCK_DRILLS';
+  chapters: Chapter[];
+  isDone: boolean;
 }
 
-const TimetableModule: React.FC<TimetableModuleProps> = ({ data }) => {
-  const [activeMode, setActiveMode] = useState<'daily' | 'roadmap'>('daily');
+const TimetableModule: React.FC<{ data: StudentData }> = ({ data }) => {
+  const [activeTab, setActiveTab] = useState<'daily' | 'course'>('daily');
   const [isSaving, setIsSaving] = useState(false);
-  
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Daily Routine State
   const [routine, setRoutine] = useState<RoutineConfig>(data.routine || {
-    wakeUp: '06:00', sleep: '23:00', schoolStart: '08:00', schoolEnd: '14:00', coachingStart: '16:00', coachingEnd: '19:00'
+    wakeUp: '05:30 AM',
+    sleep: '10:30 PM',
+    schoolStart: '10:00 AM',
+    schoolEnd: '04:00 PM',
+    hasSchool: true,
+    coachingStart: '06:00 AM',
+    coachingEnd: '09:00 AM',
+    coachingDays: ['Mon', 'Wed', 'Fri']
   });
 
-  // Helper to calculate hours between two time strings
-  const timeToMinutes = (t: string) => {
-    const [h, m] = t.split(':').map(Number);
-    return h * 60 + m;
+  const [generatedSchedule, setGeneratedSchedule] = useState<any[]>(data.smartPlan?.schedule || []);
+
+  // Course Plan State
+  const [planStartDate, setPlanStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [targetExamDate, setTargetExamDate] = useState('2026-06-27');
+  const [roadmap, setRoadmap] = useState<RoadmapWeek[]>(data.smartPlan?.roadmap || []);
+
+  const handleToggleDay = (day: string) => {
+    setRoutine(prev => ({
+      ...prev,
+      coachingDays: prev.coachingDays.includes(day) 
+        ? prev.coachingDays.filter(d => d !== day) 
+        : [...prev.coachingDays, day]
+    }));
   };
 
-  const minutesToTime = (min: number) => {
-    const h = Math.floor(min / 60);
-    const m = min % 60;
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  const handleGenerateDaily = async () => {
+    setIsGenerating(true);
+    await new Promise(r => setTimeout(r, 1200));
+    const schedule = [
+      { time: routine.wakeUp, label: 'Wake Up & Activation', type: 'REST', icon: Sun },
+      { time: routine.coachingStart, label: 'JEE Coaching Stream', type: 'FIXED', icon: GraduationCap },
+      { time: '09:15 AM', label: 'Priority Revision: ' + (data.chapters.find(c => c.accuracy < 70)?.name || 'Physics'), type: 'DEEP', icon: Brain },
+      { time: routine.schoolStart, label: 'School Academic Session', type: 'FIXED', icon: School },
+      { time: '04:30 PM', label: 'Cognitive Recovery', type: 'REST', icon: Coffee },
+      { time: '05:30 PM', label: 'Problem Solving Sprint', type: 'DEEP', icon: Zap },
+      { time: '08:30 PM', label: 'Dinner & Buffer', type: 'REST', icon: Coffee },
+      { time: routine.sleep, label: 'Restorative Sleep', type: 'REST', icon: Moon }
+    ];
+    setGeneratedSchedule(schedule);
+    setIsGenerating(false);
   };
 
-  // Dynamic daily schedule generation based on school/coaching inputs
-  const dailySlots = useMemo(() => {
-    const slots: any[] = [];
-    const wake = timeToMinutes(routine.wakeUp);
-    const sStart = timeToMinutes(routine.schoolStart);
-    const sEnd = timeToMinutes(routine.schoolEnd);
-    const cStart = timeToMinutes(routine.coachingStart);
-    const cEnd = timeToMinutes(routine.coachingEnd);
-    const sleep = timeToMinutes(routine.sleep);
-
-    // 1. Activation
-    slots.push({ time: routine.wakeUp, label: 'Activation Cycle', type: 'REST', icon: Sun, color: 'amber' });
-
-    // 2. Morning Study (if gap exists)
-    if (sStart - wake > 60) {
-      slots.push({ time: minutesToTime(wake + 30), label: 'Prime Focus: Mathematics', type: 'DEEP WORK', icon: Brain, color: 'indigo' });
-    }
-
-    // 3. School
-    slots.push({ time: routine.schoolStart, label: 'School Academic Session', type: 'FIXED', icon: School, color: 'slate' });
-
-    // 4. Post-School Recovery
-    slots.push({ time: routine.schoolEnd, label: 'Physiological Recovery', type: 'REST', icon: Coffee, color: 'emerald' });
-
-    // 5. Gap between school and coaching
-    if (cStart - sEnd > 90) {
-      slots.push({ time: minutesToTime(sEnd + 45), label: 'Formula Flush / Quick Revision', type: 'DEEP WORK', icon: Zap, color: 'indigo' });
-    }
-
-    // 6. Coaching
-    slots.push({ time: routine.coachingStart, label: 'JEE Coaching Stream', type: 'FIXED', icon: GraduationCap, color: 'rose' });
-
-    // 7. Post-Coaching Deep Work
-    slots.push({ time: routine.coachingEnd, label: 'Self Study: Problem Sets', type: 'DEEP WORK', icon: BookOpen, color: 'indigo' });
-
-    // 8. Review & Plan
-    slots.push({ time: minutesToTime(sleep - 45), label: 'Mistake Log & Plan Sync', type: 'REVIEW', icon: ListTodo, color: 'blue' });
-
-    // 9. Neural Shutdown
-    slots.push({ time: routine.sleep, label: 'Restorative Sleep', type: 'REST', icon: Moon, color: 'slate' });
-
-    return slots.sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
-  }, [routine]);
-
-  // Roadmap Logic
-  const roadmapStats = useMemo(() => {
-    const targetDate = data.targetExamDate ? new Date(data.targetExamDate) : new Date('2025-05-24');
-    const today = new Date();
-    const diffTime = targetDate.getTime() - today.getTime();
-    const daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+  const generateMasterPlan = async () => {
+    setIsGenerating(true);
+    await new Promise(r => setTimeout(r, 1800));
     
-    const pendingChapters = data.chapters.filter(c => c.status !== 'COMPLETED');
-    const totalPending = pendingChapters.length;
-    const weeksLeft = daysLeft / 7;
-    const velocityNeeded = totalPending > 0 ? (totalPending / (weeksLeft || 1)).toFixed(1) : '0';
+    const start = new Date(planStartDate);
+    const end = new Date(targetExamDate);
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const totalWeeks = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7));
+    
+    // Simple logic: distribute unfinished chapters across weeks
+    const unfinished = data.chapters.filter(c => c.status !== 'COMPLETED');
+    const chPerWeek = Math.ceil(unfinished.length / (totalWeeks || 1));
+    
+    const newRoadmap: RoadmapWeek[] = [];
+    for (let i = 0; i < totalWeeks; i++) {
+      const wStart = new Date(start);
+      wStart.setDate(start.getDate() + (i * 7));
+      const wEnd = new Date(wStart);
+      wEnd.setDate(wStart.getDate() + 6);
 
-    return { daysLeft, totalPending, velocityNeeded, pendingChapters, targetDate };
-  }, [data.chapters, data.targetExamDate]);
+      const weekChapters = unfinished.slice(i * chPerWeek, (i + 1) * chPerWeek);
+      
+      newRoadmap.push({
+        weekNumber: i + 1,
+        startDate: wStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        endDate: wEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        phase: i > totalWeeks * 0.8 ? 'REVISION' : 'LEARNING',
+        chapters: weekChapters,
+        isDone: false
+      });
+    }
+    
+    setRoadmap(newRoadmap);
+    setIsGenerating(false);
+  };
 
-  const saveRoutine = async () => {
+  const toggleWeekDone = (idx: number) => {
+    const next = [...roadmap];
+    next[idx].isDone = !next[idx].isDone;
+    setRoadmap(next);
+  };
+
+  const handleSave = async () => {
     setIsSaving(true);
     await api.saveRoutine(data.id, routine);
-    setIsSaving(false);
+    await api.saveTimetable(data.id, { schedule: generatedSchedule, roadmap });
+    setTimeout(() => setIsSaving(false), 800);
   };
 
-  return (
-    <div className="max-w-7xl mx-auto space-y-10 animate-in fade-in duration-500 pb-32 px-4">
-      {/* Header & Mode Switch */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-10">
-        <div>
-           <div className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.5em] mb-4 flex items-center gap-3">
-              <CalendarDays className="w-5 h-5" /> Operational Scheduling
-           </div>
-           <h2 className="text-7xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">
-              Strategic <br /> <span className="text-indigo-600">Planner.</span>
-           </h2>
-        </div>
+  const getSubjectColor = (s: Subject) => {
+    switch(s) {
+      case 'Physics': return 'bg-indigo-50 text-indigo-600 border-indigo-100';
+      case 'Chemistry': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+      case 'Mathematics': return 'bg-rose-50 text-rose-600 border-rose-100';
+      default: return 'bg-slate-50 text-slate-600 border-slate-100';
+    }
+  };
 
-        <div className="flex bg-white p-2 rounded-[2.5rem] border border-slate-200 shadow-2xl overflow-hidden shrink-0">
+  const TimeInput = ({ label, value, onChange }: any) => (
+    <div className="flex-1 space-y-2">
+      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">{label}</label>
+      <div className="relative group">
+        <input 
+          type="text" 
+          value={value} 
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full bg-white border border-slate-200 rounded-xl p-4 text-sm font-black text-slate-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 transition-all"
+        />
+        <Clock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-indigo-500" />
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-8 pb-32 animate-in fade-in duration-500 px-4">
+      {/* --- HEADER BAR --- */}
+      <div className="bg-white rounded-[3rem] border border-slate-200 shadow-sm p-10 flex flex-col lg:flex-row justify-between items-center gap-8">
+        <div className="flex items-center gap-6">
+           <div className="w-16 h-16 bg-[#10b981] rounded-[1.5rem] flex items-center justify-center text-white shadow-xl shadow-emerald-100">
+              <CalendarCheck className="w-8 h-8" />
+           </div>
+           <div>
+              <h1 className="text-4xl font-black italic tracking-tighter text-[#0a1128] uppercase leading-none">Schedule & Planner</h1>
+              <p className="text-slate-400 text-sm font-medium mt-1">Manage your daily routine and generate a long-term master plan.</p>
+           </div>
+        </div>
+        <div className="flex gap-4">
            <button 
-            onClick={() => setActiveMode('daily')} 
-            className={`px-10 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${activeMode === 'daily' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-700'}`}
+             onClick={handleSave}
+             disabled={isSaving}
+             className="px-10 py-4 bg-white border border-slate-200 text-[#0a1128] rounded-[1.5rem] text-xs font-black uppercase tracking-widest flex items-center gap-3 shadow-xl hover:bg-slate-50 transition-all disabled:opacity-50"
            >
-             <Clock className="w-4 h-4" /> Daily Routine
-           </button>
-           <button 
-            onClick={() => setActiveMode('roadmap')} 
-            className={`px-10 py-4 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${activeMode === 'roadmap' ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-700'}`}
-           >
-             <Flag className="w-4 h-4" /> Syllabus Roadmap
+             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4" /> Save Changes</>}
            </button>
         </div>
       </div>
 
-      {activeMode === 'daily' ? (
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
-           {/* Sidebar: Config */}
-           <div className="xl:col-span-4 space-y-8">
-              <div className="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm space-y-10">
-                 <div className="flex justify-between items-center">
-                    <h3 className="text-2xl font-black text-slate-800 flex items-center gap-3 italic"><Settings2 className="w-6 h-6 text-indigo-600" /> Inputs</h3>
-                    {isSaving ? <Loader2 className="w-5 h-5 text-indigo-600 animate-spin" /> : <button onClick={saveRoutine} className="text-[10px] font-black uppercase text-emerald-500 hover:underline">Save Sync</button>}
+      {/* --- TAB NAVIGATION --- */}
+      <div className="flex p-1.5 bg-white rounded-2xl border border-slate-200 shadow-sm w-fit mx-auto">
+        <button 
+          onClick={() => setActiveTab('daily')}
+          className={`px-10 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-3 transition-all ${activeTab === 'daily' ? 'bg-[#2b4c8c] text-white shadow-lg shadow-indigo-100' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          <Clock className="w-4 h-4" /> Daily Routine
+        </button>
+        <button 
+          onClick={() => setActiveTab('course')}
+          className={`px-10 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-3 transition-all ${activeTab === 'course' ? 'bg-[#2b4c8c] text-white shadow-lg shadow-indigo-100' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          <Map className="w-4 h-4" /> Full Course Plan
+        </button>
+      </div>
+
+      {activeTab === 'daily' ? (
+        <div className="space-y-8 animate-in slide-in-from-left duration-500">
+           <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-2xl overflow-hidden">
+              <div className="p-10 bg-[#1e293b] text-white space-y-2 relative overflow-hidden">
+                 <div className="absolute top-0 right-0 p-8 opacity-5"><Clock className="w-32 h-32" /></div>
+                 <div className="flex items-center gap-4 relative z-10">
+                    <Clock className="w-8 h-8 text-indigo-400" />
+                    <h2 className="text-3xl font-black italic tracking-tight uppercase">Daily Routine Generator</h2>
                  </div>
-                 
+                 <p className="text-indigo-300 text-sm font-medium relative z-10">Auto-allocates Revision based on your progress history.</p>
+              </div>
+
+              <div className="p-12 md:p-16 space-y-16">
                  <div className="space-y-8">
-                    <div className="grid grid-cols-2 gap-6">
-                       <div className="space-y-2">
-                          <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-4">Wake Up</label>
-                          <input type="time" value={routine.wakeUp} onChange={e => setRoutine({...routine, wakeUp: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800 focus:ring-2 focus:ring-indigo-100 transition-all" />
-                       </div>
-                       <div className="space-y-2">
-                          <label className="text-[9px] font-black uppercase text-slate-400 tracking-widest ml-4">Sleep</label>
-                          <input type="time" value={routine.sleep} onChange={e => setRoutine({...routine, sleep: e.target.value})} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800 focus:ring-2 focus:ring-indigo-100 transition-all" />
-                       </div>
+                    <h3 className="text-xs font-black uppercase text-slate-400 tracking-[0.2em] flex items-center gap-3"><BookOpen className="w-4 h-4" /> Coaching Schedule</h3>
+                    <div className="flex flex-wrap gap-3">
+                       {DAYS.map(day => (
+                         <button 
+                          key={day}
+                          onClick={() => handleToggleDay(day)}
+                          className={`px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest border-2 transition-all ${routine.coachingDays.includes(day) ? 'bg-[#2b4c8c] border-[#2b4c8c] text-white shadow-lg shadow-indigo-100' : 'bg-white border-slate-100 text-slate-400 hover:border-indigo-200'}`}
+                         >
+                           {day}
+                         </button>
+                       ))}
                     </div>
-
-                    <div className="space-y-4">
-                       <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-4">Academic Cycles</h4>
-                       <div className="grid grid-cols-1 gap-6">
-                          <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 space-y-4">
-                             <div className="flex items-center gap-2 text-xs font-black text-slate-500 uppercase"><School className="w-4 h-4" /> School Timing</div>
-                             <div className="flex gap-4">
-                                <div className="flex-1 space-y-1">
-                                   <label className="text-[8px] font-bold text-slate-400 uppercase ml-2">Start</label>
-                                   <input type="time" value={routine.schoolStart} onChange={e => setRoutine({...routine, schoolStart: e.target.value})} className="w-full bg-white border-none rounded-xl p-3 text-xs font-black" />
-                                </div>
-                                <div className="flex-1 space-y-1">
-                                   <label className="text-[8px] font-bold text-slate-400 uppercase ml-2">End</label>
-                                   <input type="time" value={routine.schoolEnd} onChange={e => setRoutine({...routine, schoolEnd: e.target.value})} className="w-full bg-white border-none rounded-xl p-3 text-xs font-black" />
-                                </div>
-                             </div>
-                          </div>
-                          <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 space-y-4">
-                             <div className="flex items-center gap-2 text-xs font-black text-slate-500 uppercase"><GraduationCap className="w-4 h-4" /> Coaching Timing</div>
-                             <div className="flex gap-4">
-                                <div className="flex-1 space-y-1">
-                                   <label className="text-[8px] font-bold text-slate-400 uppercase ml-2">Start</label>
-                                   <input type="time" value={routine.coachingStart} onChange={e => setRoutine({...routine, coachingStart: e.target.value})} className="w-full bg-white border-none rounded-xl p-3 text-xs font-black" />
-                                </div>
-                                <div className="flex-1 space-y-1">
-                                   <label className="text-[8px] font-bold text-slate-400 uppercase ml-2">End</label>
-                                   <input type="time" value={routine.coachingEnd} onChange={e => setRoutine({...routine, coachingEnd: e.target.value})} className="w-full bg-white border-none rounded-xl p-3 text-xs font-black" />
-                                </div>
-                             </div>
-                          </div>
-                       </div>
-                    </div>
-
-                    <div className="p-8 bg-indigo-50 rounded-[2.5rem] border border-indigo-100 space-y-4">
-                       <h4 className="text-[10px] font-black uppercase text-indigo-600 tracking-widest flex items-center gap-2"><Sparkles className="w-4 h-4" /> Logic Hint</h4>
-                       <p className="text-xs font-bold text-indigo-900 leading-relaxed italic">
-                         "The engine has dynamically allocated your study blocks around school and coaching. Total deep-work capacity today: {Math.round((timeToMinutes(routine.sleep) - timeToMinutes(routine.wakeUp) - (timeToMinutes(routine.schoolEnd) - timeToMinutes(routine.schoolStart)) - (timeToMinutes(routine.coachingEnd) - timeToMinutes(routine.coachingStart))) / 60)} hours."
-                       </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       <TimeInput label="Start Time" value={routine.coachingStart} onChange={(v: string) => setRoutine({...routine, coachingStart: v})} />
+                       <TimeInput label="End Time" value={routine.coachingEnd} onChange={(v: string) => setRoutine({...routine, coachingEnd: v})} />
                     </div>
                  </div>
+
+                 <div className="space-y-8 pt-10 border-t border-slate-50">
+                    <div className="flex justify-between items-center">
+                       <h3 className="text-xs font-black uppercase text-slate-400 tracking-[0.2em] flex items-center gap-3"><School className="w-4 h-4" /> School / College</h3>
+                       <button 
+                        onClick={() => setRoutine({...routine, hasSchool: !routine.hasSchool})}
+                        className={`w-14 h-7 rounded-full p-1 transition-all ${routine.hasSchool ? 'bg-emerald-500' : 'bg-slate-200'}`}
+                       >
+                          <div className={`w-5 h-5 bg-white rounded-full shadow-md transition-transform ${routine.hasSchool ? 'translate-x-7' : 'translate-x-0'}`} />
+                       </button>
+                    </div>
+                    {routine.hasSchool && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in slide-in-from-top-4">
+                         <TimeInput label="Starts" value={routine.schoolStart} onChange={(v: string) => setRoutine({...routine, schoolStart: v})} />
+                         <TimeInput label="Ends" value={routine.schoolEnd} onChange={(v: string) => setRoutine({...routine, schoolEnd: v})} />
+                      </div>
+                    )}
+                 </div>
+
+                 <div className="space-y-8 pt-10 border-t border-slate-50">
+                    <h3 className="text-xs font-black uppercase text-slate-400 tracking-[0.2em] flex items-center gap-3"><Moon className="w-4 h-4" /> Sleep Cycle</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                       <TimeInput label="Wake Up" value={routine.wakeUp} onChange={(v: string) => setRoutine({...routine, wakeUp: v})} />
+                       <TimeInput label="Bed Time" value={routine.sleep} onChange={(v: string) => setRoutine({...routine, sleep: v})} />
+                    </div>
+                 </div>
+
+                 <button 
+                  onClick={handleGenerateDaily}
+                  disabled={isGenerating}
+                  className="w-full py-6 bg-[#0a1128] text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] shadow-2xl hover:bg-black transition-all flex items-center justify-center gap-4 active:scale-95"
+                 >
+                    {isGenerating ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Zap className="w-6 h-6 text-yellow-400 fill-yellow-400" /> Generate Daily Schedule</>}
+                 </button>
               </div>
            </div>
 
-           {/* Main Timeline */}
-           <div className="xl:col-span-8 space-y-6">
-              <div className="bg-white rounded-[4rem] border border-slate-200 shadow-sm p-10 space-y-12">
-                 <div className="flex justify-between items-center px-4">
-                    <h3 className="text-2xl font-black text-slate-800 italic tracking-tight">Generated Routine</h3>
-                    <div className="text-[10px] font-black uppercase text-indigo-600 bg-indigo-50 px-4 py-2 rounded-xl">Status: Optimized</div>
-                 </div>
-
-                 <div className="relative pl-12 md:pl-20 space-y-10">
-                    <div className="absolute left-6 md:left-10 top-0 bottom-0 w-1 bg-slate-100 rounded-full"></div>
-                    {dailySlots.map((slot, i) => (
-                       <div key={i} className="relative group">
-                          {/* Dot */}
-                          <div className={`absolute -left-7 md:-left-11 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-4 border-white ring-2 transition-all group-hover:scale-150 ${
-                            slot.type === 'DEEP WORK' ? 'bg-indigo-600 ring-indigo-200' : slot.type === 'FIXED' ? 'bg-slate-400 ring-slate-100' : 'bg-emerald-500 ring-emerald-100'
-                          }`}></div>
-                          
-                          <div className="flex flex-col md:flex-row items-start md:items-center gap-6 p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 group-hover:border-indigo-400 group-hover:bg-white group-hover:shadow-2xl transition-all duration-500">
-                             <div className="w-20 text-center shrink-0">
-                                <div className="text-lg font-black text-slate-900 group-hover:text-indigo-600 transition-colors">{slot.time}</div>
-                                <div className="text-[8px] font-black uppercase text-slate-400 mt-1">{slot.type}</div>
-                             </div>
-                             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border shadow-inner ${
-                               slot.type === 'DEEP WORK' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-white text-slate-300 border-slate-100'
-                             }`}>
-                                <slot.icon className="w-7 h-7" />
-                             </div>
-                             <div className="flex-1">
-                                <h4 className="text-xl font-black text-slate-800 italic tracking-tighter leading-none">{slot.label}</h4>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">
-                                  {slot.type === 'DEEP WORK' ? 'Maximize solving speed & conceptual clarity' : slot.type === 'FIXED' ? 'Mandatory academic attendance' : 'Restoration for next high-load slot'}
-                                </p>
-                             </div>
-                          </div>
-                       </div>
-                    ))}
-                 </div>
-              </div>
-           </div>
+           {generatedSchedule.length > 0 && (
+             <div className="bg-white rounded-[4rem] border border-slate-200 p-12 space-y-12 animate-in slide-in-from-bottom-8">
+                <div className="flex items-center gap-4 border-b border-slate-50 pb-8">
+                   <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center"><CalendarDays className="w-6 h-6" /></div>
+                   <div>
+                      <h3 className="text-2xl font-black italic tracking-tight">Daily Protocol</h3>
+                      <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Optimized Study Cycles</p>
+                   </div>
+                </div>
+                
+                <div className="relative pl-12 md:pl-20 space-y-10">
+                   <div className="absolute left-6 md:left-10 top-0 bottom-0 w-1 bg-slate-100 rounded-full" />
+                   {generatedSchedule.map((slot, i) => (
+                     <div key={i} className="relative group">
+                        <div className={`absolute -left-7 md:-left-11 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-4 border-white ring-2 ring-slate-100 transition-all ${slot.type === 'DEEP' ? 'bg-indigo-600 ring-indigo-100 scale-125 shadow-[0_0_15px_rgba(99,102,241,0.5)]' : 'bg-slate-300'}`} />
+                        <div className={`flex flex-col md:flex-row items-start md:items-center gap-8 p-8 rounded-[2.5rem] border transition-all ${slot.type === 'DEEP' ? 'bg-indigo-50 border-indigo-100 shadow-lg' : 'bg-slate-50 border-slate-100 hover:bg-white hover:shadow-xl'}`}>
+                           <div className="w-24 shrink-0">
+                              <div className="text-xl font-black text-slate-900 tracking-tight">{slot.time}</div>
+                              <div className="text-[8px] font-black uppercase text-slate-400 tracking-widest mt-1">START</div>
+                           </div>
+                           <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-inner ${slot.type === 'DEEP' ? 'bg-white text-indigo-600' : 'bg-white text-slate-400'}`}>
+                              <slot.icon className="w-6 h-6" />
+                           </div>
+                           <div className="flex-1">
+                              <h4 className="text-lg font-black italic tracking-tighter uppercase leading-none">{slot.label}</h4>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">{slot.type} Session Core</p>
+                           </div>
+                        </div>
+                     </div>
+                   ))}
+                </div>
+             </div>
+           )}
         </div>
       ) : (
         <div className="space-y-10 animate-in slide-in-from-right duration-500">
-           {/* Roadmap Stats */}
-           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {[
-                { label: 'Days to Exam', val: roadmapStats.daysLeft, icon: Calendar, color: 'rose' },
-                { label: 'Pending Units', val: roadmapStats.totalPending, icon: BookOpen, color: 'indigo' },
-                { label: 'Ideal Velocity', val: `${roadmapStats.velocityNeeded} Ch/Wk`, icon: TrendingUp, color: 'emerald' },
-                { label: 'Mastery Level', val: `${Math.round((data.chapters.filter(c=>c.status==='COMPLETED').length / (data.chapters.length || 1)) * 100)}%`, icon: Target, color: 'blue' }
-              ].map((s, i) => (
-                <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm flex flex-col justify-between group hover:border-indigo-400 transition-all">
-                  <div className={`w-12 h-12 bg-${s.color}-50 text-${s.color}-600 rounded-2xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform shadow-inner`}><s.icon className="w-6 h-6" /></div>
-                  <div>
-                    <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">{s.label}</div>
-                    <div className="text-3xl font-black text-slate-900 tracking-tighter">{s.val}</div>
-                  </div>
-                </div>
-              ))}
-           </div>
-
-           {/* Tactical Burn-down */}
-           <div className="bg-white rounded-[4rem] border border-slate-200 shadow-sm overflow-hidden">
-              <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
-                 <h3 className="text-2xl font-black italic text-slate-800 flex items-center gap-3"><Flag className="w-6 h-6 text-rose-600" /> Strategic Roadmap</h3>
-                 <div className="px-5 py-2 bg-rose-50 text-rose-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-rose-100">Exam: {roadmapStats.targetDate.toLocaleDateString()}</div>
+           {/* --- STRATEGY GENERATOR CARD --- */}
+           <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-2xl overflow-hidden">
+              <div className="p-10 bg-[#4f46e5] text-white space-y-2 relative overflow-hidden">
+                 <div className="absolute top-0 right-0 p-8 opacity-5"><Map className="w-32 h-32" /></div>
+                 <div className="flex items-center gap-4 relative z-10">
+                    <Map className="w-8 h-8 text-indigo-200" />
+                    <h2 className="text-3xl font-black italic tracking-tight uppercase">Long-Term Strategy Generator</h2>
+                 </div>
+                 <p className="text-indigo-100 text-sm font-medium relative z-10">Auto-distributes syllabus into weeks until your exam date.</p>
               </div>
 
-              <div className="divide-y divide-slate-100">
-                 {roadmapStats.pendingChapters.length === 0 ? (
-                   <div className="py-40 text-center space-y-6">
-                      <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto" />
-                      <h4 className="text-2xl font-black italic text-slate-800">Syllabus Complete.</h4>
-                      <p className="text-slate-400 font-medium text-sm">Every node has been synchronized to 100% completion.</p>
-                   </div>
-                 ) : (
-                   roadmapStats.pendingChapters.sort((a,b) => a.accuracy - b.accuracy).map((ch, i) => (
-                    <div key={ch.id} className="p-8 hover:bg-slate-50 transition-colors flex flex-col lg:flex-row items-center justify-between gap-10 group">
-                       <div className="flex-1 flex items-center gap-8">
-                          <div className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center font-black text-xs shrink-0 shadow-xl group-hover:scale-110 transition-transform">0{i+1}</div>
-                          <div className="space-y-1">
-                             <div className="flex items-center gap-3">
-                                <h4 className="text-xl font-black text-slate-800 italic group-hover:text-indigo-600 transition-colors">{ch.name}</h4>
-                                <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${ch.accuracy < 60 ? 'bg-rose-50 text-rose-500' : 'bg-indigo-50 text-indigo-500'}`}>
-                                   {ch.accuracy}% Stability
-                                </span>
-                             </div>
-                             <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{ch.subject} • {ch.unit}</p>
-                          </div>
-                       </div>
-                       
-                       <div className="flex items-center gap-12 w-full lg:w-auto">
-                          <div className="flex-1 lg:w-64 space-y-2">
-                             <div className="flex justify-between text-[8px] font-black uppercase text-slate-400">
-                                <span>Preparation Flow</span>
-                                <span>{ch.progress}%</span>
-                             </div>
-                             <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-indigo-500" style={{ width: `${ch.progress}%` }}></div>
-                             </div>
-                          </div>
-                          
-                          <div className="text-right shrink-0">
-                             <div className="text-[10px] font-black uppercase text-slate-400 mb-1">Estimated Slot</div>
-                             <div className="text-lg font-black text-slate-800">Week {Math.ceil((i + 1) / (parseFloat(roadmapStats.velocityNeeded) || 1))}</div>
-                          </div>
-
-                          <button 
-                            onClick={() => window.dispatchEvent(new CustomEvent('changeTab', { detail: 'learn' }))}
-                            className="p-4 bg-white border border-slate-100 text-slate-400 rounded-2xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
-                          >
-                             <ArrowRight className="w-5 h-5" />
-                          </button>
+              <div className="p-10 md:p-14 space-y-12">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-4">Start Date</label>
+                       <div className="relative">
+                          <input 
+                            type="date" 
+                            value={planStartDate} 
+                            onChange={(e) => setPlanStartDate(e.target.value)}
+                            className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black italic outline-none focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner" 
+                          />
                        </div>
                     </div>
-                   ))
-                 )}
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-4">Target Exam Date</label>
+                       <div className="relative">
+                          <input 
+                            type="date" 
+                            value={targetExamDate} 
+                            onChange={(e) => setTargetExamDate(e.target.value)}
+                            className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black italic outline-none focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner" 
+                          />
+                       </div>
+                    </div>
+                 </div>
+
+                 <button 
+                  onClick={generateMasterPlan}
+                  disabled={isGenerating}
+                  className="w-full py-6 bg-[#2b4c8c] text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.4em] shadow-2xl hover:bg-[#1e3a8a] transition-all flex items-center justify-center gap-4 active:scale-95"
+                 >
+                    {isGenerating ? <Loader2 className="w-6 h-6 animate-spin" /> : <><CalendarCheck className="w-6 h-6" /> Generate Master Plan</>}
+                 </button>
               </div>
            </div>
 
-           <div className="bg-slate-900 p-12 rounded-[4rem] text-white flex flex-col md:flex-row items-center gap-10 shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform duration-[3s]"><BarChart className="w-80 h-80" /></div>
-              <div className="w-24 h-24 bg-white/10 rounded-[2.5rem] flex items-center justify-center shrink-0 backdrop-blur-md border border-white/20">
-                 <Zap className="w-12 h-12 text-indigo-400" />
-              </div>
-              <div className="space-y-4 relative z-10 text-center md:text-left">
-                 <h3 className="text-3xl font-black italic tracking-tighter uppercase leading-none">Preparation Burn Rate.</h3>
-                 <p className="text-indigo-200 text-sm max-w-2xl font-medium leading-relaxed">
-                   To reach 100% synchronization by <strong>{roadmapStats.targetDate.toLocaleDateString()}</strong>, maintain a velocity of <strong>{roadmapStats.velocityNeeded} chapters/week</strong>. This schedule includes a 14-day buffer for full-length mock simulation.
-                 </p>
-              </div>
-           </div>
+           {/* --- ROADMAP OUTPUT --- */}
+           {roadmap.length > 0 && (
+             <div className="space-y-8 animate-in slide-in-from-bottom-8">
+                <h3 className="text-2xl font-black italic text-slate-800 tracking-tight px-4">Your Roadmap ({roadmap.length} Weeks)</h3>
+                <div className="space-y-6">
+                   {roadmap.map((week, idx) => (
+                     <div key={idx} className={`bg-white rounded-[3rem] border border-slate-200 overflow-hidden shadow-sm transition-all hover:shadow-xl group ${week.isDone ? 'opacity-60' : ''}`}>
+                        <div className="p-8 flex flex-col md:flex-row justify-between items-center gap-8">
+                           <div className="flex items-center gap-8">
+                              <div className={`w-14 h-14 rounded-[1.5rem] flex flex-col items-center justify-center font-black transition-all ${week.isDone ? 'bg-emerald-500 text-white' : 'bg-[#dbeafe] text-[#3b82f6]'}`}>
+                                 <span className="text-[9px] uppercase tracking-tighter leading-none">Week</span>
+                                 <span className="text-2xl leading-none">{week.weekNumber}</span>
+                              </div>
+                              <div className="space-y-2">
+                                 <div className="flex items-center gap-4">
+                                    <h4 className="text-xl font-black italic text-slate-800 tracking-tight">{week.startDate} - {week.endDate}</h4>
+                                    <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${week.phase === 'LEARNING' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                                       {week.phase}
+                                    </span>
+                                 </div>
+                                 <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{week.chapters.length} Chapters Assigned</p>
+                              </div>
+                           </div>
+
+                           <button 
+                             onClick={() => toggleWeekDone(idx)}
+                             className={`px-8 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 border-2 ${week.isDone ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg' : 'bg-slate-50 border-slate-100 text-slate-400 hover:bg-slate-100 hover:text-slate-600'}`}
+                           >
+                             <Flag className="w-4 h-4" /> {week.isDone ? 'Done' : 'Mark Done'}
+                           </button>
+                        </div>
+                        
+                        <div className="px-8 pb-8 flex flex-wrap gap-3">
+                           {week.chapters.length > 0 ? week.chapters.map((ch, ci) => (
+                             <div key={ci} className={`px-5 py-2.5 rounded-2xl border text-[10px] font-black tracking-tight italic transition-all group-hover:scale-105 ${getSubjectColor(ch.subject)}`}>
+                                {ch.name}
+                             </div>
+                           )) : (
+                             <div className="text-[10px] font-black text-slate-300 italic tracking-widest uppercase py-2">Rest / Consolidation Buffer Week</div>
+                           )}
+                        </div>
+                     </div>
+                   ))}
+                </div>
+             </div>
+           )}
         </div>
       )}
     </div>

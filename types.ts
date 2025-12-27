@@ -1,3 +1,4 @@
+
 export enum UserRole {
   STUDENT = 'STUDENT',
   PARENT = 'PARENT',
@@ -13,8 +14,10 @@ export interface RoutineConfig {
   sleep: string;
   schoolStart: string;
   schoolEnd: string;
+  hasSchool: boolean;
   coachingStart: string;
   coachingEnd: string;
+  coachingDays: string[];
 }
 
 export interface Chapter {
@@ -31,9 +34,9 @@ export interface Chapter {
   timeSpentTests: number; // Time in seconds
   status: ChapterStatus;
   lastStudied?: string;
-  notes?: string; // Changed to string for easier CMS editing
+  notes?: string; 
   videoUrl?: string;
-  targetCompletionDate?: string; // New field for roadmap planning
+  targetCompletionDate?: string; 
 }
 
 export interface BacklogItem {
@@ -77,7 +80,7 @@ export interface TestResult {
   date: string;
   chapterIds: string[];
   accuracy: number;
-  category?: string; // Added to distinguish Mock Test vs Chapter Practice
+  category?: string; 
 }
 
 export interface Flashcard {
@@ -164,7 +167,6 @@ export interface StudentData {
     id: string;
     linkedSince: string;
   };
-  // Detailed Profile Fields
   institute?: string;
   targetExam?: string;
   birthDate?: string;
@@ -179,7 +181,6 @@ export interface UserAccount {
   password?: string;
   createdAt: string;
   connectedId?: string; 
-  // Detailed Profile Fields
   institute?: string;
   targetExam?: string;
   targetYear?: string;

@@ -13,22 +13,6 @@ const DEMO_USERS: Record<string, UserAccount> = {
   'admin@demo.in': { id: 'ADMIN-001', name: 'System Admin', email: 'admin@demo.in', role: UserRole.ADMIN, createdAt: '2024-01-01' }
 };
 
-const getBlankStudentData = (id: string, name: string): StudentData => ({
-  ...INITIAL_STUDENT_DATA,
-  id,
-  name,
-  chapters: INITIAL_STUDENT_DATA.chapters.map(c => ({
-    ...c,
-    progress: 0, accuracy: 0, timeSpent: 0,
-    timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0,
-    status: 'NOT_STARTED'
-  })),
-  backlogs: [],
-  testHistory: [],
-  psychometricHistory: [{ stress: 5, focus: 5, motivation: 5, examFear: 5, timestamp: new Date().toISOString().split('T')[0] }],
-  timeSummary: { notes: 0, videos: 0, practice: 0, tests: 0 }
-});
-
 const safeJson = async (response: Response) => {
   const text = await response.text();
   try {
@@ -90,6 +74,29 @@ export const api = {
         body: JSON.stringify({ student_id: studentId, routine })
       });
     }
+  },
+
+  // Fixed type mismatch: changed tasks from any[] to any to support complex plan objects containing schedule and roadmap
+  async saveTimetable(studentId: string, tasks: any) {
+    if (this.getMode() === 'LIVE') {
+      await fetch(`${API_CONFIG.BASE_URL}save_timetable.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: studentId, tasks })
+      });
+    }
+    return { success: true };
+  },
+
+  async syncProgress(studentId: string, metrics: any) {
+    if (this.getMode() === 'LIVE') {
+       await fetch(`${API_CONFIG.BASE_URL}sync_progress.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: studentId, ...metrics })
+      });
+    }
+    return { success: true };
   },
 
   async updateStudentData(studentId: string, updatedData: StudentData) {
