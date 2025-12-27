@@ -1,13 +1,14 @@
+
 import { StudentData, UserRole, UserAccount, RoutineConfig, TestResult } from '../types';
 import { INITIAL_STUDENT_DATA } from '../mockData';
 
 const API_CONFIG = {
   BASE_URL: './api/', 
-  // v10.5: Global mode key for tracking datasource
-  MODE_KEY: 'jeepro_datasource_mode_v10_5'
+  MODE_KEY: 'jeepro_datasource_mode_v10_final'
 };
 
-// High-priority local demo accounts for system verification
+// CRITICAL: Hardcoded bypass for demo credentials to ensure "Demo Sign-in" works 
+// even if the production PHP backend is not yet uploaded or 404s.
 const DEMO_ACCOUNTS: Record<string, UserAccount> = {
   'ishu@gmail.com': { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2025-01-01' },
   'parent@demo.in': { id: 'P-4402', name: 'Mr. Ramesh Sharma', email: 'parent@demo.in', role: UserRole.PARENT, createdAt: '2025-01-01' },
@@ -15,24 +16,26 @@ const DEMO_ACCOUNTS: Record<string, UserAccount> = {
 };
 
 const safeJson = async (response: Response) => {
+  // If response is not OK (e.g., 404, 500), do not attempt to parse as JSON
   if (!response.ok) {
-    if (response.status === 404) {
-        return { success: false, error: "Backend node not found (404). Ensure PHP files are in /api/." };
-    }
-    return { success: false, error: `Server error (${response.status})` };
+    const errorText = await response.text().catch(() => "Unknown network error");
+    console.warn(`API non-ok response (${response.status}):`, errorText);
+    return { 
+      success: false, 
+      error: response.status === 404 ? "Uplink Node Not Found (404). Check /api folder." : `Server Fault (${response.status})`
+    };
   }
   
   const text = await response.text();
   try {
     return JSON.parse(text);
   } catch (e) {
-    console.error("Malformed API Response:", text);
-    return { success: false, error: "Malformed server response. Check PHP logs." };
+    console.error("Malformed API Response. Expected JSON but got:", text);
+    return { success: false, error: "Protocol Error: Malformed data stream from server." };
   }
 };
 
 export const api = {
-  // Production Priority: Defaulting to 'LIVE'
   getMode: (): 'MOCK' | 'LIVE' => (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'LIVE',
   
   setMode: (mode: 'MOCK' | 'LIVE') => { 
@@ -43,13 +46,13 @@ export const api = {
   async login(credentials: { email: string; password?: string; role?: UserRole }) {
     const email = credentials.email.toLowerCase();
     
-    // ALLOW DEMO SIGN: Check hardcoded demo accounts first to allow immediate access even if DB is offline
+    // PRIORITY INTERCEPT: Always allow demo accounts to sign in without hitting the network
     if (DEMO_ACCOUNTS[email]) {
       return { success: true, user: DEMO_ACCOUNTS[email] };
     }
 
     if (this.getMode() === 'MOCK') {
-      return { success: true, user: { id: 'DEMO-NEW', name: 'Sandbox User', email: credentials.email, role: credentials.role || UserRole.STUDENT, createdAt: '2025-01-01' } };
+      return { success: true, user: { id: 'MOCK-ID', name: 'Sandbox User', email: credentials.email, role: credentials.role || UserRole.STUDENT, createdAt: '2025-01-01' } };
     }
 
     try {
@@ -60,12 +63,12 @@ export const api = {
       });
       return await safeJson(res);
     } catch(e) { 
-      return { success: false, error: "Production server node unreachable. Check connection or path." }; 
+      return { success: false, error: "Host unreachable. Ensure your PHP environment is active." }; 
     }
   },
 
   async register(data: any) {
-    if (this.getMode() === 'MOCK') return { success: true, user: { ...data, id: 'M-TEMP-' + Date.now() } };
+    if (this.getMode() === 'MOCK') return { success: true, user: { ...data, id: 'NEW-' + Date.now() } };
     try {
       const res = await fetch(`${API_CONFIG.BASE_URL}auth_register.php`, {
         method: 'POST',
@@ -73,7 +76,7 @@ export const api = {
         body: JSON.stringify(data)
       });
       return await safeJson(res);
-    } catch(e) { return { success: false, error: "Registration gateway timeout." }; }
+    } catch(e) { return { success: false, error: "Registration Node Offline." }; }
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
@@ -82,9 +85,8 @@ export const api = {
         const res = await fetch(`${API_CONFIG.BASE_URL}get_dashboard.php?id=${studentId}`);
         const result = await safeJson(res);
         if (result && result.success) return result.data;
-      } catch(e) { console.error("Sync fault during data fetch:", e); }
+      } catch(e) { console.error("Data Sync Failure:", e); }
     }
-    // Fallback to initial data if LIVE fetch fails or in MOCK mode
     return INITIAL_STUDENT_DATA;
   },
 
@@ -134,7 +136,7 @@ export const api = {
           body: JSON.stringify(data)
         });
         return await safeJson(res);
-      } catch(e) { return { success: false, error: "Network Error" }; }
+      } catch(e) { return { success: false, error: "Request Failed" }; }
     }
     return { success: true };
   },
