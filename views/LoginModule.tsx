@@ -26,6 +26,36 @@ const NATIONAL_EXAMS = [
 
 const TARGET_YEARS = ["2025", "2026", "2027", "2028"];
 
+// Components moved outside to prevent re-creation and focus loss during typing
+const InputField = ({ icon: Icon, type, placeholder, value, onChange, label }: any) => (
+  <div className="space-y-2">
+    {label && <label className="text-[9px] font-black uppercase text-slate-400 ml-4 tracking-widest">{label}</label>}
+    <div className="relative group">
+      <Icon className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-indigo-600 transition-colors" />
+      <input 
+        type={type} placeholder={placeholder}
+        value={value} onChange={onChange}
+        className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-[1.5rem] text-sm font-black italic shadow-inner focus:bg-white focus:border-indigo-600 transition-all outline-none"
+      />
+    </div>
+  </div>
+);
+
+const SelectField = ({ icon: Icon, label, options, value, onChange }: any) => (
+  <div className="space-y-2">
+     <label className="text-[9px] font-black uppercase text-slate-400 ml-4 tracking-widest">{label}</label>
+     <div className="relative group">
+        <Icon className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-indigo-600 transition-colors" />
+        <select 
+          value={value} onChange={onChange}
+          className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-[1.5rem] text-sm font-black italic shadow-inner focus:bg-white focus:border-indigo-600 transition-all outline-none appearance-none"
+        >
+           {options.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
+        </select>
+     </div>
+  </div>
+);
+
 const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) => {
   const [isAuthMode, setIsAuthMode] = useState<'login' | 'register'>('login');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -109,35 +139,6 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
     );
   }
 
-  const InputField = ({ icon: Icon, type, placeholder, value, onChange, label }: any) => (
-    <div className="space-y-2">
-      {label && <label className="text-[9px] font-black uppercase text-slate-400 ml-4 tracking-widest">{label}</label>}
-      <div className="relative group">
-        <Icon className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-indigo-600 transition-colors" />
-        <input 
-          type={type} placeholder={placeholder}
-          value={value} onChange={onChange}
-          className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-[1.5rem] text-sm font-black italic shadow-inner focus:bg-white focus:border-indigo-600 transition-all outline-none"
-        />
-      </div>
-    </div>
-  );
-
-  const SelectField = ({ icon: Icon, label, options, value, onChange }: any) => (
-    <div className="space-y-2">
-       <label className="text-[9px] font-black uppercase text-slate-400 ml-4 tracking-widest">{label}</label>
-       <div className="relative group">
-          <Icon className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-indigo-600 transition-colors" />
-          <select 
-            value={value} onChange={onChange}
-            className="w-full pl-14 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-[1.5rem] text-sm font-black italic shadow-inner focus:bg-white focus:border-indigo-600 transition-all outline-none appearance-none"
-          >
-             {options.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
-          </select>
-       </div>
-    </div>
-  );
-
   return (
     <div className="min-h-screen flex flex-col bg-[#fcfdfe] relative selection:bg-indigo-100 overflow-hidden">
       <div className="absolute top-0 right-0 w-[40%] h-[100%] bg-slate-50 border-l border-slate-100 pointer-events-none -z-10 blueprint-bg opacity-40"></div>
@@ -218,17 +219,27 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
                       </div>
 
                       <div className="pt-6 border-t border-slate-50 space-y-6">
+                        {formData.role === UserRole.STUDENT && (
+                          <>
+                            <div className="text-[10px] font-black uppercase text-indigo-400 tracking-[0.3em] text-center italic flex items-center justify-center gap-3">
+                               <div className="h-px bg-indigo-100 flex-1"></div>
+                               Academic Target
+                               <div className="h-px bg-indigo-100 flex-1"></div>
+                            </div>
+
+                            <SelectField icon={Building} label="Coaching Institute" options={INSTITUTES} value={formData.institute} onChange={(e:any) => setFormData({...formData, institute: e.target.value})} />
+                            
+                            <div className="grid grid-cols-2 gap-6">
+                               <SelectField icon={Target} label="Target Exam" options={NATIONAL_EXAMS} value={formData.targetExam} onChange={(e:any) => setFormData({...formData, targetExam: e.target.value})} />
+                               <SelectField icon={Calendar} label="Year" options={TARGET_YEARS} value={formData.targetYear} onChange={(e:any) => setFormData({...formData, targetYear: e.target.value})} />
+                            </div>
+                          </>
+                        )}
+
                         <div className="text-[10px] font-black uppercase text-indigo-400 tracking-[0.3em] text-center italic flex items-center justify-center gap-3">
                            <div className="h-px bg-indigo-100 flex-1"></div>
-                           Academic Target
+                           Profile Meta
                            <div className="h-px bg-indigo-100 flex-1"></div>
-                        </div>
-
-                        <SelectField icon={Building} label="Coaching Institute" options={INSTITUTES} value={formData.institute} onChange={(e:any) => setFormData({...formData, institute: e.target.value})} />
-                        
-                        <div className="grid grid-cols-2 gap-6">
-                           <SelectField icon={Target} label="Target Exam" options={NATIONAL_EXAMS} value={formData.targetExam} onChange={(e:any) => setFormData({...formData, targetExam: e.target.value})} />
-                           <SelectField icon={Calendar} label="Year" options={TARGET_YEARS} value={formData.targetYear} onChange={(e:any) => setFormData({...formData, targetYear: e.target.value})} />
                         </div>
 
                         <div className="grid grid-cols-2 gap-6">
