@@ -174,14 +174,14 @@ const App: React.FC = () => {
               <div className="flex items-center gap-1">
                  <span className="font-black tracking-tight text-2xl uppercase text-[#2b4c8c]">IITGRRPREP</span>
               </div>
-              <p className="text-xs font-bold text-slate-400">Your trusted gateway to Growth, Rigor, and Results.</p>
+              <p className="text-xs font-bold text-slate-400">Solaris v9.0: Global Engineering Ecosystem.</p>
             </div>
             <div className="flex flex-wrap justify-center gap-8 md:gap-12">
-               {['About', 'Features', 'Privacy', 'Compliance'].map(link => (
+               {['About', 'Features', 'Privacy', 'Deployment'].map(link => (
                  <button key={link} className="text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors">{link}</button>
                ))}
             </div>
-            <p className="text-xs font-bold text-slate-300">&copy; 2025 IITGRRPREP Platform.</p>
+            <p className="text-xs font-bold text-slate-300">&copy; 2025 Solaris Ultimate v9.0. Built for Toppers.</p>
          </div>
       </footer>
     </div>

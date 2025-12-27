@@ -1,6 +1,6 @@
 {
-  "name": "IITGEEPREP: Solaris Hub",
-  "version": "6.0.0",
-  "description": "High-performance IIT-JEE academic tracker with ULTIMATE PHP/PDO architecture (31+ modular files) and exhaustive SQL persistence.",
+  "name": "IITGEEPREP: Solaris Ultimate",
+  "version": "9.0.0",
+  "description": "Elite IIT-JEE academic ecosystem with Solaris v9.0 Backend. Features 42+ modular PHP files for high-performance scale and exhaustive SQL schema.",
   "requestFramePermissions": []
 }

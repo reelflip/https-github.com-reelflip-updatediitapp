@@ -75,7 +75,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, handle
             <div className="leading-tight text-sm font-black tracking-tighter">
               {role === UserRole.ADMIN ? 'ADMIN CENTER' : role === UserRole.PARENT ? 'FAMILY PORTAL' : 'IITGRRPREP'}
             </div>
-            <div className="text-[7px] font-black tracking-[0.4em] text-indigo-400 uppercase">Academic Hub v6.0</div>
+            <div className="text-[7px] font-black tracking-[0.4em] text-indigo-400 uppercase">Solaris v9.0</div>
           </div>
         </h1>
       </div>
@@ -100,7 +100,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, handle
       <div className="p-4 mt-auto">
         <button 
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-6 py-4 bg-slate-900 text-rose-400 hover:bg-rose-500 hover:text-white rounded-2xl transition-all font-black text-xs uppercase tracking-widest border border-slate-800 shadow-2xl"
+          className="w-full flex items-center gap-3 px-6 py-4 bg-slate-900 text-rose-400 hover:bg-rose-50 hover:text-white rounded-2xl transition-all font-black text-xs uppercase tracking-widest border border-slate-800 shadow-2xl"
         >
           <LogOut className="w-4 h-4" /> Sign Out
         </button>

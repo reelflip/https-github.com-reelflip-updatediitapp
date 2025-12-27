@@ -3,8 +3,9 @@ import { StudentData, UserRole, UserAccount, RoutineConfig, TestResult } from '.
 import { INITIAL_STUDENT_DATA } from '../mockData';
 
 const API_CONFIG = {
+  // Direct relative path to the api folder containing all modules
   BASE_URL: './api/', 
-  MODE_KEY: 'jeepro_datasource_mode'
+  MODE_KEY: 'jeepro_datasource_mode_v9'
 };
 
 const DEMO_USERS: Record<string, UserAccount> = {
@@ -19,7 +20,7 @@ const safeJson = async (response: Response) => {
     return JSON.parse(text);
   } catch (e) {
     console.error("Malformed JSON response:", text);
-    throw new Error("Invalid Server Response.");
+    throw new Error("API Node returned invalid data. Check server logs.");
   }
 };
 
@@ -35,27 +36,29 @@ export const api = {
     if (this.getMode() === 'MOCK') {
       const user = DEMO_USERS[credentials.email.toLowerCase()];
       if (user) return { success: true, user };
-      return { success: false, error: "Sandbox identity not found." };
+      return { success: false, error: "Identity not recognized in Sandbox mode." };
     }
     
     try {
-      const res = await fetch(`${API_CONFIG.BASE_URL}login.php`, {
+      const res = await fetch(`${API_CONFIG.BASE_URL}auth_login.php`, {
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials)
       });
       return await safeJson(res);
-    } catch(e) { return { success: false, error: "Uplink Failed." }; }
+    } catch(e) { return { success: false, error: "Uplink Failure. Deployment node unreachable." }; }
   },
 
   async register(data: any) {
-    if (this.getMode() === 'MOCK') return { success: true, user: { ...data, id: 'MOCK-' + Math.random() } };
-    const res = await fetch(`${API_CONFIG.BASE_URL}register.php`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    return await safeJson(res);
+    if (this.getMode() === 'MOCK') return { success: true, user: { ...data, id: 'MOCK-' + Math.random().toString(36).substr(2, 5) } };
+    try {
+      const res = await fetch(`${API_CONFIG.BASE_URL}auth_register.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      return await safeJson(res);
+    } catch(e) { return { success: false, error: "Registration node unreachable." }; }
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
@@ -64,7 +67,7 @@ export const api = {
         const res = await fetch(`${API_CONFIG.BASE_URL}get_dashboard.php?id=${studentId}`);
         const result = await safeJson(res);
         if (result.success) return result.data;
-      } catch(e) { console.error(e); }
+      } catch(e) { console.error("Sync fault:", e); }
     }
     return INITIAL_STUDENT_DATA;
   },
@@ -114,8 +117,21 @@ export const api = {
 
   async saveEntity(type: string, data: any) {
     if (this.getMode() === 'LIVE') {
-      const endpoint = type.toLowerCase().includes('result') ? 'save_attempt.php' : `manage_${type.toLowerCase()}.php?action=save`;
-      const res = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
+      const typeMap: Record<string, string> = {
+        'Chapter': 'manage_chapters.php',
+        'Question': 'manage_questions.php',
+        'MockTest': 'manage_tests.php',
+        'Flashcard': 'manage_flashcards.php',
+        'MemoryHack': 'manage_hacks.php',
+        'Blog': 'manage_blogs.php',
+        'Result': 'save_attempt.php',
+        'Psychometric': 'save_psychometric.php'
+      };
+      
+      const endpoint = typeMap[type] || `manage_${type.toLowerCase()}.php`;
+      const connector = endpoint.includes('?') ? '&' : '?';
+      
+      const res = await fetch(`${API_CONFIG.BASE_URL}${endpoint}${connector}action=save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
