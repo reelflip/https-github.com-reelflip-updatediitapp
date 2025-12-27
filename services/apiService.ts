@@ -7,8 +7,7 @@ const API_CONFIG = {
   MODE_KEY: 'jeepro_datasource_mode_v10_final'
 };
 
-// CRITICAL: Hardcoded bypass for demo credentials to ensure "Demo Sign-in" works 
-// even if the production PHP backend is not yet uploaded or 404s.
+// CRITICAL: Hardcoded bypass for demo credentials
 const DEMO_ACCOUNTS: Record<string, UserAccount> = {
   'ishu@gmail.com': { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2025-01-01' },
   'parent@demo.in': { id: 'P-4402', name: 'Mr. Ramesh Sharma', email: 'parent@demo.in', role: UserRole.PARENT, createdAt: '2025-01-01' },
@@ -16,7 +15,6 @@ const DEMO_ACCOUNTS: Record<string, UserAccount> = {
 };
 
 const safeJson = async (response: Response) => {
-  // If response is not OK (e.g., 404, 500), do not attempt to parse as JSON
   if (!response.ok) {
     const errorText = await response.text().catch(() => "Unknown network error");
     console.warn(`API non-ok response (${response.status}):`, errorText);
@@ -36,7 +34,8 @@ const safeJson = async (response: Response) => {
 };
 
 export const api = {
-  getMode: (): 'MOCK' | 'LIVE' => (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'LIVE',
+  // Changed default to 'MOCK' for the preview environment
+  getMode: (): 'MOCK' | 'LIVE' => (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'MOCK',
   
   setMode: (mode: 'MOCK' | 'LIVE') => { 
     localStorage.setItem(API_CONFIG.MODE_KEY, mode); 
@@ -45,8 +44,6 @@ export const api = {
 
   async login(credentials: { email: string; password?: string; role?: UserRole }) {
     const email = credentials.email.toLowerCase();
-    
-    // PRIORITY INTERCEPT: Always allow demo accounts to sign in without hitting the network
     if (DEMO_ACCOUNTS[email]) {
       return { success: true, user: DEMO_ACCOUNTS[email] };
     }
