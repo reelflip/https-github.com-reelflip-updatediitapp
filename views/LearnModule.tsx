@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StudentData, Subject, Chapter, MockTest, ChapterStatus } from '../types';
+import { StudentData, Subject, Chapter, MockTest, ChapterStatus, TestResult } from '../types';
 import { 
   Search, ChevronRight, BookOpen, ArrowLeft, Target, 
-  Play, Clock, Edit2, X, TrendingUp, Layers, ChevronDown, Activity, Zap, Brain, CheckCircle
+  Play, Clock, Edit2, X, TrendingUp, Layers, ChevronDown, Activity, Zap, Brain, CheckCircle, Award
 } from 'lucide-react';
 import TestsView from './TestsView';
 
@@ -88,6 +88,7 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
   if (activeChapter) {
     const chapterQuestions = data.questions.filter(q => q.topicId === activeChapter.id);
     const conf = calculateConfidence(activeChapter);
+    const chapterResults = data.testHistory.filter(res => res.category === 'PRACTICE' && res.chapterIds.includes(activeChapter.id));
     
     return (
       <div className="max-w-7xl mx-auto space-y-6 animate-in slide-in-from-right duration-500 pb-20">
@@ -157,24 +158,56 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
                  </div>
                )}
                {activeContentTab === 'practice' && (
-                 <div className="space-y-6 animate-in slide-in-from-bottom-4">
-                    <div className="flex justify-between items-center px-4">
-                       <h3 className="text-xl font-black italic text-slate-800">Chapter Drills ({chapterQuestions.length})</h3>
-                       <div className="text-[10px] font-black uppercase text-indigo-600 bg-indigo-50 px-4 py-2 rounded-xl">Target Accuracy: 90%</div>
-                    </div>
-                    <div className="space-y-4 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
-                        {chapterQuestions.map((q, idx) => (
-                          <div key={q.id} className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 hover:border-indigo-200 transition-all flex flex-col md:flex-row justify-between items-center gap-6">
-                            <div className="space-y-3">
-                               <div className="flex items-center gap-3">
-                                  <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Problem {idx+1}</span>
-                                  <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${q.difficulty === 'HARD' ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-500'}`}>{q.difficulty}</div>
+                 <div className="space-y-12 animate-in slide-in-from-bottom-4">
+                    <div className="space-y-6">
+                       <div className="flex justify-between items-center px-4">
+                          <h3 className="text-xl font-black italic text-slate-800">Chapter Drills ({chapterQuestions.length})</h3>
+                          <div className="text-[10px] font-black uppercase text-indigo-600 bg-indigo-50 px-4 py-2 rounded-xl">Target Accuracy: 90%</div>
+                       </div>
+                       <div className="space-y-4 max-h-[400px] overflow-y-auto pr-4 custom-scrollbar">
+                           {chapterQuestions.map((q, idx) => (
+                             <div key={q.id} className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 hover:border-indigo-200 transition-all flex flex-col md:flex-row justify-between items-center gap-6">
+                               <div className="space-y-3">
+                                  <div className="flex items-center gap-3">
+                                     <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Problem {idx+1}</span>
+                                     <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${q.difficulty === 'HARD' ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-500'}`}>{q.difficulty}</div>
+                                  </div>
+                                  <div className="font-black text-slate-800 italic leading-tight">{q.text}</div>
                                </div>
-                               <div className="font-black text-slate-800 italic leading-tight">{q.text}</div>
+                               <button onClick={() => setTakingTest({ id: `practice-${activeChapter.id}-${idx}`, name: `${activeChapter.name} Drill`, duration: 10, totalMarks: 4, category: 'PRACTICE', difficulty: q.difficulty, questionIds: [q.id], chapterIds: [activeChapter.id] })} className="px-6 py-3 bg-white text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-indigo-100 shadow-sm hover:bg-indigo-600 hover:text-white transition-all">Attempt</button>
+                             </div>
+                           ))}
+                       </div>
+                    </div>
+
+                    {/* Local Practice History Section */}
+                    <div className="space-y-6">
+                       <div className="flex justify-between items-center px-4">
+                          <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-3"><Award className="w-5 h-5 text-indigo-600" /> Local Attempt History</h3>
+                          <div className="text-[10px] font-black uppercase text-slate-400">Restricted to {activeChapter.name}</div>
+                       </div>
+                       <div className="bg-slate-50 rounded-[2.5rem] border border-slate-100 overflow-hidden">
+                          {chapterResults.length === 0 ? (
+                            <div className="p-16 text-center text-slate-300 font-black uppercase text-[9px] tracking-widest italic">No drill attempts recorded for this node.</div>
+                          ) : (
+                            <div className="divide-y divide-slate-100">
+                               {chapterResults.map((res, i) => (
+                                 <div key={i} className="p-6 flex items-center justify-between hover:bg-indigo-50/30 transition-colors">
+                                    <div className="flex items-center gap-4">
+                                       <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-inner text-indigo-600 font-black text-xs">{i+1}</div>
+                                       <div>
+                                          <div className="text-sm font-black text-slate-800 tracking-tight italic">{res.date} Session</div>
+                                          <div className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Score: {res.score} / {res.totalMarks}</div>
+                                       </div>
+                                    </div>
+                                    <div className={`px-4 py-1.5 rounded-full text-[9px] font-black tracking-widest border ${res.accuracy > 70 ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                                       {res.accuracy}% Accuracy
+                                    </div>
+                                 </div>
+                               ))}
                             </div>
-                            <button onClick={() => setTakingTest({ id: 'quick', name: 'Quick Practice', duration: 10, totalMarks: 4, category: 'PRACTICE', difficulty: q.difficulty, questionIds: [q.id], chapterIds: [activeChapter.id] })} className="px-6 py-3 bg-white text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-indigo-100 shadow-sm hover:bg-indigo-600 hover:text-white transition-all">Attempt</button>
-                          </div>
-                        ))}
+                          )}
+                       </div>
                     </div>
                  </div>
                )}

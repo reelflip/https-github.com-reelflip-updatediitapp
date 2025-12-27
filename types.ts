@@ -77,6 +77,7 @@ export interface TestResult {
   date: string;
   chapterIds: string[];
   accuracy: number;
+  category?: string; // Added to distinguish Mock Test vs Chapter Practice
 }
 
 export interface Flashcard {

@@ -80,7 +80,8 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
       totalMarks: activeTest.totalMarks || (activeTest.questionIds.length * 4),
       date: new Date().toISOString().split('T')[0],
       chapterIds: activeTest.chapterIds,
-      accuracy: Math.round((correct / (activeTest.questionIds.length || 1)) * 100)
+      accuracy: Math.round((correct / (activeTest.questionIds.length || 1)) * 100),
+      category: activeTest.category // Crucial: Store category to differentiate results
     };
 
     setIsSubmitted(true);
@@ -349,6 +350,9 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
     )
   }
 
+  // Filter history to show ONLY Mock Tests (category 'ADMIN')
+  const mockTestHistory = data.testHistory.filter(res => res.category === 'ADMIN');
+
   return (
     <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in duration-500 pb-20 px-4">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-10">
@@ -400,12 +404,12 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
         ) : activeTab === 'history' ? (
           <div className="bg-white rounded-[3rem] border border-slate-200 shadow-sm overflow-hidden animate-in slide-in-from-right duration-500">
              <table className="w-full text-left">
-                <thead className="bg-slate-50 border-b border-slate-100"><tr className="text-[9px] font-black uppercase text-slate-400 tracking-[0.4em]"><th className="p-8">Exam Identity</th><th className="p-8 text-center">Date Taken</th><th className="p-8 text-center">Score Delta</th><th className="p-8 text-center">Precision</th><th className="p-8 text-right">Review</th></tr></thead>
+                <thead className="bg-slate-50 border-b border-slate-100"><tr className="text-[9px] font-black uppercase text-slate-400 tracking-[0.4em]"><th className="p-8">Mock Exam Identity</th><th className="p-8 text-center">Date Taken</th><th className="p-8 text-center">Score Delta</th><th className="p-8 text-center">Precision</th><th className="p-8 text-right">Review</th></tr></thead>
                 <tbody className="divide-y divide-slate-50">
-                   {data.testHistory.length === 0 ? (
-                     <tr><td colSpan={5} className="p-32 text-center text-slate-300 font-black uppercase text-xs tracking-widest italic">No historical sessions synchronized.</td></tr>
+                   {mockTestHistory.length === 0 ? (
+                     <tr><td colSpan={5} className="p-32 text-center text-slate-300 font-black uppercase text-xs tracking-widest italic">No historical Mock Exam sessions synchronized.</td></tr>
                    ) : (
-                     data.testHistory.map((res, i) => (
+                     mockTestHistory.map((res, i) => (
                        <tr key={i} className="hover:bg-slate-50/80 transition-colors group">
                           <td className="p-8 font-black text-slate-800 italic text-lg group-hover:text-indigo-600 transition-colors tracking-tight">{res.testName}</td>
                           <td className="p-8 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">{res.date}</td>

@@ -1,4 +1,3 @@
-
 import { StudentData, UserRole, Chapter } from './types';
 
 export const INITIAL_STUDENT_DATA: StudentData = {
@@ -10,7 +9,7 @@ export const INITIAL_STUDENT_DATA: StudentData = {
     { stress: 4, focus: 8, motivation: 9, examFear: 3, timestamp: '2025-12-18' }
   ],
   testHistory: [
-    { testId: 'test_jee_main_2024_p1', testName: 'JEE Main 2024 - Session 1 Official', score: 242, totalMarks: 300, date: '2025-12-10', chapterIds: ['p-units', 'm-sets'], accuracy: 82 }
+    { testId: 'test_jee_main_2024_p1', testName: 'JEE Main 2024 - Session 1 Official', score: 242, totalMarks: 300, date: '2025-12-10', chapterIds: ['p-units', 'm-sets'], accuracy: 82, category: 'ADMIN' }
   ],
   backlogs: [
     { id: 'bl_1', title: 'Circular Motion Practice', subject: 'Physics', priority: 'High', status: 'PENDING', deadline: '2025-01-01', createdAt: '2025-12-15' },
