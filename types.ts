@@ -31,8 +31,9 @@ export interface Chapter {
   timeSpentTests: number; // Time in seconds
   status: ChapterStatus;
   lastStudied?: string;
-  notes?: string[];
+  notes?: string; // Changed to string for easier CMS editing
   videoUrl?: string;
+  targetCompletionDate?: string; // New field for roadmap planning
 }
 
 export interface BacklogItem {

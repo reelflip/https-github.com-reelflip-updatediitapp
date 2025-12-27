@@ -11,7 +11,7 @@ import {
   Network, Check, ChevronRight, Bot, User, Terminal,
   Layout, List, FileText, HelpCircle, Image as ImageIcon,
   Calendar, Award, Hash, Type, Lightbulb, Activity, Filter,
-  CheckCircle2, Search, Clock, Database, Globe
+  CheckCircle2, Search, Clock, Database, Globe, Video, ExternalLink
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -122,7 +122,8 @@ const CreationHub = ({ type, item, onClose, onSave, questions = [], chapters = [
     date: new Date().toISOString().split('T')[0], status: 'PUBLISHED',
     progress: 0, accuracy: 0, timeSpent: 0,
     question: '', answer: '', category: 'Shortcuts', hack: '',
-    duration: 180, totalMarks: 300, questionIds: [], chapterIds: []
+    duration: 180, totalMarks: 300, questionIds: [], chapterIds: [],
+    notes: '', videoUrl: '', targetCompletionDate: ''
   });
 
   const [qSearch, setQSearch] = useState('');
@@ -164,7 +165,7 @@ const CreationHub = ({ type, item, onClose, onSave, questions = [], chapters = [
          <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <div className="flex items-center gap-6">
                <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-100">
-                  {type === 'Blog' ? <PenTool className="w-7 h-7" /> : type === 'Question' ? <HelpCircle className="w-7 h-7" /> : type === 'MockTest' ? <Target className="w-7 h-7" /> : <Layers className="w-7 h-7" />}
+                  {type === 'Blog' ? <PenTool className="w-7 h-7" /> : type === 'Question' ? <HelpCircle className="w-7 h-7" /> : type === 'MockTest' ? <Target className="w-7 h-7" /> : type === 'Chapter' ? <BookOpen className="w-7 h-7" /> : <Layers className="w-7 h-7" />}
                </div>
                <div>
                   <h3 className="text-3xl font-black italic tracking-tighter text-slate-900 uppercase leading-none">
@@ -177,6 +178,52 @@ const CreationHub = ({ type, item, onClose, onSave, questions = [], chapters = [
          </div>
 
          <div className="flex-1 overflow-y-auto p-12 space-y-12 custom-scrollbar">
+            {type === 'Chapter' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                 <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <InputGroup label="Chapter Name" icon={Type}>
+                        <input name="name" value={formData.name} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black italic text-slate-800" placeholder="e.g. Thermodynamics" />
+                    </InputGroup>
+                    <InputGroup label="Unit Identification" icon={Hash}>
+                        <input name="unit" value={formData.unit} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800" placeholder="e.g. UNIT 03" />
+                    </InputGroup>
+                 </div>
+
+                 <InputGroup label="Subject Vertical" icon={BookOpen}>
+                    <select name="subject" value={formData.subject} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800">
+                       <option value="Physics">Physics</option>
+                       <option value="Chemistry">Chemistry</option>
+                       <option value="Mathematics">Mathematics</option>
+                    </select>
+                 </InputGroup>
+                 <InputGroup label="Preparation Status" icon={Activity}>
+                    <select name="status" value={formData.status} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800">
+                       <option value="NOT_STARTED">Not Started</option>
+                       <option value="LEARNING">Learning Phase</option>
+                       <option value="REVISION">Revision Phase</option>
+                       <option value="COMPLETED">Mastered</option>
+                    </select>
+                 </InputGroup>
+
+                 <div className="md:col-span-2 bg-slate-50/50 p-8 rounded-[3rem] border border-slate-100 space-y-10">
+                    <h4 className="text-xl font-black italic text-slate-800 flex items-center gap-3"><Layers className="w-6 h-6 text-indigo-600" /> Advanced Academic Assets</h4>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                       <InputGroup label="Lecture Stream URL" icon={Video}>
+                          <input name="videoUrl" value={formData.videoUrl || ''} onChange={handleChange} className="w-full bg-white border-2 border-slate-100 rounded-2xl p-5 text-sm font-bold text-indigo-600" placeholder="https://youtube.com/watch?v=..." />
+                       </InputGroup>
+                       <InputGroup label="Target Mastered Date" icon={Calendar}>
+                          <input type="date" name="targetCompletionDate" value={formData.targetCompletionDate || ''} onChange={handleChange} className="w-full bg-white border-2 border-slate-100 rounded-2xl p-5 text-sm font-bold text-slate-800" />
+                       </InputGroup>
+                    </div>
+
+                    <InputGroup label="Comprehensive Theory Notes (Markdown/Text)" icon={FileText}>
+                       <textarea name="notes" value={formData.notes || ''} onChange={handleChange} rows={8} className="w-full bg-white border-2 border-slate-100 rounded-[2rem] p-8 text-sm font-medium leading-relaxed text-slate-600" placeholder="Paste theory syllabus, key points, or summary here..." />
+                    </InputGroup>
+                 </div>
+              </div>
+            )}
+
             {type === 'Blog' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                  <InputGroup label="Article Title" icon={Type}>
@@ -291,32 +338,6 @@ const CreationHub = ({ type, item, onClose, onSave, questions = [], chapters = [
                        ))}
                     </div>
                  </div>
-              </div>
-            )}
-
-            {type === 'Chapter' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                 <InputGroup label="Chapter Name" icon={Type}>
-                    <input name="name" value={formData.name} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black italic text-slate-800" placeholder="Thermodynamics..." />
-                 </InputGroup>
-                 <InputGroup label="Unit ID" icon={Hash}>
-                    <input name="unit" value={formData.unit} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800" placeholder="UNIT 01" />
-                 </InputGroup>
-                 <InputGroup label="Subject" icon={BookOpen}>
-                    <select name="subject" value={formData.subject} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800">
-                       <option value="Physics">Physics</option>
-                       <option value="Chemistry">Chemistry</option>
-                       <option value="Mathematics">Mathematics</option>
-                    </select>
-                 </InputGroup>
-                 <InputGroup label="Status" icon={Activity}>
-                    <select name="status" value={formData.status} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black text-slate-800">
-                       <option value="NOT_STARTED">Not Started</option>
-                       <option value="LEARNING">Learning Phase</option>
-                       <option value="REVISION">Revision Phase</option>
-                       <option value="COMPLETED">Mastered</option>
-                    </select>
-                 </InputGroup>
               </div>
             )}
 
@@ -654,7 +675,7 @@ CREATE TABLE wellness_scores (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARC
                          }`}>
                            {m.role === 'bot' ? <Bot className="w-5 h-5" /> : <User className="w-5 h-5" />}
                          </div>
-                         <div className={`p-6 rounded-[2rem] text-sm leading-relaxed font-bold shadow-sm whitespace-pre-wrap ${
+                         <div className={`p-8 rounded-[2rem] text-sm leading-relaxed font-bold shadow-sm whitespace-pre-wrap ${
                            m.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white text-slate-800 border border-slate-100 rounded-tl-none italic'
                          }`}>
                            {m.text}
