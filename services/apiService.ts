@@ -1,5 +1,5 @@
 
-import { StudentData, UserRole, UserAccount, Chapter, TestResult, BacklogItem, Question, MockTest, RoutineConfig } from '../types';
+import { StudentData, UserRole, UserAccount, RoutineConfig, TestResult } from '../types';
 import { INITIAL_STUDENT_DATA } from '../mockData';
 
 const API_CONFIG = {
@@ -13,21 +13,14 @@ const DEMO_USERS: Record<string, UserAccount> = {
   'admin@demo.in': { id: 'ADMIN-001', name: 'System Admin', email: 'admin@demo.in', role: UserRole.ADMIN, createdAt: '2024-01-01' }
 };
 
-const DEMO_IDS = Object.values(DEMO_USERS).map(u => u.id);
-
 const getBlankStudentData = (id: string, name: string): StudentData => ({
   ...INITIAL_STUDENT_DATA,
   id,
   name,
   chapters: INITIAL_STUDENT_DATA.chapters.map(c => ({
     ...c,
-    progress: 0,
-    accuracy: 0,
-    timeSpent: 0,
-    timeSpentNotes: 0,
-    timeSpentVideos: 0,
-    timeSpentPractice: 0,
-    timeSpentTests: 0,
+    progress: 0, accuracy: 0, timeSpent: 0,
+    timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0,
     status: 'NOT_STARTED'
   })),
   backlogs: [],
@@ -37,17 +30,11 @@ const getBlankStudentData = (id: string, name: string): StudentData => ({
 });
 
 const safeJson = async (response: Response) => {
-  if (response.status === 404) {
-    throw new Error("Endpoint Not Found (404). Ensure /api/ folder and .htaccess are uploaded.");
-  }
-  
   const text = await response.text();
   try {
     return JSON.parse(text);
   } catch (e) {
-    if (text.includes('<?php') || text.includes('Fatal error') || text.includes('PDOException')) {
-        throw new Error("Database Logic Error: " + text.substring(0, 150));
-    }
+    console.error("Malformed JSON response:", text);
     throw new Error("Invalid Server Response.");
   }
 };
@@ -57,133 +44,69 @@ export const api = {
   
   setMode: (mode: 'MOCK' | 'LIVE') => { 
     localStorage.setItem(API_CONFIG.MODE_KEY, mode); 
-    localStorage.removeItem('jeepro_user');
-    localStorage.removeItem('jeepro_student_data');
     window.location.reload(); 
   },
 
   async login(credentials: { email: string; role: UserRole; password?: string }) {
-    // INTERCEPT DEMO USERS for local testing without backend
     if (this.getMode() === 'MOCK' && DEMO_USERS[credentials.email]) {
       return { success: true, user: DEMO_USERS[credentials.email] };
     }
-
     try {
-      const res = await fetch(`${API_CONFIG.BASE_URL}auth/login`, {
+      const res = await fetch(`${API_CONFIG.BASE_URL}login.php`, {
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials)
       });
-      const result = await safeJson(res);
-      if (result.success) {
-        localStorage.setItem(API_CONFIG.MODE_KEY, 'LIVE');
-      }
-      return result;
-    } catch(e: any) { 
-      // Fallback for demo users if network fails
-      if (DEMO_USERS[credentials.email]) {
-        return { success: true, user: DEMO_USERS[credentials.email] };
-      }
-      return { success: false, error: "Uplink Failed: " + (e.message || "Database unreachable.") }; 
-    }
+      return await safeJson(res);
+    } catch(e) { return { success: false, error: "Uplink Failed." }; }
   },
 
   async register(data: any) {
-    try {
-      const res = await fetch(`${API_CONFIG.BASE_URL}auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      const result = await safeJson(res);
-      if (result.success) {
-        localStorage.setItem(API_CONFIG.MODE_KEY, 'LIVE');
-      }
-      return result;
-    } catch(e: any) { 
-      // If we are in MOCK mode, simulate registration success
-      if (this.getMode() === 'MOCK') {
-          const mockUser = { id: 'USR-' + Math.random().toString(36).substr(2, 5), name: data.name, email: data.email, role: data.role, createdAt: new Date().toISOString() };
-          return { success: true, user: mockUser };
-      }
-      return { success: false, error: "Registration Failed: " + (e.message || "Server error.") }; 
-    }
-  },
-
-  async updateUserProfile(studentId: string, profileData: any) {
-    if (this.getMode() === 'LIVE') {
-      try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}auth/update_profile`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: studentId, ...profileData })
-        });
-        return await safeJson(res);
-      } catch (e: any) {
-        return { success: false, error: e.message };
-      }
-    }
-    return { success: true };
+    if (this.getMode() === 'MOCK') return { success: true, user: { ...data, id: 'MOCK-' + Math.random() } };
+    const res = await fetch(`${API_CONFIG.BASE_URL}register.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return await safeJson(res);
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
-    const isDemo = DEMO_IDS.includes(studentId);
-    
-    if (this.getMode() === 'LIVE' && !isDemo) {
+    if (this.getMode() === 'LIVE') {
       try {
-        const [sRes, bRes, wRes, rRes, qRes, tRes, rtRes] = await Promise.all([
-          fetch(`${API_CONFIG.BASE_URL}syllabus/get?id=${studentId}`),
-          fetch(`${API_CONFIG.BASE_URL}backlogs/get?id=${studentId}`),
-          fetch(`${API_CONFIG.BASE_URL}wellness/get?id=${studentId}`),
-          fetch(`${API_CONFIG.BASE_URL}results/get?id=${studentId}`),
-          fetch(`${API_CONFIG.BASE_URL}questions/index`),
-          fetch(`${API_CONFIG.BASE_URL}mocktests/index`),
-          fetch(`${API_CONFIG.BASE_URL}timetable/get?id=${studentId}`)
-        ]);
-
-        const syllabus = await safeJson(sRes);
-        if (!syllabus || !syllabus.chapters) {
-          return getBlankStudentData(studentId, 'Verified Student');
-        }
-
-        const backlogs = await safeJson(bRes);
-        const wellness = await safeJson(wRes);
-        const results = await safeJson(rRes);
-        const questions = await safeJson(qRes);
-        const tests = await safeJson(tRes);
-        const routine = await safeJson(rtRes);
-        
-        return {
-          ...getBlankStudentData(studentId, syllabus.name || 'User'),
-          chapters: Array.isArray(syllabus.chapters) ? syllabus.chapters : [],
-          backlogs: Array.isArray(backlogs) ? backlogs : [],
-          testHistory: Array.isArray(results) ? results : [],
-          questions: Array.isArray(questions) ? questions : INITIAL_STUDENT_DATA.questions,
-          mockTests: Array.isArray(tests) ? tests : INITIAL_STUDENT_DATA.mockTests,
-          psychometricHistory: wellness?.length ? wellness : [],
-          routine: routine || undefined
-        };
-      } catch(e) { 
-          return getBlankStudentData(studentId, 'Recovery User'); 
-      }
+        const res = await fetch(`${API_CONFIG.BASE_URL}get_dashboard.php?id=${studentId}`);
+        const result = await safeJson(res);
+        if (result.success) return result.data;
+      } catch(e) { console.error(e); }
     }
-    
     return INITIAL_STUDENT_DATA;
   },
 
   async saveRoutine(studentId: string, routine: RoutineConfig) {
     if (this.getMode() === 'LIVE') {
-      await fetch(`${API_CONFIG.BASE_URL}timetable/save`, {
+      await fetch(`${API_CONFIG.BASE_URL}manage_settings.php?action=save_routine`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ student_id: studentId, ...routine })
+        body: JSON.stringify({ student_id: studentId, routine })
       });
     }
   },
 
-  async saveEntity(module: string, data: any) {
+  async updateStudentData(studentId: string, updatedData: StudentData) {
     if (this.getMode() === 'LIVE') {
-      const res = await fetch(`${API_CONFIG.BASE_URL}${module.toLowerCase()}/save`, {
+      await fetch(`${API_CONFIG.BASE_URL}manage_syllabus.php?action=update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: studentId, chapters: updatedData.chapters })
+      });
+    }
+    return { success: true };
+  },
+
+  async saveEntity(type: string, data: any) {
+    if (this.getMode() === 'LIVE') {
+      const endpoint = type === 'Result' ? 'save_attempt.php' : `manage_${type.toLowerCase()}.php?action=save`;
+      const res = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -193,25 +116,23 @@ export const api = {
     return { success: true };
   },
 
-  async updateStudentData(studentId: string, updatedData: StudentData) {
+  async getAccounts(): Promise<UserAccount[]> {
     if (this.getMode() === 'LIVE') {
-        if (updatedData.routine) {
-            await this.saveRoutine(studentId, updatedData.routine);
-        }
-        return this.saveEntity('Syllabus', { student_id: studentId, chapters: updatedData.chapters });
+      const res = await fetch(`${API_CONFIG.BASE_URL}manage_users.php?action=list`);
+      return await safeJson(res);
     }
-    return { success: true };
+    return Object.values(DEMO_USERS);
   },
 
-  async getAccounts(): Promise<UserAccount[]> {
-     if (this.getMode() === 'LIVE') {
-       try {
-         const res = await fetch(`${API_CONFIG.BASE_URL}auth/index`);
-         const data = await safeJson(res);
-         return Array.isArray(data) ? data : [];
-       } catch(e) { return []; }
-     }
-     // In mock mode, return the demo users
-     return Object.values(DEMO_USERS);
+  async updateUserProfile(studentId: string, profileData: any) {
+    if (this.getMode() === 'LIVE') {
+      const res = await fetch(`${API_CONFIG.BASE_URL}manage_users.php?action=update_profile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: studentId, ...profileData })
+      });
+      return await safeJson(res);
+    }
+    return { success: true };
   }
 };
