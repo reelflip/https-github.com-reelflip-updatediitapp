@@ -31,10 +31,17 @@ export const api = {
     window.location.reload(); 
   },
 
-  async login(credentials: { email: string; role: UserRole; password?: string }) {
-    if (this.getMode() === 'MOCK' && DEMO_USERS[credentials.email]) {
-      return { success: true, user: DEMO_USERS[credentials.email] };
+  async login(credentials: { email: string; password?: string; role?: UserRole }) {
+    // In MOCK mode, we find the user by email and return their inherent role
+    if (this.getMode() === 'MOCK') {
+      const user = DEMO_USERS[credentials.email.toLowerCase()];
+      if (user) {
+        return { success: true, user };
+      }
+      return { success: false, error: "Credentials not recognized in Sandbox." };
     }
+    
+    // In LIVE mode, the PHP backend handles the role lookup automatically
     try {
       const res = await fetch(`${API_CONFIG.BASE_URL}index.php?action=login`, {
         method: 'POST', 

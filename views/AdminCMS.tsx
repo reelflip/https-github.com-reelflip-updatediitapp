@@ -439,18 +439,25 @@ $input = json_decode(file_get_contents('php://input'), true) ?? [];
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') exit;
 `);
 
-        // 2. controllers/UserController.php
+        // 2. controllers/UserController.php - UPDATED WITH ROLE-LESS LOGIN
         controllerFolder.file("UserController.php", `<?php
 require_once __DIR__ . '/../config/database.php';
 
 class UserController {
-    public static function login($email, $role) {
+    public static function login($email, $password) {
         $db = Database::getConnection();
-        $stmt = $db->prepare("SELECT * FROM users WHERE email = ? AND role = ?");
-        $stmt->execute([$email, $role]);
+        // Identify user by email only - role is retrieved as part of the record
+        $stmt = $db->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt->execute([$email]);
         $user = $stmt->fetch();
+        
         if ($user) {
-            return ['success' => true, 'user' => $user];
+            // For production, use password_verify($password, $user['password'])
+            // Here we just check equality for the provided logic
+            if ($user['password'] === $password) {
+                return ['success' => true, 'user' => $user];
+            }
+            return ['success' => false, 'error' => 'INVALID_PASSWORD'];
         }
         return ['success' => false, 'error' => 'USER_NOT_FOUND'];
     }
@@ -458,8 +465,23 @@ class UserController {
     public static function register($data) {
         $db = Database::getConnection();
         $id = 'USR-' . strtoupper(substr(md5(uniqid()), 0, 8));
-        $stmt = $db->prepare("INSERT INTO users (id, name, email, role, institute, target_exam, target_year) VALUES (?,?,?,?,?,?,?)");
-        $stmt->execute([$id, $data['name'], $data['email'], $data['role'], $data['institute'], $data['targetExam'], $data['targetYear']]);
+        
+        // Comprehensive Registration Insertion
+        $stmt = $db->prepare("INSERT INTO users (id, name, email, password, role, institute, target_exam, target_year, birth_date, gender) VALUES (?,?,?,?,?,?,?,?,?,?)");
+        
+        $stmt->execute([
+            $id, 
+            $data['name'], 
+            $data['email'], 
+            $data['password'], 
+            $data['role'], 
+            $data['institute'], 
+            $data['targetExam'], 
+            $data['targetYear'],
+            $data['birthDate'],
+            $data['gender']
+        ]);
+        
         return ['success' => true, 'user' => ['id' => $id, 'name' => $data['name'], 'role' => $data['role']]];
     }
 }
@@ -521,13 +543,12 @@ require_once 'controllers/UserController.php';
 require_once 'controllers/AcademicController.php';
 
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$parts = explode('/', trim($path, '/'));
 $action = $_GET['action'] ?? '';
 
-// Simple Router
-if (strpos($path, 'login.php') !== false) {
-    response(UserController::login($input['email'], $input['role']));
-} elseif (strpos($path, 'register.php') !== false) {
+// Router logic
+if ($action === 'login') {
+    response(UserController::login($input['email'], $input['password'] ?? ''));
+} elseif ($action === 'register') {
     response(UserController::register($input));
 } elseif (strpos($path, 'get_dashboard.php') !== false) {
     response(AcademicController::getDashboard($_GET['id']));
@@ -630,7 +651,9 @@ CREATE TABLE IF NOT EXISTS mock_tests (
 );
 
 -- SEED DATA
-INSERT INTO users (id, email, name, role) VALUES ('163110', 'ishu@gmail.com', 'Aryan Sharma', 'STUDENT');
+INSERT INTO users (id, email, name, password, role) VALUES ('163110', 'ishu@gmail.com', 'Aryan Sharma', 'password', 'STUDENT');
+INSERT INTO users (id, email, name, password, role) VALUES ('P-4402', 'parent@demo.in', 'Mr. Ramesh Sharma', 'password', 'PARENT');
+INSERT INTO users (id, email, name, password, role) VALUES ('ADMIN-001', 'admin@demo.in', 'System Admin', 'password', 'ADMIN');
 INSERT INTO chapters (student_id, chapter_id, subject, name, progress, accuracy) VALUES ('163110', 'p-units', 'Physics', 'Units & Measurements', 40, 85);
 `);
       }
