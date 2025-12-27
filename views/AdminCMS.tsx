@@ -2,13 +2,16 @@
 import React, { useState, useEffect } from 'react';
 import { StudentData, UserAccount, Subject, Question, MockTest, Chapter, Flashcard, MemoryHack, Blog, UserRole } from '../types';
 import { api } from '../services/apiService';
+import { MODEL_CONFIGS } from '../services/intelligenceService';
+import JSZip from 'jszip';
+import saveAs from 'file-saver';
 import { 
   ShieldCheck, BookOpen, Layers, Zap, Loader2,
   Plus, Trash2, Edit3, X, 
   Target, Code2, Save, Users, PenTool,
   Check, HelpCircle, Video,
   Award, Type, Lightbulb, Activity, Filter,
-  Search, Clock, ChevronRight, Layout, List, FileText, Calendar, Globe
+  Search, Clock, ChevronRight, Layout, List, FileText, Calendar, Globe, Settings, Cpu, Database, Cloud, Download
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -41,6 +44,195 @@ const Overview = ({ data }: { data: StudentData }) => (
     ))}
   </div>
 );
+
+const SystemSettings = ({ data }: { data: StudentData }) => {
+  const [activeModel, setActiveModel] = useState(localStorage.getItem('jeepro_platform_ai_model') || 'gemini-3-flash');
+  const [isDownloading, setIsDownloading] = useState(false);
+  const mode = api.getMode();
+
+  const updateModel = (id: string) => {
+    localStorage.setItem('jeepro_platform_ai_model', id);
+    setActiveModel(id);
+  };
+
+  const downloadProductionBackend = async () => {
+    setIsDownloading(true);
+    try {
+      const zip = new JSZip();
+      
+      // SQL MASTER SCHEMA
+      const sqlSchema = `-- IITGEEPREP MASTER SCHEMA v20.0
+CREATE DATABASE IF NOT EXISTS iitgrrprep_v20;
+USE iitgrrprep_v20;
+
+CREATE TABLE users (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100) UNIQUE,
+    password VARCHAR(255),
+    role ENUM('STUDENT', 'PARENT', 'ADMIN'),
+    institute VARCHAR(255),
+    targetExam VARCHAR(100),
+    targetYear VARCHAR(4),
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE chapters (
+    id VARCHAR(50) PRIMARY KEY,
+    subject VARCHAR(50),
+    unit VARCHAR(100),
+    name VARCHAR(255),
+    notes LONGTEXT,
+    videoUrl VARCHAR(255),
+    targetCompletionDate DATE
+);
+
+CREATE TABLE student_progress (
+    student_id VARCHAR(50),
+    chapter_id VARCHAR(50),
+    progress INT DEFAULT 0,
+    accuracy INT DEFAULT 0,
+    timeSpentNotes INT DEFAULT 0,
+    timeSpentVideos INT DEFAULT 0,
+    timeSpentPractice INT DEFAULT 0,
+    lastStudied DATETIME,
+    PRIMARY KEY (student_id, chapter_id)
+);
+
+CREATE TABLE mock_tests (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(255),
+    duration INT,
+    totalMarks INT,
+    category VARCHAR(50),
+    difficulty VARCHAR(50),
+    questionIds TEXT,
+    chapterIds TEXT
+);`;
+
+      // DATABASE CONFIG
+      const dbConfig = `<?php
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'iitgrrprep_v20');
+define('DB_USER', 'root');
+define('DB_PASS', '');
+
+try {
+    $pdo = new PDO("mysql:host=".DB_HOST.";dbname=".DB_NAME, DB_USER, DB_PASS);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+} catch(PDOException $e) {
+    die(json_encode(["success" => false, "error" => "Uplink Failed: " . $e->getMessage()]));
+}
+?>`;
+
+      // MAIN API GATEWAY
+      const apiIndex = `<?php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Content-Type: application/json");
+require_once 'config/database.php';
+
+$action = $_GET['action'] ?? '';
+
+switch($action) {
+    case 'login':
+        // Implement logic using password_verify
+        echo json_encode(["success" => true, "message" => "Auth Node Ready"]);
+        break;
+    default:
+        echo json_encode(["success" => false, "error" => "Undefined endpoint"]);
+}
+?>`;
+
+      zip.folder("api")?.file("index.php", apiIndex);
+      zip.folder("api/config")?.file("database.php", dbConfig);
+      zip.folder("api/sql")?.file("master_schema_v20.sql", sqlSchema);
+      
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, "iitgrrprep_production_backend.zip");
+    } catch (e) {
+      alert("Bundle generation failed.");
+    }
+    setIsDownloading(false);
+  };
+
+  return (
+    <div className="space-y-12 px-4 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          <div className="bg-white p-12 rounded-[4rem] border border-slate-200 shadow-sm space-y-10">
+             <div className="flex items-center gap-5">
+                <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shadow-inner"><Cpu className="w-7 h-7" /></div>
+                <div>
+                   <h3 className="text-2xl font-black italic tracking-tighter text-slate-900 uppercase">Intelligence Core</h3>
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Platform-wide LLM Orchestration</p>
+                </div>
+             </div>
+             
+             <div className="grid grid-cols-1 gap-4">
+                {Object.entries(MODEL_CONFIGS).map(([id, cfg]) => (
+                   <button 
+                    key={id}
+                    onClick={() => updateModel(id)}
+                    className={`p-6 rounded-[2rem] border-2 text-left transition-all flex items-center justify-between group ${activeModel === id ? 'border-indigo-600 bg-indigo-50/30' : 'border-slate-50 hover:border-indigo-200'}`}
+                   >
+                      <div className="flex items-center gap-5">
+                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${activeModel === id ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}>{cfg.name[0]}</div>
+                         <div>
+                            <div className="text-sm font-black text-slate-800">{cfg.name}</div>
+                            <div className="text-[9px] font-bold text-slate-400 uppercase">{cfg.desc}</div>
+                         </div>
+                      </div>
+                      {activeModel === id && <Check className="w-5 h-5 text-indigo-600" />}
+                   </button>
+                ))}
+             </div>
+          </div>
+
+          <div className="space-y-8">
+             <div className="bg-slate-900 p-12 rounded-[4rem] text-white shadow-2xl space-y-8 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:rotate-12 transition-transform duration-[4s]"><Database className="w-48 h-48" /></div>
+                <div>
+                   <h3 className="text-2xl font-black italic tracking-tighter uppercase">Uplink Status</h3>
+                   <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Data persistence layer config</p>
+                </div>
+                
+                <div className="flex items-center justify-between p-6 bg-white/5 rounded-3xl border border-white/10">
+                   <div className="flex items-center gap-4">
+                      <div className={`w-3 h-3 rounded-full animate-pulse ${mode === 'LIVE' ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-slate-500'}`}></div>
+                      <div className="text-sm font-bold uppercase tracking-widest">{mode === 'LIVE' ? 'Production (SQL)' : 'Sandbox Mode'}</div>
+                   </div>
+                   <button 
+                    onClick={() => api.setMode(mode === 'MOCK' ? 'LIVE' : 'MOCK')} 
+                    className={`w-14 h-7 rounded-full p-1 transition-all duration-500 ${mode === 'LIVE' ? 'bg-emerald-500' : 'bg-slate-700'}`}
+                   >
+                      <div className={`w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-500 transform ${mode === 'LIVE' ? 'translate-x-7' : 'translate-x-0'}`}></div>
+                   </button>
+                </div>
+
+                <div className="space-y-4 pt-6">
+                   <div className="flex justify-between text-xs font-bold text-slate-400"><span>Latency</span><span>{mode === 'LIVE' ? '24ms' : '0ms'}</span></div>
+                   <div className="flex justify-between text-xs font-bold text-slate-400"><span>API Version</span><span>v10.5-FINAL</span></div>
+                </div>
+             </div>
+
+             <div className="bg-indigo-600 p-12 rounded-[4rem] text-white shadow-xl space-y-6 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 opacity-10"><Cloud className="w-32 h-32" /></div>
+                <h3 className="text-xl font-black italic tracking-tighter uppercase">Deployment Blueprint</h3>
+                <p className="text-sm text-indigo-100 font-medium italic leading-relaxed">Download the modular PHP backbone to synchronize this UI with your local XAMPP/Production server.</p>
+                <button 
+                  onClick={downloadProductionBackend}
+                  disabled={isDownloading}
+                  className="w-full py-5 bg-white text-indigo-600 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:scale-[1.02] active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50"
+                >
+                  {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Download className="w-4 h-4" /> Download Production ZIP</>}
+                </button>
+             </div>
+          </div>
+       </div>
+    </div>
+  );
+};
 
 const UserManagement = () => {
   const [users, setUsers] = useState<UserAccount[]>([]);
@@ -306,7 +498,7 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                     <InputGroup label="Article Headline"><input name="title" value={formData.title} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-xl font-black italic text-slate-800" /></InputGroup>
                     <InputGroup label="Author Node"><input name="author" value={formData.author} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black" /></InputGroup>
                  </div>
-                 <InputGroup label="Manuscript (HTML Support)"><textarea name="content" value={formData.content} onChange={handleChange} rows={15} className="w-full bg-slate-50 border-none rounded-[2rem] p-8 text-base font-medium leading-relaxed text-slate-600 shadow-inner" placeholder="Detailed tactical content..." /></InputGroup>
+                 <InputGroup label="Manuscript (HTML Support)"><textarea name="content" value={formData.content} onChange={handleChange} rows={15} className="w-full bg-slate-50 border-none rounded-[2.5rem] p-8 text-base font-medium leading-relaxed text-slate-600 shadow-inner" placeholder="Detailed tactical content..." /></InputGroup>
               </div>
             )}
          </div>
@@ -398,6 +590,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
         {activeTab === 'admin-flashcards' && <EntityList title="Recall Engine (Cards)" type="Flashcard" data={data.flashcards} icon={Layers} color="blue" btnLabel="Add Recall Card" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Flashcard'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-hacks' && <EntityList title="Memory Hack Vault" type="MemoryHack" data={data.memoryHacks} icon={Zap} color="amber" btnLabel="Add Logic Hack" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MemoryHack'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-blogs' && <EntityList title="Intelligence Strategy Feed" type="Blog" data={data.blogs} icon={PenTool} color="indigo" btnLabel="Draft Strategy" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Blog'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-system' && <SystemSettings data={data} />}
       </div>
 
       {isCreating && (
