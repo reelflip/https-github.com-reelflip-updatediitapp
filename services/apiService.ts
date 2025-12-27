@@ -114,7 +114,8 @@ export const api = {
 
   async saveEntity(type: string, data: any) {
     if (this.getMode() === 'LIVE') {
-      const res = await fetch(`${API_CONFIG.BASE_URL}manage_${type.toLowerCase()}.php?action=save`, {
+      const endpoint = type.toLowerCase().includes('result') ? 'save_attempt.php' : `manage_${type.toLowerCase()}.php?action=save`;
+      const res = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
