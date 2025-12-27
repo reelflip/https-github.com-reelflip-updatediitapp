@@ -32,18 +32,14 @@ export const api = {
   },
 
   async login(credentials: { email: string; password?: string; role?: UserRole }) {
-    // In MOCK mode, we find the user by email and return their inherent role
     if (this.getMode() === 'MOCK') {
       const user = DEMO_USERS[credentials.email.toLowerCase()];
-      if (user) {
-        return { success: true, user };
-      }
-      return { success: false, error: "Credentials not recognized in Sandbox." };
+      if (user) return { success: true, user };
+      return { success: false, error: "Sandbox identity not found." };
     }
     
-    // In LIVE mode, the PHP backend handles the role lookup automatically
     try {
-      const res = await fetch(`${API_CONFIG.BASE_URL}index.php?action=login`, {
+      const res = await fetch(`${API_CONFIG.BASE_URL}login.php`, {
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials)
@@ -54,7 +50,7 @@ export const api = {
 
   async register(data: any) {
     if (this.getMode() === 'MOCK') return { success: true, user: { ...data, id: 'MOCK-' + Math.random() } };
-    const res = await fetch(`${API_CONFIG.BASE_URL}index.php?action=register`, {
+    const res = await fetch(`${API_CONFIG.BASE_URL}register.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -75,7 +71,7 @@ export const api = {
 
   async saveRoutine(studentId: string, routine: RoutineConfig) {
     if (this.getMode() === 'LIVE') {
-      await fetch(`${API_CONFIG.BASE_URL}index.php?action=save_routine`, {
+      await fetch(`${API_CONFIG.BASE_URL}save_routine.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ student_id: studentId, routine })
@@ -85,7 +81,7 @@ export const api = {
 
   async saveTimetable(studentId: string, tasks: any) {
     if (this.getMode() === 'LIVE') {
-      await fetch(`${API_CONFIG.BASE_URL}index.php?action=save_timetable`, {
+      await fetch(`${API_CONFIG.BASE_URL}save_timetable.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ student_id: studentId, tasks })
@@ -107,7 +103,7 @@ export const api = {
 
   async updateStudentData(studentId: string, updatedData: StudentData) {
     if (this.getMode() === 'LIVE') {
-      await fetch(`${API_CONFIG.BASE_URL}index.php?action=update_syllabus`, {
+      await fetch(`${API_CONFIG.BASE_URL}manage_syllabus.php?action=update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ student_id: studentId, chapters: updatedData.chapters })
@@ -118,7 +114,7 @@ export const api = {
 
   async saveEntity(type: string, data: any) {
     if (this.getMode() === 'LIVE') {
-      const res = await fetch(`${API_CONFIG.BASE_URL}index.php?action=save_${type.toLowerCase()}`, {
+      const res = await fetch(`${API_CONFIG.BASE_URL}manage_${type.toLowerCase()}.php?action=save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -130,7 +126,7 @@ export const api = {
 
   async getAccounts(): Promise<UserAccount[]> {
     if (this.getMode() === 'LIVE') {
-      const res = await fetch(`${API_CONFIG.BASE_URL}index.php?action=list_users`);
+      const res = await fetch(`${API_CONFIG.BASE_URL}manage_users.php`);
       return await safeJson(res);
     }
     return Object.values(DEMO_USERS);
@@ -138,7 +134,7 @@ export const api = {
 
   async updateUserProfile(studentId: string, profileData: any) {
     if (this.getMode() === 'LIVE') {
-      const res = await fetch(`${API_CONFIG.BASE_URL}index.php?action=update_profile`, {
+      const res = await fetch(`${API_CONFIG.BASE_URL}manage_settings.php?action=profile`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: studentId, ...profileData })
