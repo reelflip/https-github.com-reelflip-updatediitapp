@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { StudentData, Blog } from '../types';
 import { Calendar, User, ArrowLeft, Share2, Bookmark, Clock, Sparkles, ChevronRight, Search, TrendingUp, BookOpen, Zap } from 'lucide-react';
@@ -8,42 +9,40 @@ interface BlogModuleProps {
 
 const BlogModule: React.FC<BlogModuleProps> = ({ data }) => {
   const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
-  const [activeCategory, setActiveCategory] = useState('All Strategy Reports');
+  const [activeCategory, setActiveCategory] = useState('All Reports');
 
-  // Enhanced categories for better preparation utility
-  const categories = ['All Strategy Reports', 'Physics Insights', 'Organic Hacks', 'Math Mechanics', 'Numerical Stoicism', 'Wellness'];
+  const categories = ['All Reports', 'Physics Insights', 'Organic Hacks', 'Math Mechanics', 'Numerical Strategies', 'Wellness'];
 
-  // High-value preparation articles (Simulated context)
   const strategyArticles = [
     {
       id: 's1',
-      title: 'The Forgetting Curve: Why your Revision Fails',
+      title: 'The Forgetting Curve: Applied Revision Methodology',
       author: 'Academic Node 01',
       date: 'DEC 24, 2024',
       readTime: '12 MIN',
       category: 'Psychology',
-      content: `<h1>The Science of Memory Decay</h1><p>Standard revision follows a linear path. Dominant preparation follows an exponential one. Learn how to exploit the science of spaced repetition to double your retention velocity before the Jan attempt.</p>`,
-      excerpt: "Generic revision leads to decay. Learn how to use Spaced Repetition algorithms to retain 90% of the JEE syllabus."
+      content: `<h1>The Science of Memory Decay</h1><p>Standard revision often follows a linear path. This report analyzes how to exploit the science of spaced repetition to optimize retention velocity before the upcoming attempts.</p>`,
+      excerpt: "Technical analysis of memory decay. Learn how to use Spaced Repetition algorithms to maintain high retention levels across the syllabus."
     },
     {
       id: 's2',
-      title: 'Numerical Stoicism: Surviving consecutive Hard Qs',
-      author: 'IIT-B Graduate Node',
+      title: 'Performance Stability: Analysis of Exam Stress',
+      author: 'Graduated Researcher',
       date: 'DEC 22, 2024',
       readTime: '8 MIN',
       category: 'Exam Strategy',
-      content: `<h1>Exam Stoicism</h1><p>The biggest mark-killer in JEE Advanced isn't lack of knowledge—it's panic. When you face 3 consecutive unsolved problems, your cortisol levels spike. We analyze how to maintain a flat-line focus pulse.</p>`,
-      excerpt: "Panic is the #1 reason for silly mistakes. Master the psychological flat-line to maintain precision under pressure."
+      content: `<h1>Exam Stoicism</h1><p>Stability under pressure is a measurable metric. We analyze how to maintain a consistent focus pulse during high-stakes examinations and minimize error rates.</p>`,
+      excerpt: "Minimizing silly mistakes requires consistent mental state monitoring. We examine the methodology for maintaining precision."
     },
     {
       id: 's3',
-      title: 'Organic Chemistry: Architecture over Memorization',
+      title: 'Organic Chemistry: Mechanism Mapping vs Memorization',
       author: 'Chemistry Specialist',
       date: 'DEC 20, 2024',
       readTime: '15 MIN',
       category: 'Subject Strategy',
-      content: `<h1>The Mechanism Map</h1><p>Stop memorizing 500+ reactions. Start understanding Electron Density and Nucleophilic attacks. Once you see the architecture of the molecule, the reaction predicts itself.</p>`,
-      excerpt: "Molecular architecture predicts reactions. Stop rote learning and start engineering your Chemistry scores."
+      content: `<h1>The Mechanism Map</h1><p>This report discusses shifting from memorization to understanding electron density and nucleophilic patterns for organic reaction prediction.</p>`,
+      excerpt: "Understanding molecular architecture allows for more reliable reaction prediction than rote learning."
     }
   ];
 
@@ -55,7 +54,7 @@ const BlogModule: React.FC<BlogModuleProps> = ({ data }) => {
           onClick={() => setSelectedBlog(null)}
           className="flex items-center gap-4 text-[#4a5578] hover:text-white font-black text-[10px] uppercase tracking-[0.4em] transition-all group"
         >
-          <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-2" /> Back to Intelligence Hub
+          <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-2" /> Back to Technical Reports
         </button>
 
         <article className="bg-[#161a2e] rounded-[5rem] overflow-hidden border border-[#2d3656] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.7)] relative">
@@ -63,8 +62,8 @@ const BlogModule: React.FC<BlogModuleProps> = ({ data }) => {
             <div className="absolute inset-0 bg-gradient-to-t from-[#161a2e] via-[#0d1021]/60 to-transparent"></div>
             <div className="absolute bottom-20 left-16 right-16 space-y-8">
               <div className="flex gap-4">
-                 <span className="bg-[#5d5fef] text-white px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-[0_15px_30px_rgba(93,95,239,0.4)]">Strategic Report</span>
-                 <span className="bg-white/5 backdrop-blur-md text-[#7d8cb8] px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10">High Frequency Intel</span>
+                 <span className="bg-[#5d5fef] text-white px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-[0_15px_30px_rgba(93,95,239,0.4)]">Technical Report</span>
+                 <span className="bg-white/5 backdrop-blur-md text-[#7d8cb8] px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10">Academic Intel</span>
               </div>
               <h1 className="text-6xl md:text-8xl font-black text-white italic tracking-tighter leading-[0.85] uppercase drop-shadow-2xl">{blog.title}</h1>
             </div>
@@ -78,7 +77,7 @@ const BlogModule: React.FC<BlogModuleProps> = ({ data }) => {
                   </div>
                   <div>
                     <div className="text-2xl font-black text-white tracking-tight uppercase italic leading-none">{blog.author}</div>
-                    <div className="text-[11px] text-indigo-400 font-black uppercase tracking-[0.4em] mt-3">{blog.date} • JEE-PRO VERIFIED</div>
+                    <div className="text-[11px] text-indigo-400 font-black uppercase tracking-[0.4em] mt-3">{blog.date} • VERIFIED SOURCE</div>
                   </div>
                </div>
                <div className="flex gap-6">
@@ -91,17 +90,6 @@ const BlogModule: React.FC<BlogModuleProps> = ({ data }) => {
               className="prose prose-invert max-w-none prose-p:text-[#7d8cb8] prose-p:text-2xl prose-p:leading-relaxed prose-headings:font-black prose-headings:tracking-tighter prose-img:rounded-[4rem] prose-img:shadow-2xl prose-strong:text-white italic font-medium selection:bg-indigo-500/30"
               dangerouslySetInnerHTML={{ __html: blog.content }}
             />
-            
-            <div className="pt-20 border-t border-[#1e2440]">
-               <div className="bg-[#0d1021] p-16 rounded-[4rem] flex flex-col md:flex-row items-center justify-between gap-12 border border-[#1e2440] relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform"><TrendingUp className="w-32 h-32" /></div>
-                  <div className="space-y-6 text-center md:text-left relative z-10">
-                     <h4 className="text-4xl font-black italic text-white tracking-tight uppercase leading-none">Upgrade your Architecture.</h4>
-                     <p className="text-[#4a5578] font-medium text-xl max-w-md italic">Join 15,000+ aspirants receiving weekly tactical reports and memory flushes.</p>
-                  </div>
-                  <button className="bg-[#5d5fef] text-white px-16 py-8 rounded-[2.5rem] font-black uppercase text-[11px] tracking-[0.4em] shadow-[0_20px_50px_-10px_rgba(93,95,239,0.5)] hover:scale-105 transition-all relative z-10">Establish Permanent Link</button>
-               </div>
-            </div>
           </div>
         </article>
       </div>
@@ -115,23 +103,22 @@ const BlogModule: React.FC<BlogModuleProps> = ({ data }) => {
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-12">
         <div className="space-y-8">
           <div className="inline-flex items-center gap-3 bg-indigo-500/10 border border-indigo-500/20 px-6 py-2.5 rounded-full text-[11px] font-black uppercase tracking-[0.4em] text-indigo-400">
-            <Sparkles className="w-4 h-4" /> Tactics for AIR-1
+            <TrendingUp className="w-4 h-4" /> Strategy & Analytics
           </div>
-          <h2 className="text-8xl font-black text-white tracking-tighter italic leading-[0.85] uppercase">INTELLIGENCE <br /> <span className="text-[#5d5fef]">HUB.</span></h2>
-          <p className="text-[#7d8cb8] text-2xl font-medium max-w-xl leading-relaxed italic">"Deep dives into high-performance study mechanics, subject strategies, and numerical warfare."</p>
+          <h2 className="text-8xl font-black text-white tracking-tighter italic leading-[0.85] uppercase">TECHNICAL <br /> <span className="text-[#5d5fef]">HUB.</span></h2>
+          <p className="text-[#7d8cb8] text-2xl font-medium max-w-xl leading-relaxed italic">"Analytical reports on preparation mechanics, subject-specific trends, and performance psychology."</p>
         </div>
         
         <div className="w-full lg:w-[450px] relative group">
            <Search className="absolute left-7 top-1/2 -translate-y-1/2 w-6 h-6 text-[#2d3656] group-focus-within:text-[#5d5fef] transition-colors" />
            <input 
             type="text" 
-            placeholder="Search tactical reports..." 
+            placeholder="Search reports..." 
             className="w-full pl-16 pr-10 py-7 bg-[#0d1021] border border-[#1e2440] rounded-[2.5rem] text-base font-bold text-white placeholder:text-[#2d3656] focus:ring-8 focus:ring-indigo-500/10 shadow-inner transition-all outline-none"
            />
         </div>
       </div>
 
-      {/* --- CATEGORY NAV --- */}
       <nav className="flex gap-4 overflow-x-auto pb-6 scrollbar-hide">
          {categories.map((cat, i) => (
            <button 
@@ -144,45 +131,8 @@ const BlogModule: React.FC<BlogModuleProps> = ({ data }) => {
          ))}
       </nav>
 
-      {/* --- ARTICLE GRID --- */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-        
-        {/* FEATURED: THE FORGETTING CURVE */}
-        <div 
-          onClick={() => setSelectedBlog(strategyArticles[0] as any)}
-          className="lg:col-span-2 group bg-[#161a2e] rounded-[5rem] border border-[#2d3656] overflow-hidden shadow-2xl hover:border-indigo-500/40 transition-all cursor-pointer flex flex-col md:flex-row min-h-[550px]"
-        >
-          <div className="md:w-1/2 bg-[#0d1021] relative overflow-hidden p-16 flex items-center justify-center">
-             <div className="absolute inset-0 bg-indigo-500/5 group-hover:scale-110 transition-transform duration-[3s]"></div>
-             <div className="absolute top-12 left-12">
-                <span className="bg-[#5d5fef] text-white px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl">Masterclass</span>
-             </div>
-             <Zap className="w-32 h-32 text-[#1e2440] group-hover:text-indigo-500/20 transition-colors duration-1000" />
-          </div>
-          <div className="md:w-1/2 p-16 md:p-20 flex flex-col justify-between space-y-12 bg-[#161a2e] relative z-10">
-            <div className="space-y-8">
-              <div className="flex items-center gap-5 text-[10px] font-black text-[#4a5578] uppercase tracking-[0.3em]">
-                <Calendar className="w-4 h-4" /> {strategyArticles[0].date}
-                <div className="w-1 h-1 bg-[#2d3656] rounded-full"></div>
-                <Clock className="w-4 h-4" /> {strategyArticles[0].readTime}
-              </div>
-              <h3 className="text-4xl md:text-5xl font-black text-white tracking-tighter italic leading-[0.9] group-hover:text-[#5d5fef] transition-colors uppercase">{strategyArticles[0].title}</h3>
-              <p className="text-[#7d8cb8] text-lg font-medium leading-relaxed line-clamp-3 italic">"{strategyArticles[0].excerpt}"</p>
-            </div>
-            <div className="flex items-center justify-between pt-12 border-t border-[#1e2440]">
-               <div className="flex items-center gap-5">
-                  <div className="w-14 h-14 bg-[#0d1021] border border-[#1e2440] rounded-2xl flex items-center justify-center text-indigo-400"><User className="w-6 h-6" /></div>
-                  <span className="text-[10px] font-black text-white uppercase tracking-widest">{strategyArticles[0].author}</span>
-               </div>
-               <div className="w-16 h-16 bg-[#0d1021] border border-[#1e2440] rounded-[1.5rem] flex items-center justify-center text-[#4a5578] group-hover:bg-[#5d5fef] group-hover:text-white transition-all group-hover:rotate-12 shadow-inner">
-                  <ChevronRight className="w-8 h-8" />
-               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* REGULAR STRATEGY REPORTS */}
-        {strategyArticles.slice(1).map((blog) => (
+        {strategyArticles.map((blog) => (
           <div 
             key={blog.id} 
             onClick={() => setSelectedBlog(blog as any)}
@@ -213,15 +163,14 @@ const BlogModule: React.FC<BlogModuleProps> = ({ data }) => {
           </div>
         ))}
         
-        {/* NEWSLETTER: OPERATIONAL SYNC */}
         <div className="bg-[#0d1021] p-16 rounded-[4.5rem] text-white space-y-12 flex flex-col justify-center relative overflow-hidden shadow-2xl border border-[#1e2440] group">
            <div className="absolute top-0 right-0 p-10 opacity-5 rotate-12 scale-150 group-hover:rotate-45 transition-transform duration-[4s]"><TrendingUp className="w-64 h-64 text-indigo-400" /></div>
            <div className="space-y-6 relative z-10">
-              <h4 className="text-5xl font-black italic tracking-tighter leading-[0.9] uppercase">Stay Ahead <br /> Of The Curve.</h4>
-              <p className="text-[#7d8cb8] text-lg font-medium leading-relaxed italic">"Weekly formula flushes, subject-specific focus hacks, and real-time exam cycle alerts."</p>
+              <h4 className="text-5xl font-black italic tracking-tighter leading-[0.9] uppercase">Stay Performance <br /> Integrated.</h4>
+              <p className="text-[#7d8cb8] text-lg font-medium leading-relaxed italic">"Weekly analytical insights, focused methodology, and critical examination updates."</p>
            </div>
            <div className="space-y-6 relative z-10">
-              <input type="email" placeholder="aspirant@node.iit.ac.in" className="w-full bg-[#161a2e] border border-[#2d3656] rounded-[1.8rem] px-8 py-7 text-base font-black text-white placeholder:text-[#2d3656] focus:ring-8 focus:ring-indigo-500/10 outline-none transition-all" />
+              <input type="email" placeholder="aspirant@node.edu" className="w-full bg-[#161a2e] border border-[#2d3656] rounded-[1.8rem] px-8 py-7 text-base font-black text-white placeholder:text-[#2d3656] focus:ring-8 focus:ring-indigo-500/10 outline-none transition-all" />
               <button className="w-full bg-[#5d5fef] text-white py-8 rounded-[2.5rem] text-[11px] font-black uppercase tracking-[0.5em] shadow-[0_20px_50px_-10px_rgba(93,95,239,0.5)] hover:scale-105 transition-all">ESTABLISH UPLINK</button>
            </div>
         </div>

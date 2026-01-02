@@ -12,7 +12,6 @@ import ExamGuideModule from './views/ExamGuideModule';
 import BlogModule from './views/BlogModule';
 import ContactModule from './views/ContactModule';
 import LoginModule from './views/LoginModule';
-import LandingPage from './views/LandingPage';
 import StudentDashboard from './views/StudentDashboard';
 import ParentDashboard from './views/ParentDashboard';
 import AdminCMS from './views/AdminCMS';
@@ -30,7 +29,7 @@ import MistakesLog from './views/MistakesLog';
 import BacklogModule from './views/BacklogModule';
 import FocusTimer from './views/FocusTimer';
 import ProfileModule from './views/ProfileModule';
-import { TrendingUp, LayoutDashboard, BookOpen, Bot, FileText, Menu } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Bot, FileText, Menu, Settings } from 'lucide-react';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<UserAccount | null>(null);
@@ -107,21 +106,21 @@ const App: React.FC = () => {
   };
 
   const BottomNav = () => (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-6 py-3 flex justify-between items-center z-[100] shadow-2xl">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-100 px-2 py-3 flex justify-around items-center z-[100] safe-pb shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
       {[
-        { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
-        { id: 'learn', label: 'Study', icon: BookOpen },
-        { id: 'aitutor', label: 'AI', icon: Bot },
-        { id: 'tests', label: 'Tests', icon: FileText },
+        { id: role === UserRole.ADMIN ? 'admin-overview' : role === UserRole.PARENT ? 'parent-status' : 'dashboard', label: 'Home', icon: LayoutDashboard },
+        { id: role === UserRole.ADMIN ? 'admin-syllabus' : role === UserRole.PARENT ? 'parent-syllabus' : 'learn', label: 'Learn', icon: BookOpen },
+        { id: role === UserRole.ADMIN ? 'admin-system' : 'aitutor', label: role === UserRole.ADMIN ? 'Core' : 'Coach', icon: role === UserRole.ADMIN ? Settings : Bot },
+        { id: role === UserRole.ADMIN ? 'admin-tests' : 'tests', label: 'Exams', icon: FileText },
         { id: 'profile', label: 'Menu', icon: Menu },
       ].map((item) => (
         <button
           key={item.id}
           onClick={() => setActiveTab(item.id)}
-          className={`flex flex-col items-center gap-1 transition-all ${activeTab === item.id ? 'text-blue-600' : 'text-slate-400'}`}
+          className={`flex flex-col items-center gap-1 transition-all px-4 py-1 rounded-xl ${activeTab === item.id ? 'text-indigo-600' : 'text-slate-400'}`}
         >
-          <item.icon className="w-5 h-5" />
-          <span className="text-[9px] font-bold uppercase tracking-widest">{item.label}</span>
+          <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} />
+          <span className="text-[10px] font-black uppercase tracking-tighter">{item.label}</span>
         </button>
       ))}
     </div>
@@ -147,18 +146,17 @@ const App: React.FC = () => {
         case 'backlogs': return <BacklogModule data={studentData} />;
         case 'focus': return <FocusTimer />;
         case 'profile': return <ProfileModule data={studentData} setData={syncStudentData} />;
-        // Strategy hub is available to everyone
         case 'blog': return <BlogModule data={studentData} />; 
         default: return <StudentDashboard data={studentData} />;
       }
     };
 
     return (
-      <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
+      <div className="flex h-screen overflow-hidden bg-[#fcfdfe] font-sans">
         <Sidebar role={role} activeTab={activeTab} setActiveTab={setActiveTab} setRole={setRole} handleLogout={handleLogout} />
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden pb-20 lg:pb-0">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
           <Header role={role} studentName={user.name} />
-          <main className="flex-1 overflow-y-auto p-4 lg:p-10 bg-slate-50/50">
+          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10 pb-24 lg:pb-10 custom-scrollbar">
             {renderPrivateContent()}
           </main>
           <BottomNav />
@@ -181,25 +179,23 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-white font-sans flex flex-col overflow-x-hidden">
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <main className="flex-1 flex flex-col items-center w-full">
-        <div className="w-full">
-          {renderPublicContent()}
-        </div>
+      <main className="flex-1 w-full">
+        {renderPublicContent()}
       </main>
-      <footer className="py-20 border-t border-slate-100 bg-white relative z-10 px-6">
+      <footer className="py-12 md:py-20 border-t border-slate-100 bg-white relative z-10 px-6 safe-pb">
          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
             <div className="flex flex-col items-center md:items-start gap-4">
               <div className="flex items-center gap-1">
-                 <span className="font-black tracking-tight text-2xl uppercase text-[#2b4c8c]">IITGRRPREP</span>
+                 <span className="font-black tracking-tight text-2xl uppercase text-[#2b4c8c]">IITJEEPRO</span>
               </div>
-              <p className="text-xs font-bold text-slate-400">Solaris v10.5: Elite Engineering Ecosystem.</p>
+              <p className="text-xs font-bold text-slate-400">Solaris v10.5: Elite Performance Engine.</p>
             </div>
-            <div className="flex flex-wrap justify-center gap-8 md:gap-12">
-               {['About', 'Features', 'Privacy', 'Deployment'].map(link => (
-                 <button key={link} className="text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors">{link}</button>
+            <div className="flex flex-wrap justify-center gap-6 md:gap-12">
+               {['Methodology', 'Functionality', 'Privacy', 'Legal'].map(link => (
+                 <button key={link} className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors">{link}</button>
                ))}
             </div>
-            <p className="text-xs font-bold text-slate-300">&copy; 2025 Solaris Ultimate v10.5. Built for Toppers.</p>
+            <p className="text-[10px] font-black uppercase text-slate-300 tracking-widest">&copy; 2025 Solaris Ultimate v10.5</p>
          </div>
       </footer>
     </div>

@@ -1,13 +1,16 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0a1128">
     <title>IITGRRPREP | The Engineering Apex</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
     <script>
-        // Set this to true in production deployments to hide quick-entry buttons
         window.HIDE_DEMO_SIGNIN = false;
     </script>
     <style>
@@ -24,11 +27,13 @@
             padding: 0; 
             color: #1e293b;
             scroll-behavior: smooth;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
         }
         .font-space { font-family: 'Space Grotesk', sans-serif; }
         
         #root:empty::before {
-            content: 'INITIALIZING IITGRRPREP...';
+            content: 'INITIALIZING...';
             display: flex;
             align-items: center;
             justify-content: center;
@@ -39,26 +44,21 @@
             letter-spacing: 0.5em;
         }
 
+        /* Responsive Safe Area Padding for iOS */
+        .safe-pb {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
         .glass-panel {
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
-        .elegant-shadow { shadow: var(--shadow-lux); }
-        
-        .cloud-bg {
-            background-color: #f8fafc;
-            background-image: 
-                radial-gradient(at 0% 0%, hsla(202,100%,91%,0.4) 0, transparent 50%), 
-                radial-gradient(at 100% 100%, hsla(140,80%,90%,0.3) 0, transparent 50%);
-        }
-
-        /* Custom Scrollbar for Elegance */
-        ::-webkit-scrollbar { width: 6px; }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
     </style>
 <script type="importmap">
 {

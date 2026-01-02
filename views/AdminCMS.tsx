@@ -11,7 +11,7 @@ import {
   Target, Code2, Save, Users, PenTool,
   Check, HelpCircle, Video,
   Award, Type, Lightbulb, Activity, Filter,
-  Search, Clock, ChevronRight, Layout, List, FileText, Calendar, Globe, Settings, Cpu, Database, Cloud, Download, Eye, AlertTriangle, Star, Signal, SignalHigh, SignalLow
+  Search, Clock, ChevronRight, Layout, List, FileText, Calendar, Globe, Settings, Cpu, Database, Cloud, Download, Eye, AlertTriangle, Star, Signal, SignalHigh, SignalLow, Image
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -525,7 +525,7 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
     timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0,
     question: '', answer: '', category: 'Shortcuts', hack: '',
     duration: 180, totalMarks: 300, questionIds: [], chapterIds: [],
-    notes: '', videoUrl: '', targetCompletionDate: '', type: 'Concept',
+    notes: '', videoUrl: '', coverImage: '', targetCompletionDate: '', type: 'Concept',
     highYield: false
   });
 
@@ -739,7 +739,15 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                     <InputGroup label="Strategy Report Headline"><input name="title" value={formData.title} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-2xl font-black italic text-slate-800" /></InputGroup>
                     <InputGroup label="Author Identification"><input name="author" value={formData.author} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-5 text-sm font-black" /></InputGroup>
                  </div>
-                 <InputGroup label="Intelligence Manuscript (Rich HTML Support)"><textarea name="content" value={formData.content} onChange={handleChange} rows={15} className="w-full bg-slate-50 border-none rounded-[3rem] p-10 text-base font-medium leading-relaxed text-slate-600 shadow-inner font-mono" placeholder="<h1>Strategic Vector</h1><p>Explain the tactical advantage...</p>" /></InputGroup>
+                 <InputGroup label="Hero Image Asset URL">
+                    <div className="relative group">
+                       <Image className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-indigo-600 transition-colors" />
+                       <input name="coverImage" value={formData.coverImage} onChange={handleChange} className="w-full pl-14 pr-6 py-5 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-800" placeholder="https://images.unsplash.com/..." />
+                    </div>
+                 </InputGroup>
+                 <InputGroup label="Intelligence Manuscript (Rich HTML Support)">
+                    <textarea name="content" value={formData.content} onChange={handleChange} rows={15} className="w-full bg-slate-50 border-none rounded-[3rem] p-10 text-base font-medium leading-relaxed text-slate-600 shadow-inner font-mono" placeholder="<h1>Strategic Vector</h1><p>Explain the tactical advantage...</p>" />
+                 </InputGroup>
               </div>
             )}
          </div>

@@ -3,45 +3,41 @@ import React from 'react';
 import { 
   BookOpen, 
   Target, 
-  ChevronRight, 
   ArrowRight,
-  Layers,
-  Zap,
   TrendingUp,
-  Brain,
   ShieldCheck,
-  Cpu,
-  Globe,
   Database,
-  BarChart3
+  BarChart3,
+  Clock,
+  Activity
 } from 'lucide-react';
 
 const AboutModule: React.FC = () => {
   return (
     <div className="bg-white min-h-screen animate-in fade-in duration-700">
-      {/* --- METHODOLOGY HERO --- */}
+      {/* --- FUNCTIONAL HERO --- */}
       <section className="py-20 md:py-32 px-6 md:px-12 text-center max-w-6xl mx-auto relative">
         <div className="inline-flex items-center gap-3 px-5 py-1.5 bg-slate-50 border border-slate-200 rounded-full text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-8">
-           Academic Performance Kernel v10.0
+           Performance Monitoring Kernel v10.5
         </div>
         <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter leading-[1.1] mb-10 uppercase italic font-space">
           Syllabus-Aligned <br /><span className="text-indigo-600">Analytics</span> for JEE.
         </h1>
         <p className="text-slate-500 text-lg md:text-xl font-medium leading-relaxed max-w-3xl mx-auto italic mb-12">
-          A structured monitoring environment for IIT-JEE and engineering entrance exams. We focus on <span className="font-bold text-slate-800">retention metrics</span>, <span className="font-bold text-slate-800">error classification</span>, and <span className="font-bold text-slate-800">syllabus velocity</span> tracking.
+          A structured environment for engineering entrance preparation. The platform focuses on <span className="font-bold text-slate-800">retention mapping</span>, <span className="font-bold text-slate-800">error classification</span>, and <span className="font-bold text-slate-800">syllabus velocity</span> tracking to ensure preparation consistency.
         </p>
         <div className="flex flex-col sm:flex-row justify-center gap-4">
            <button 
              onClick={() => window.dispatchEvent(new CustomEvent('changeTab', { detail: 'login' }))}
              className="px-10 py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3"
            >
-             Initialize Tracking <ArrowRight className="w-4 h-4" />
+             Initialize Profile <ArrowRight className="w-4 h-4" />
            </button>
            <button 
              onClick={() => window.dispatchEvent(new CustomEvent('changeTab', { detail: 'features' }))}
              className="px-10 py-5 bg-white border border-slate-200 text-slate-400 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:border-indigo-600 hover:text-indigo-600 transition-all"
            >
-             View Technical Specs
+             Technical Specifications
            </button>
         </div>
       </section>
@@ -53,29 +49,29 @@ const AboutModule: React.FC = () => {
           
           <div className="max-w-2xl space-y-6 relative z-10">
             <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase italic leading-none">
-              Preparation <br /><span className="text-indigo-400">Architecture.</span>
+              Preparation <br /><span className="text-indigo-400">Framework.</span>
             </h2>
             <p className="text-slate-400 text-lg font-medium leading-relaxed italic">
-              JEE preparation requires consistency across a 700+ hour syllabus. Our platform serves as a digital ledger to ensure every study hour translates into measurable progress.
+              Competitive examinations require data-driven consistency. Our platform acts as a technical ledger to correlate study hours with measurable proficiency.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 relative z-10">
             {[
               { 
-                title: "Error Classification", 
-                desc: "Classify mock test mistakes into conceptual gaps, calculation slips, or time-pressure errors for targeted improvement.",
+                title: "Error Ledgers", 
+                desc: "Systematically classify mock test mistakes into conceptual gaps or calculation slips for targeted remediation.",
                 icon: ShieldCheck 
               },
               { 
-                title: "Velocity Mapping", 
-                desc: "Monitor syllabus coverage speed against exam deadlines with automated alerts for lagging subject verticals.",
+                title: "Velocity Logs", 
+                desc: "Monitor syllabus coverage speed against predefined milestones with automated alerts for lagging subject units.",
                 icon: TrendingUp 
               },
               { 
-                title: "Recall Intervals", 
-                desc: "Integrated spaced repetition logic to maintain high-weightage formulas in active memory cycles.",
-                icon: Zap 
+                title: "Recall Cycles", 
+                desc: "Integrated logic for spaced repetition to maintain active memory of high-weightage formulas and reaction mechanisms.",
+                icon: Clock 
               }
             ].map((item, i) => (
               <div key={i} className="space-y-5 p-8 bg-white/5 border border-white/10 rounded-3xl">
@@ -90,19 +86,19 @@ const AboutModule: React.FC = () => {
         </div>
       </section>
 
-      {/* --- OPERATIONAL FEATURES --- */}
+      {/* --- PERFORMANCE VECTORS --- */}
       <section className="py-20 px-6 md:px-12 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
          <div className="space-y-10">
             <div className="space-y-4">
-              <h3 className="text-3xl font-black text-slate-900 tracking-tight uppercase italic leading-none">Structured <span className="text-indigo-600">Syllabus Sync.</span></h3>
-              <p className="text-slate-500 text-lg font-medium leading-relaxed italic">The platform handles the complexity of the 3-subject JEE ecosystem through modular tracking.</p>
+              <h3 className="text-3xl font-black text-slate-900 tracking-tight uppercase italic leading-none">Structured <span className="text-indigo-600">Syllabus Mapping.</span></h3>
+              <p className="text-slate-500 text-lg font-medium leading-relaxed italic">The platform handles the complexity of the JEE ecosystem through granular subject tracking.</p>
             </div>
             
             <div className="space-y-6">
                {[
-                 { label: "Physics Mechanics & Electrodynamics", val: "Deep vector-based problem logs." },
-                 { label: "Chemistry Organic & Physical", val: "Mechanism mapping and numerical persistence." },
-                 { label: "Mathematics Calculus & Algebra", val: "Execution accuracy and formula retrieval grids." }
+                 { label: "Stability Analysis", val: "Measuring retention levels across Physics, Chemistry, and Math." },
+                 { label: "Execution Precision", val: "Tracking accuracy trends in mock tests and chapter drills." },
+                 { label: "Time Management", val: "Optimizing the ratio of theory study to problem-solving sessions." }
                ].map((p, i) => (
                  <div key={i} className="flex gap-5">
                     <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-[10px] shrink-0">0{i+1}</div>
@@ -117,9 +113,9 @@ const AboutModule: React.FC = () => {
          <div className="bg-slate-50 rounded-[3rem] p-12 border border-slate-100 shadow-inner flex items-center justify-center relative">
             <div className="text-center space-y-4">
                <div className="w-24 h-24 bg-white rounded-3xl shadow-xl mx-auto flex items-center justify-center text-indigo-600">
-                  <BarChart3 className="w-10 h-10" />
+                  <Activity className="w-10 h-10" />
                </div>
-               <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em]">Integrated Performance Node</div>
+               <div className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em]">Integrated Telemetry Node</div>
             </div>
          </div>
       </section>
