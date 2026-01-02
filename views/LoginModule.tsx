@@ -210,7 +210,7 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
                   </div>
                   {authError.includes("Server Configuration") && (
                     <div className="text-[9px] font-black uppercase text-rose-400 pl-7">
-                      Hint: Check Admin Panel -> System Hub -> Mode. Switch to 'Sandbox' if database is not set up.
+                      Hint: Check Admin Panel → System Hub → Mode. Switch to 'Sandbox' if database is not set up.
                     </div>
                   )}
                 </div>

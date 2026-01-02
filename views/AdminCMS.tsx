@@ -627,6 +627,15 @@ CREATE TABLE IF NOT EXISTS memory_hacks (
     subject VARCHAR(50)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS blogs (
+    id VARCHAR(50) PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    content LONGTEXT NOT NULL,
+    author VARCHAR(100) NOT NULL,
+    date DATE NOT NULL,
+    status ENUM('DRAFT', 'PUBLISHED') DEFAULT 'DRAFT'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 COMMIT;`;
 
       const dbConfig = `<?php
@@ -944,6 +953,14 @@ $pdo->prepare("REPLACE INTO questions (id, topicId, subject, text, options, corr
 echo json_encode(["success" => true]);
 ?>`;
 
+      const manageBlogs = `<?php
+require_once 'config/database.php';
+$d = json_decode(file_get_contents("php://input"));
+$pdo->prepare("REPLACE INTO blogs (id, title, content, author, date, status) VALUES (?,?,?,?,?,?)")
+    ->execute([$d->id, $d->title, $d->content, $d->author, $d->date, $d->status]);
+echo json_encode(["success" => true]);
+?>`;
+
       const saveAttempt = `<?php
 require_once 'config/database.php';
 $d = json_decode(file_get_contents("php://input"));
@@ -993,6 +1010,7 @@ RewriteRule ^(.*)$ index.php [QSA,L]`;
       zip.file("save_timetable.php", saveTable);
       zip.file("manage_chapters.php", manageChapters);
       zip.file("manage_questions.php", manageQuestions);
+      zip.file("manage_blogs.php", manageBlogs);
       zip.file("save_attempt.php", saveAttempt);
       zip.file("save_psychometric.php", savePsych);
       zip.file("manage_users.php", manageUsers);
