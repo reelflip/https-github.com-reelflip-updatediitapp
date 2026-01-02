@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { StudentData, Subject, Chapter, MockTest, ChapterStatus } from '../types';
+import { StudentData, Subject, Chapter, MockTest, ChapterStatus, TestResult } from '../types';
 import { 
   Search, ChevronRight, BookOpen, ArrowLeft, Target, 
-  Play, Clock, Edit2, X, TrendingUp, Layers, ChevronDown, Activity, Zap, Video, CheckCircle
+  Play, Clock, Edit2, X, TrendingUp, Layers, ChevronDown, Activity, Zap, Video, CheckCircle, History, Award, Calendar
 } from 'lucide-react';
 import TestsView from './TestsView';
 
@@ -18,7 +18,7 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
   const [takingTest, setTakingTest] = useState<MockTest | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedUnits, setExpandedUnits] = useState<string[]>([]);
-  const [activeContentTab, setActiveContentTab] = useState<'notes' | 'video' | 'practice'>('notes');
+  const [activeContentTab, setActiveContentTab] = useState<'notes' | 'video' | 'practice' | 'history'>('notes');
   const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
   const [tempProgress, setTempProgress] = useState(0);
 
@@ -97,6 +97,7 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
 
   if (activeChapter) {
     const chapterQuestions = data.questions.filter(q => q.topicId === activeChapter.id);
+    const chapterHistory = data.testHistory.filter(t => t.category === 'PRACTICE' && t.chapterIds.includes(activeChapter.id));
     const conf = calculateConfidence(activeChapter);
     const videoEmbed = getEmbedUrl(activeChapter.videoUrl || '');
     
@@ -127,7 +128,8 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
               {[
                 { id: 'notes', label: 'Theory', icon: BookOpen },
                 { id: 'video', label: 'Lecture', icon: Play },
-                { id: 'practice', label: 'Drills', icon: Target }
+                { id: 'practice', label: 'Drills', icon: Target },
+                { id: 'history', label: 'History', icon: History }
               ].map((tab: any) => (
                 <button 
                   key={tab.id} 
@@ -202,6 +204,52 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
                              </div>
                            ))}
                        </div>
+                    </div>
+                 </div>
+               )}
+               {activeContentTab === 'history' && (
+                 <div className="space-y-8 animate-in fade-in">
+                    <div className="flex justify-between items-center px-2">
+                       <h3 className="text-xl font-black italic text-slate-800 uppercase tracking-tight">Practice History</h3>
+                       <div className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-4 py-1.5 rounded-full border border-indigo-100">
+                          {chapterHistory.length} ATTEMPTS
+                       </div>
+                    </div>
+
+                    <div className="bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm">
+                       {chapterHistory.length === 0 ? (
+                         <div className="p-20 text-center space-y-4">
+                            <History className="w-12 h-12 text-slate-100 mx-auto" />
+                            <p className="text-[10px] font-black uppercase text-slate-300 tracking-[0.4em] italic">No localized practice data synchronized.</p>
+                         </div>
+                       ) : (
+                         <div className="divide-y divide-slate-50">
+                            {chapterHistory.map((res, idx) => (
+                              <div key={idx} className="p-6 md:p-8 flex flex-col md:flex-row justify-between items-center gap-6 hover:bg-slate-50/50 transition-colors group">
+                                 <div className="flex items-center gap-6">
+                                    <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                                       <Award className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                       <div className="text-lg font-black text-slate-800 italic tracking-tight">{res.testName}</div>
+                                       <div className="flex items-center gap-3 mt-1">
+                                          <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                             <Calendar className="w-3 h-3" /> {res.date}
+                                          </div>
+                                          <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${res.accuracy > 75 ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-500'}`}>
+                                             {res.accuracy}% ACCURACY
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+                                 <div className="text-right">
+                                    <div className="text-2xl font-black text-slate-900">{res.score}<span className="text-xs text-slate-300 ml-1">/ {res.totalMarks}</span></div>
+                                    <div className="text-[8px] font-black uppercase text-slate-400 tracking-widest mt-1">FINAL GRADE</div>
+                                 </div>
+                              </div>
+                            ))}
+                         </div>
+                       )}
                     </div>
                  </div>
                )}
@@ -312,7 +360,7 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
                   {expandedUnits.includes(unit) && (
                     <div className="bg-slate-50/50 px-4 md:px-12 pb-6 md:pb-10 space-y-2 md:space-y-3 animate-in slide-in-from-top-4">
                       {chapters.map(c => (
-                        <div key={c.id} onClick={() => setActiveChapter(c)} className="p-4 md:p-6 bg-white border border-slate-200 rounded-2xl md:rounded-[2rem] hover:border-indigo-400 hover:shadow-xl cursor-pointer flex justify-between items-center transition-all group/item">
+                        <div key={c.id} onClick={() => { setActiveChapter(c); setActiveContentTab('notes'); }} className="p-4 md:p-6 bg-white border border-slate-200 rounded-2xl md:rounded-[2rem] hover:border-indigo-400 hover:shadow-xl cursor-pointer flex justify-between items-center transition-all group/item">
                            <div className="flex items-center gap-4 md:gap-6 min-w-0 flex-1">
                               <div className="relative shrink-0">
                                 <svg className="w-10 h-10 md:w-12 md:h-12 -rotate-90">
