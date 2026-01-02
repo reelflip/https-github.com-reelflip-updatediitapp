@@ -270,7 +270,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     try {
       const zip = new JSZip();
       
-      // 1. SQL Schema - Expanded with Flashcards and Hacks
+      // 1. SQL Schema - Comprehensive for v21.0
       const sqlSchema = `-- IITGEEPREP Solaris v21.0 Production Schema
 CREATE TABLE IF NOT EXISTS users (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255) UNIQUE, role VARCHAR(50), institute VARCHAR(255), targetExam VARCHAR(255), targetYear INT, password_hash VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS chapters (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), subject VARCHAR(50), unit VARCHAR(255), notes TEXT, videoUrl VARCHAR(512));
@@ -279,55 +279,74 @@ CREATE TABLE IF NOT EXISTS questions (id VARCHAR(100) PRIMARY KEY, topicId VARCH
 CREATE TABLE IF NOT EXISTS flashcards (id VARCHAR(100) PRIMARY KEY, question TEXT, answer TEXT, subject VARCHAR(50), difficulty VARCHAR(20), type VARCHAR(50));
 CREATE TABLE IF NOT EXISTS memory_hacks (id VARCHAR(100) PRIMARY KEY, title VARCHAR(255), description TEXT, hack TEXT, category VARCHAR(100), subject VARCHAR(50));
 CREATE TABLE IF NOT EXISTS test_results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(100), test_name VARCHAR(255), score INT, total_marks INT, accuracy INT, taken_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE IF NOT EXISTS psychometric (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(100), stress INT, focus INT, motivation INT, timestamp DATE);
+CREATE TABLE IF NOT EXISTS psychometric (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(100), stress INT, focus INT, motivation INT, examFear INT, timestamp DATE, studentSummary TEXT, parentAdvice TEXT);
 `;
       zip.file("sql/full_schema_v21.sql", sqlSchema);
 
-      // 2. Auth Login
+      // 2. SEED DATA SQL
+      const seedSql = `-- Core Academic Seed Data
+INSERT INTO flashcards (id, question, answer, subject, difficulty, type) VALUES 
+('fc-1', 'Dimensional formula of Planck''s Constant (h)', 'ML²T⁻¹', 'Physics', 'EASY', 'Formula'),
+('fc-2', 'Ideal Gas Equation', 'PV = nRT', 'Chemistry', 'EASY', 'Formula'),
+('fc-3', 'Huckel''s Rule for Aromaticity', '(4n + 2) pi electrons', 'Chemistry', 'MEDIUM', 'Concept');
+
+INSERT INTO memory_hacks (id, title, description, hack, category, subject) VALUES 
+('mh-1', 'Trigonometry Ratios', 'Sine, Cosine, Tangent basic formulas', 'SOH CAH TOA', 'Mnemonics', 'Mathematics'),
+('mh-2', 'Redox Reactions', 'Oxidation vs Reduction definitions', 'OIL RIG', 'Mnemonics', 'Chemistry');
+`;
+      zip.file("sql/seed_data_v21.sql", seedSql);
+
+      // 3. Main Logic Endpoints
       zip.file("auth_login.php", `<?php
 header('Content-Type: application/json');
 include 'config/database.php';
 $data = json_decode(file_get_contents('php://input'), true);
-$email = $data['email'];
+$email = $data['email'] ?? '';
 $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
 $stmt->execute([$email]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 if ($user) {
     echo json_encode(['success' => true, 'user' => $user]);
 } else {
-    echo json_encode(['success' => false, 'error' => 'User not found']);
+    echo json_encode(['success' => false, 'error' => 'User not found in system database.']);
 }
 ?>`);
 
-      // 3. Get Dashboard Data
-      zip.file("get_dashboard.php", `<?php
-header('Content-Type: application/json');
-include 'config/database.php';
-$id = $_GET['id'];
-$stmt = $pdo->prepare("SELECT chapter_id as id, progress, accuracy, status, time_spent as timeSpent FROM student_progress WHERE student_id = ?");
-$stmt->execute([$id]);
-$chapters = $stmt->fetchAll(PDO::FETCH_ASSOC);
-echo json_encode(['success' => true, 'data' => ['chapters' => $chapters]]);
-?>`);
-
-      // 4. Sync Progress
       zip.file("sync_progress.php", `<?php
 header('Content-Type: application/json');
 include 'config/database.php';
 $data = json_decode(file_get_contents('php://input'), true);
-$sid = $data['student_id'];
-foreach($data['chapters'] as $ch) {
+$sid = $data['student_id'] ?? '';
+if(!$sid) die(json_encode(['success' => false, 'error' => 'No ID']));
+foreach(($data['chapters'] ?? []) as $ch) {
     $stmt = $pdo->prepare("INSERT INTO student_progress (student_id, chapter_id, progress, accuracy, status, time_spent) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE progress=?, accuracy=?, status=?, time_spent=?");
     $stmt->execute([$sid, $ch['id'], $ch['progress'], $ch['accuracy'], $ch['status'], $ch['timeSpent'], $ch['progress'], $ch['accuracy'], $ch['status'], $ch['timeSpent']]);
 }
 echo json_encode(['success' => true]);
 ?>`);
 
-      // 5. Config
-      zip.file("config/database.php", "<?php\n$host = 'localhost';\n$db = 'iitjeeprep_v21';\n$user = 'root';\n$pass = '';\n$pdo = new PDO(\"mysql:host=$host;dbname=$db\", $user, $pass); ?>");
+      zip.file("manage_entity.php", `<?php
+header('Content-Type: application/json');
+include 'config/database.php';
+$type = $_GET['type'] ?? '';
+$data = json_decode(file_get_contents('php://input'), true);
+if($type == 'Flashcard') {
+    $stmt = $pdo->prepare("INSERT INTO flashcards (id, question, answer, subject, difficulty, type) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE question=?, answer=?, subject=?, difficulty=?, type=?");
+    $stmt->execute([$data['id'], $data['question'], $data['answer'], $data['subject'], $data['difficulty'], $data['type'], $data['question'], $data['answer'], $data['subject'], $data['difficulty'], $data['type']]);
+} else if($type == 'MemoryHack') {
+    $stmt = $pdo->prepare("INSERT INTO memory_hacks (id, title, description, hack, category, subject) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE title=?, description=?, hack=?, category=?, subject=?");
+    $stmt->execute([$data['id'], $data['title'], $data['description'], $data['hack'], $data['category'], $data['subject'], $data['title'], $data['description'], $data['hack'], $data['category'], $data['subject']]);
+} else if($type == 'Psychometric') {
+    $stmt = $pdo->prepare("INSERT INTO psychometric (student_id, stress, focus, motivation, examFear, timestamp, studentSummary, parentAdvice) VALUES (?,?,?,?,?,?,?,?)");
+    $stmt->execute([$data['student_id'], $data['stress'], $data['focus'], $data['motivation'], $data['examFear'], $data['timestamp'], $data['studentSummary'], $data['parentAdvice']]);
+}
+echo json_encode(['success' => true]);
+?>`);
+
+      zip.file("config/database.php", "<?php\n\$host = 'localhost';\n\$db = 'iitjeeprep_v21';\n\$user = 'root';\n\$pass = '';\n\$pdo = new PDO(\"mysql:host=\$host;dbname=\$db\", \$user, \$pass); ?>");
 
       const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, "iitjeeprep_live_v21.zip");
+      saveAs(content, "iitjeeprep_production_suite_v21.zip");
     } catch (error) {
       console.error("ZIP Generation Failed", error);
       alert("System could not generate production bundle.");

@@ -12,18 +12,20 @@ const FlashcardsModule: React.FC<FlashcardsModuleProps> = ({ data }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [sessionCompleted, setSessionCompleted] = useState(false);
 
-  const cards = data.flashcards || [];
+  // Buffer: Ensure cards is never undefined or null
+  const cards: Flashcard[] = data?.flashcards || [];
 
   const handleNext = () => {
+    if (cards.length === 0) return;
     setIsFlipped(false);
     if (currentIdx < cards.length - 1) {
-      setCurrentIdx(currentIdx + 1);
+      setCurrentIdx(prev => prev + 1);
     } else {
       setSessionCompleted(true);
     }
   };
 
-  // Guard for empty state
+  // Safe Guard for Empty Deck
   if (cards.length === 0) {
     return (
       <div className="h-[60vh] flex flex-col items-center justify-center text-center p-12 bg-white rounded-[3rem] border-4 border-dashed border-slate-100 max-w-2xl mx-auto animate-in fade-in">
@@ -36,7 +38,9 @@ const FlashcardsModule: React.FC<FlashcardsModuleProps> = ({ data }) => {
     );
   }
 
-  const currentCard = cards[currentIdx];
+  // Safety: Bounds check currentIdx
+  const safeIdx = Math.min(currentIdx, cards.length - 1);
+  const currentCard = cards[safeIdx];
 
   if (sessionCompleted) {
     return (
@@ -64,7 +68,7 @@ const FlashcardsModule: React.FC<FlashcardsModuleProps> = ({ data }) => {
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Spaced Repetition Engine v10.0</p>
         </div>
         <div className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-5 py-2.5 rounded-full border border-indigo-100 shadow-sm">
-          CARTRIDGE {currentIdx + 1} / {cards.length}
+          CARTRIDGE {safeIdx + 1} / {cards.length}
         </div>
       </div>
 

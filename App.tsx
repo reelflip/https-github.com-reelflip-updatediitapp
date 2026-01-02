@@ -143,7 +143,7 @@ const App: React.FC = () => {
         case 'aitutor': return <AITutor data={studentData} />;
         case 'tests': return <TestsView data={studentData} setData={syncStudentData} />;
         case 'analytics': return <AnalyticsView data={studentData} />;
-        case 'wellness': return <WellnessModule data={studentData} />;
+        case 'wellness': return <WellnessModule data={studentData} setData={syncStudentData} />;
         case 'psychometric': return <PsychometricTest data={studentData} setData={syncStudentData} />;
         case 'flashcards': return <FlashcardsModule data={studentData} />;
         case 'hacks': return <HacksModule data={studentData} />;

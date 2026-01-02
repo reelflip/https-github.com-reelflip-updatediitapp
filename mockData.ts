@@ -94,12 +94,25 @@ export const INITIAL_STUDENT_DATA: StudentData = {
     { id: 'bl_1', title: 'Circular Motion Practice', subject: 'Physics', priority: 'High', status: 'PENDING', deadline: '2025-01-01', createdAt: '2025-12-15' }
   ],
   flashcards: [
-    { id: '1', question: "Dimensional formula of Planck's Constant (h)", answer: "ML²T⁻¹", subject: 'Physics', difficulty: 'EASY', type: 'Formula' },
-    { id: '11', question: "Ideal Gas Equation", answer: "PV = nRT", subject: 'Chemistry', difficulty: 'EASY', type: 'Concept' }
+    { id: 'fc-1', question: "Dimensional formula of Planck's Constant (h)", answer: "ML²T⁻¹", subject: 'Physics', difficulty: 'EASY', type: 'Formula' },
+    { id: 'fc-2', question: "Force between two point charges (Coulomb's Law)", answer: "F = k(q1q2)/r²", subject: 'Physics', difficulty: 'EASY', type: 'Formula' },
+    { id: 'fc-3', question: "Work-Energy Theorem Statement", answer: "Work done by all forces = Change in Kinetic Energy", subject: 'Physics', difficulty: 'MEDIUM', type: 'Concept' },
+    { id: 'fc-4', question: "Ideal Gas Equation", answer: "PV = nRT", subject: 'Chemistry', difficulty: 'EASY', type: 'Formula' },
+    { id: 'fc-5', question: "Oxidation state of Oxygen in OF2", answer: "+2", subject: 'Chemistry', difficulty: 'HARD', type: 'Concept' },
+    { id: 'fc-6', question: "Huckel's Rule for Aromaticity", answer: "(4n + 2) pi electrons", subject: 'Chemistry', difficulty: 'MEDIUM', type: 'Concept' },
+    { id: 'fc-7', question: "Euler's Formula for Complex Numbers", answer: "e^(ix) = cos(x) + i sin(x)", subject: 'Mathematics', difficulty: 'MEDIUM', type: 'Formula' },
+    { id: 'fc-8', question: "Integral of tan(x) dx", answer: "log|sec(x)| + C", subject: 'Mathematics', difficulty: 'EASY', type: 'Formula' },
+    { id: 'fc-9', question: "Condition for Perpendicular Vectors A and B", answer: "A . B = 0", subject: 'Mathematics', difficulty: 'EASY', type: 'Concept' },
+    { id: 'fc-10', question: "Lens Maker's Formula", answer: "1/f = (mu-1)(1/R1 - 1/R2)", subject: 'Physics', difficulty: 'MEDIUM', type: 'Formula' }
   ],
   memoryHacks: [
-    { id: '1', title: "Trigonometry Ratios", description: "Sine, Cosine, Tangent", hack: "SOH CAH TOA", category: "Mnemonics", subject: "Mathematics" },
-    { id: '3', title: "Redox Reactions", description: "Oxidation vs Reduction", hack: "OIL RIG", category: "Mnemonics", subject: "Chemistry" }
+    { id: 'mh-1', title: "Trigonometry Ratios", description: "Sine, Cosine, Tangent basic formulas", hack: "SOH CAH TOA", category: "Mnemonics", subject: "Mathematics" },
+    { id: 'mh-2', title: "Redox Reactions", description: "Oxidation vs Reduction definitions", hack: "OIL RIG (Oxidation Is Loss, Reduction Is Gain)", category: "Mnemonics", subject: "Chemistry" },
+    { id: 'mh-3', title: "Visible Spectrum", description: "Colors in increasing frequency", hack: "VIBGYOR", category: "Mnemonics", subject: "Physics" },
+    { id: 'mh-4', title: "Reactivity Series", description: "Order of metal reactivity", hack: "Please Stop Calling Me A Careless Zebra...", category: "Mnemonics", subject: "Chemistry" },
+    { id: 'mh-5', title: "Integration by Parts", description: "Priority order for choosing 'u'", hack: "ILATE (Inverse, Log, Algeb, Trig, Expo)", category: "Shortcuts", subject: "Mathematics" },
+    { id: 'mh-6', title: "Periodic Table Grp 1", description: "Alkali Metals recall", hack: "Li-Na-K-Rb-Cs-Fr (Li Na Kar Rab Se Fariyad)", category: "Mnemonics", subject: "Chemistry" },
+    { id: 'mh-7', title: "Thermodynamics Laws", description: "Summary of 0, 1, 2 Laws", hack: "Energy is conserved; Entropy increases.", category: "Shortcuts", subject: "Physics" }
   ],
   blogs: [
     { id: 'b1', title: "Mastering the Forgetting Curve for JEE 2025", content: "<h1>Strategic Recall</h1><p>Master the curve using spaced repetition algorithms.</p>", author: "Admin", date: "2024-12-20", status: "PUBLISHED" }
