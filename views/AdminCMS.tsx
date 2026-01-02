@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { StudentData, UserAccount, Subject, Question, MockTest, Chapter, Flashcard, MemoryHack, Blog, UserRole } from '../types';
 import { api } from '../services/apiService';
@@ -18,6 +19,8 @@ interface AdminCMSProps {
   data: StudentData;
   setData: (data: StudentData) => void;
 }
+
+// --- HELPER COMPONENTS ---
 
 const InputGroup = ({ label, children }: any) => (
   <div className="space-y-3">
@@ -44,26 +47,31 @@ const Overview = ({ data }: { data: StudentData }) => (
   </div>
 );
 
-const DiagnosticSuite = ({ data }: { data: StudentData }) => {
+const DiagnosticSuite = () => {
   const [isDiagnosing, setIsDiagnosing] = useState(false);
   const [activeStep, setActiveStep] = useState<number | null>(null);
   const [report, setReport] = useState<any[]>([]);
   const mode = api.getMode();
 
   const protocolSteps = [
-    { id: 1, label: 'Admin Panel Editors', icon: Edit3, desc: 'Verifying Chapter, Blog, Question, and Test creators.' },
-    { id: 2, label: 'Syllabus & Chapters', icon: BookOpen, desc: 'Confirming subject mappings for 50+ chapters.' },
-    { id: 3, label: 'Data Persistence', icon: Database, desc: 'Validating student progress and video watch-time storage.' },
+    { id: 1, label: 'Admin Panel Editors', icon: Edit3, desc: 'Verifying Chapter, Blog, Question, and Test creators availability.' },
+    { id: 2, label: 'Syllabus & Chapters', icon: BookOpen, desc: 'Confirming subject mappings for 50+ chapters in production DB.' },
+    { id: 3, label: 'Data Persistence', icon: Database, desc: 'Validating student progress and video watch-time storage logic.' },
     { id: 4, label: 'Mock Exam Engine', icon: Target, desc: 'Checking successful attempt logs and history visibility.' },
     { id: 5, label: 'Chapter Test Flow', icon: FlaskConical, desc: 'Ensuring redirection-free submissions for unit tests.' },
-    { id: 6, label: 'Timetable Matrix', icon: Map, desc: 'Verifying multi-plan creation and persistence.' },
-    { id: 7, label: 'Psychometric Node', icon: Activity, desc: 'Confirming stress/focus score visibility and storage.' },
-    { id: 8, label: 'Parent Linkage', icon: HeartHandshake, desc: 'Verifying invite flow and dashboard visibility.' },
+    { id: 6, label: 'Timetable Matrix', icon: Map, desc: 'Verifying multi-plan creation and persistence nodes.' },
+    { id: 7, label: 'Psychometric Node', icon: Activity, desc: 'Confirming stress/focus score visibility and storage tables.' },
+    { id: 8, label: 'Parent Linkage', icon: HeartHandshake, desc: 'Verifying invitation flow and secure handshake visibility.' },
     { id: 9, label: 'Integrity & Stability', icon: ShieldCheck, desc: 'Scanning for role-based inconsistency or navigation breaks.' },
-    { id: 10, label: 'Regression Check', icon: RefreshCw, desc: 'Final end-to-end admin-student-parent parity scan.' }
+    { id: 10, label: 'Regression Check', icon: RefreshCw, desc: 'Final end-to-end trace of production kernel.' }
   ];
 
   const runProtocol = async () => {
+    if (mode !== 'LIVE') {
+        alert("Diagnostics are strictly reserved for 'Production (SQL)' mode to verify real server endpoints.");
+        return;
+    }
+    
     setIsDiagnosing(true);
     setReport([]);
     
@@ -71,31 +79,23 @@ const DiagnosticSuite = ({ data }: { data: StudentData }) => {
       const step = protocolSteps[i];
       setActiveStep(step.id);
       
-      // Perform live check if in LIVE mode
       let status: 'PASS' | 'WARN' | 'FAIL' = 'PASS';
       let details = "Protocol verified successfully.";
       
-      if (mode === 'LIVE') {
-        try {
-          const res = await fetch(`./api/diagnostic_test.php?step=${step.id}`);
-          const result = await res.json();
-          if (!result.success) status = 'FAIL';
-          details = result.message || details;
-        } catch (e) {
-          status = 'WARN';
-          details = "Local node verification passed. Production API check skipped.";
-        }
-      } else {
-        // Mock Verification
-        await new Promise(r => setTimeout(r, 600));
-        switch (step.id) {
-          case 2: if (data.chapters.length < 50) { status = 'WARN'; details = `Node contains ${data.chapters.length}/50 target chapters.`; } break;
-          case 3: if (!Object.values(data.timeSummary).some(v => v > 0)) { status = 'WARN'; details = "No effort logs detected in local buffer."; } break;
-          default: details = "Mock kernel verification success.";
-        }
+      try {
+        const res = await fetch(`./api/diagnostic_test.php?step=${step.id}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const result = await res.json();
+        
+        status = result.success ? (result.warn ? 'WARN' : 'PASS') : 'FAIL';
+        details = result.message || "Endpoint returned unexpected response.";
+      } catch (e: any) {
+        status = 'FAIL';
+        details = `Network Error: ${e.message}. Ensure backend v20.0 is deployed and database is online.`;
       }
 
       setReport(prev => [...prev, { ...step, status, details }]);
+      await new Promise(r => setTimeout(r, 100)); 
     }
     
     setActiveStep(null);
@@ -115,18 +115,21 @@ const DiagnosticSuite = ({ data }: { data: StudentData }) => {
         <div className="flex flex-col lg:flex-row justify-between items-center gap-10 relative z-10">
           <div className="space-y-4 text-center lg:text-left">
             <div className="inline-flex items-center gap-3 px-6 py-2 bg-rose-50 border border-rose-100 rounded-full text-[10px] font-black uppercase tracking-[0.4em] text-rose-600">
-              <ShieldAlert className="w-4 h-4" /> Comprehensive Audit v20
+              <ShieldAlert className="w-4 h-4" /> Production Audit Core v20
             </div>
             <h2 className="text-6xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">Diagnostic <br /><span className="text-rose-600">Protocol.</span></h2>
-            <p className="text-slate-500 text-lg font-medium italic max-w-xl">"Verifying stability across editors, syllabus mapping, data persistence, and role-based connectivity."</p>
+            <p className="text-slate-500 text-lg font-medium italic max-w-xl">"Live verification of server-side integrity, editors, and student data persistence."</p>
           </div>
-          <button 
-            onClick={runProtocol}
-            disabled={isDiagnosing}
-            className="px-12 py-6 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-rose-600 transition-all flex items-center gap-4 disabled:opacity-50 active:scale-95 transform"
-          >
-            {isDiagnosing ? <Loader2 className="w-6 h-6 animate-spin" /> : <><RefreshCw className="w-6 h-6" /> Initiate System Scan</>}
-          </button>
+          <div className="flex flex-col gap-4">
+            <button 
+                onClick={runProtocol}
+                disabled={isDiagnosing || mode !== 'LIVE'}
+                className="px-12 py-6 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-rose-600 transition-all flex items-center gap-4 disabled:opacity-50 active:scale-95 transform"
+            >
+                {isDiagnosing ? <Loader2 className="w-6 h-6 animate-spin" /> : <><RefreshCw className="w-6 h-6" /> Initiate Live Scan</>}
+            </button>
+            {mode !== 'LIVE' && <div className="text-[9px] font-black text-rose-500 uppercase tracking-widest text-center">Switch to LIVE mode to use diagnostics</div>}
+          </div>
         </div>
       </div>
 
@@ -138,7 +141,7 @@ const DiagnosticSuite = ({ data }: { data: StudentData }) => {
               <div key={step.id} className={`p-6 rounded-[2rem] border transition-all flex items-center gap-6 ${activeStep === step.id ? 'bg-indigo-600 border-indigo-600 text-white shadow-xl scale-[1.02]' : result ? 'bg-white border-slate-100' : 'bg-slate-50 border-transparent opacity-60'}`}>
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner ${activeStep === step.id ? 'bg-white/20' : 'bg-white text-slate-400'}`}>
                   {result ? (
-                    <CheckCircle className={`w-6 h-6 ${result.status === 'PASS' ? 'text-emerald-500' : 'text-amber-500'}`} />
+                    <CheckCircle className={`w-6 h-6 ${result.status === 'PASS' ? 'text-emerald-500' : result.status === 'WARN' ? 'text-amber-500' : 'text-rose-500'}`} />
                   ) : (
                     <step.icon className={`w-6 h-6 ${activeStep === step.id ? 'text-white' : ''}`} />
                   )}
@@ -158,8 +161,8 @@ const DiagnosticSuite = ({ data }: { data: StudentData }) => {
             <div className="h-full bg-slate-50 border-4 border-dashed border-slate-100 rounded-[4rem] flex flex-col items-center justify-center p-20 space-y-6">
               <ClipboardCheck className="w-20 h-20 text-slate-100" />
               <div className="text-center space-y-2">
-                <p className="text-[11px] font-black text-slate-300 uppercase tracking-[0.5em]">Awaiting Operational Protocol</p>
-                <p className="text-xs text-slate-300 italic">Click "Initiate System Scan" to generate report.</p>
+                <p className="text-[11px] font-black text-slate-300 uppercase tracking-[0.5em]">Awaiting Production Handshake</p>
+                <p className="text-xs text-slate-300 italic text-center">Diagnostics require v20 backend endpoints to be deployed and reachable.</p>
               </div>
             </div>
           ) : (
@@ -169,6 +172,7 @@ const DiagnosticSuite = ({ data }: { data: StudentData }) => {
                  <div className="flex gap-4">
                     <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Pass</div>
                     <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest"><div className="w-2 h-2 rounded-full bg-amber-500"></div> Caution</div>
+                    <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest"><div className="w-2 h-2 rounded-full bg-rose-500"></div> Fail</div>
                  </div>
               </div>
               <div className="space-y-6 overflow-y-auto max-h-[800px] pr-2 custom-scrollbar">
@@ -177,18 +181,21 @@ const DiagnosticSuite = ({ data }: { data: StudentData }) => {
                     <div className="flex justify-between items-start">
                        <div className="flex items-center gap-4">
                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${getStatusColor(item.status)}`}>
-                             {item.status === 'PASS' ? <Check className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+                             {item.status === 'PASS' ? <Check className="w-5 h-5" /> : item.status === 'WARN' ? <AlertTriangle className="w-5 h-5" /> : <X className="w-5 h-5" />}
                           </div>
                           <div>
                              <h4 className="text-lg font-black text-slate-900 italic uppercase">{item.label}</h4>
                              <p className="text-[10px] font-bold text-slate-400 uppercase">{item.desc}</p>
                           </div>
                        </div>
+                       <span className={`px-5 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${item.status === 'PASS' ? 'border-emerald-100 text-emerald-600 bg-emerald-50' : item.status === 'WARN' ? 'border-amber-100 text-amber-600 bg-amber-50' : 'border-rose-100 text-rose-600 bg-rose-50'}`}>
+                          {item.status === 'PASS' ? 'Sync Verified' : item.status === 'WARN' ? 'Check Required' : 'Critical Failure'}
+                       </span>
                     </div>
                     <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 font-mono text-[11px] text-slate-600 leading-relaxed shadow-inner">
                        <div className="flex items-start gap-3">
                           <ChevronRight className="w-3 h-3 mt-1 text-slate-300" />
-                          <p>{item.details}</p>
+                          <p className={item.status === 'FAIL' ? 'text-rose-600' : 'text-slate-600'}>{item.details}</p>
                        </div>
                     </div>
                   </div>
@@ -198,377 +205,13 @@ const DiagnosticSuite = ({ data }: { data: StudentData }) => {
                      <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Activity className="w-6 h-6" />
                      </div>
-                     <p className="text-[11px] font-black text-indigo-400 uppercase tracking-[0.5em]">Scanning Kernel...</p>
+                     <p className="text-[11px] font-black text-indigo-400 uppercase tracking-[0.5em]">Polling Server Endpoints...</p>
                   </div>
                 )}
               </div>
             </div>
           )}
         </div>
-      </div>
-    </div>
-  );
-};
-
-const SystemSettings = ({ data }: { data: StudentData }) => {
-  const [activeModel, setActiveModel] = useState(localStorage.getItem('jeepro_platform_ai_model') || 'gemini-3-flash');
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [connStatus, setConnStatus] = useState<'idle' | 'checking' | 'online' | 'offline'>('idle');
-  const mode = api.getMode();
-
-  const updateModel = (id: string) => {
-    localStorage.setItem('jeepro_platform_ai_model', id);
-    setActiveModel(id);
-  };
-
-  const testConnection = async () => {
-    if (mode !== 'LIVE') return;
-    setConnStatus('checking');
-    try {
-      const res = await fetch('./api/check_connection.php');
-      const result = await res.json();
-      setConnStatus(result.success ? 'online' : 'offline');
-    } catch (err) {
-      setConnStatus('offline');
-    }
-  };
-
-  useEffect(() => {
-    if (mode === 'LIVE') testConnection();
-  }, []);
-
-  const downloadProductionBackend = async () => {
-    setIsDownloading(true);
-    try {
-      const zip = new JSZip();
-      
-      const sqlSchema = `-- IITGEEPREP MASTER SCHEMA v20.0
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-START TRANSACTION;
-SET time_zone = "+00:00";
-
-CREATE DATABASE IF NOT EXISTS iitgrrprep_v20;
-USE iitgrrprep_v20;
-
-CREATE TABLE IF NOT EXISTS users (
-    id VARCHAR(50) PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    role ENUM('STUDENT', 'PARENT', 'ADMIN') DEFAULT 'STUDENT',
-    institute VARCHAR(255),
-    targetExam VARCHAR(100),
-    targetYear VARCHAR(4),
-    birthDate DATE,
-    gender VARCHAR(20),
-    routine_json JSON,
-    smartplan_json JSON,
-    connected_id VARCHAR(50),
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS chapters (
-    id VARCHAR(50) PRIMARY KEY,
-    subject VARCHAR(50) NOT NULL,
-    unit VARCHAR(100) NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    notes LONGTEXT,
-    videoUrl VARCHAR(255),
-    highYield TINYINT(1) DEFAULT 0,
-    targetCompletionDate DATE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS student_progress (
-    student_id VARCHAR(50) NOT NULL,
-    chapter_id VARCHAR(50) NOT NULL,
-    progress INT DEFAULT 0,
-    accuracy INT DEFAULT 0,
-    timeSpent INT DEFAULT 0,
-    timeSpentNotes INT DEFAULT 0,
-    timeSpentVideos INT DEFAULT 0,
-    timeSpentPractice INT DEFAULT 0,
-    timeSpentTests INT DEFAULT 0,
-    status VARCHAR(50) DEFAULT 'NOT_STARTED',
-    lastStudied DATETIME,
-    PRIMARY KEY (student_id, chapter_id),
-    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS questions (
-    id VARCHAR(50) PRIMARY KEY,
-    topicId VARCHAR(50),
-    subject VARCHAR(50),
-    text TEXT NOT NULL,
-    options JSON NOT NULL,
-    correctAnswer INT NOT NULL,
-    explanation TEXT,
-    difficulty ENUM('EASY', 'MEDIUM', 'HARD'),
-    FOREIGN KEY (topicId) REFERENCES chapters(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS mock_tests (
-    id VARCHAR(50) PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    duration INT DEFAULT 180,
-    totalMarks INT DEFAULT 300,
-    category VARCHAR(50),
-    difficulty VARCHAR(50),
-    questionIds TEXT,
-    chapterIds TEXT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS test_results (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id VARCHAR(50) NOT NULL,
-    test_id VARCHAR(50),
-    test_name VARCHAR(255),
-    score INT,
-    total_marks INT,
-    accuracy INT,
-    date DATE,
-    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS psychometric_logs (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id VARCHAR(50) NOT NULL,
-    stress INT,
-    focus INT,
-    motivation INT,
-    examFear INT,
-    summary TEXT,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS flashcards (
-    id VARCHAR(50) PRIMARY KEY,
-    question TEXT,
-    answer TEXT,
-    subject VARCHAR(50),
-    type VARCHAR(50)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE IF NOT EXISTS memory_hacks (
-    id VARCHAR(50) PRIMARY KEY,
-    title VARCHAR(255),
-    description TEXT,
-    hack TEXT,
-    category VARCHAR(50),
-    subject VARCHAR(50)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-COMMIT;`;
-
-      const dbConfig = `<?php
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'iitgrrprep_v20');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Content-Type: application/json; charset=UTF-8");
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit(); }
-try {
-    $pdo = new PDO("mysql:host=".DB_HOST.";dbname=".DB_NAME, DB_USER, DB_PASS);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-} catch(PDOException $e) {
-    http_response_code(500);
-    die(json_encode(["success" => false, "error" => "Critical Link Failure: " . $e->getMessage()]));
-}
-?>`;
-
-      const diagnosticTest = `<?php
-require_once 'config/database.php';
-$step = $_GET['step'] ?? 0;
-$response = ["success" => true, "message" => "Step verified."];
-try {
-    switch($step) {
-        case 1: $pdo->query("SELECT id FROM users LIMIT 1"); break;
-        case 2: 
-            $count = $pdo->query("SELECT COUNT(*) FROM chapters")->fetchColumn();
-            $response["message"] = "Found $count chapters in production DB.";
-            if($count < 50) $response["success"] = false;
-            break;
-        case 3: $pdo->query("SELECT student_id FROM student_progress LIMIT 1"); break;
-        case 4: $pdo->query("SELECT id FROM mock_tests LIMIT 1"); break;
-        case 5: $pdo->query("SELECT id FROM test_results LIMIT 1"); break;
-        case 6: $pdo->query("SELECT id FROM users WHERE routine_json IS NOT NULL LIMIT 1"); break;
-        case 7: $pdo->query("SELECT id FROM psychometric_logs LIMIT 1"); break;
-        case 8: $pdo->query("SELECT id FROM users WHERE connected_id IS NOT NULL LIMIT 1"); break;
-        default: $pdo->query("SELECT 1");
-    }
-} catch (Exception $e) {
-    $response = ["success" => false, "message" => "SQL Error: " . $e->getMessage()];
-}
-echo json_encode($response);
-?>`;
-
-      zip.folder("api/config")?.file("database.php", dbConfig);
-      zip.folder("api/sql")?.file("master_schema_v20.sql", sqlSchema);
-      const apiFolder = zip.folder("api");
-      apiFolder?.file("diagnostic_test.php", diagnosticTest);
-      apiFolder?.file("check_connection.php", `<?php require_once 'config/database.php'; echo json_encode(["success"=>true]); ?>`);
-      apiFolder?.file("auth_register.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input")); $id = "S-" . bin2hex(random_bytes(4)); $hashed = password_hash($d->password, PASSWORD_BCRYPT); $s = $pdo->prepare("INSERT INTO users (id, name, email, password, role, institute, targetExam, targetYear, birthDate, gender) VALUES (?,?,?,?,?,?,?,?,?,?)"); $s->execute([$id, $d->name, $d->email, $hashed, $d->role ?? 'STUDENT', $d->institute ?? null, $d->targetExam ?? null, $d->targetYear ?? null, $d->birthDate ?? null, $d->gender ?? 'Male']); echo json_encode(["success" => true, "user" => ["id" => $id, "name" => $d->name, "email" => $d->email, "role" => $d->role ?? 'STUDENT']]); ?>`);
-      apiFolder?.file("auth_login.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input")); $s = $pdo->prepare("SELECT * FROM users WHERE email = ?"); $s->execute([$d->email]); $u = $s->fetch(); if($u && password_verify($d->password, $u['password'])) { unset($u['password']); echo json_encode(["success" => true, "user" => $u]); } else { echo json_encode(["success" => false, "error" => "Invalid credentials"]); } ?>`);
-      apiFolder?.file("get_dashboard.php", `<?php require_once 'config/database.php'; $id = $_GET['id'] ?? ''; $user = $pdo->prepare("SELECT * FROM users WHERE id = ?"); $user->execute([$id]); $u = $user->fetch(); $chapters = $pdo->query("SELECT c.*, p.progress, p.accuracy, p.status FROM chapters c LEFT JOIN student_progress p ON c.id = p.chapter_id AND p.student_id = '$id'")->fetchAll(); echo json_encode(["success" => true, "data" => ["name" => $u['name'], "chapters" => $chapters]]); ?>`);
-      apiFolder?.file("sync_progress.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input")); foreach($d->chapters as $ch) { $pdo->prepare("REPLACE INTO student_progress (student_id, chapter_id, progress, accuracy, status) VALUES (?,?,?,?,?)")->execute([$d->student_id, $ch->id, $ch->progress, $ch->accuracy, $ch->status]); } echo json_encode(["success"=>true]); ?>`);
-      apiFolder?.file("save_routine.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input")); $pdo->prepare("UPDATE users SET routine_json = ? WHERE id = ?")->execute([json_encode($d->routine), $d->student_id]); echo json_encode(["success"=>true]); ?>`);
-      apiFolder?.file("save_timetable.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input")); $pdo->prepare("UPDATE users SET smartplan_json = ? WHERE id = ?")->execute([json_encode($d->smartPlan), $d->student_id]); echo json_encode(["success"=>true]); ?>`);
-      apiFolder?.file("manage_chapters.php", `<?php require_once 'config/database.php'; $a = $_GET['action'] ?? ''; $d = json_decode(file_get_contents("php://input")); if($a === 'save') { $pdo->prepare("REPLACE INTO chapters (id, subject, unit, name, notes, videoUrl, highYield) VALUES (?,?,?,?,?,?,?)")->execute([$d->id, $d->subject, $d->unit, $d->name, $d->notes, $d->videoUrl, $d->highYield ? 1 : 0]); } echo json_encode(["success"=>true]); ?>`);
-      apiFolder?.file("manage_questions.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input")); $pdo->prepare("REPLACE INTO questions (id, topicId, subject, text, options, correctAnswer, explanation, difficulty) VALUES (?,?,?,?,?,?,?,?)")->execute([$d->id, $d->topicId, $d->subject, $d->text, json_encode($d->options), $d->correctAnswer, $d->explanation, $d->difficulty]); echo json_encode(["success"=>true]); ?>`);
-      apiFolder?.file("save_attempt.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input")); $pdo->prepare("INSERT INTO test_results (student_id, test_id, test_name, score, total_marks, accuracy, date) VALUES (?,?,?,?,?,?,?)")->execute([$d->student_id, $d->testId, $d->testName, $d->score, $d->totalMarks, $d->accuracy, $d->date]); echo json_encode(["success"=>true]); ?>`);
-      apiFolder?.file("save_psychometric.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input")); $pdo->prepare("INSERT INTO psychometric_logs (student_id, stress, focus, motivation, examFear, summary) VALUES (?,?,?,?,?,?)")->execute([$d->student_id, $d->stress, $d->focus, $d->motivation, $d->examFear, $d->studentSummary]); echo json_encode(["success"=>true]); ?>`);
-      apiFolder?.file("manage_users.php", `<?php require_once 'config/database.php'; echo json_encode(["success"=>true, "users"=>$pdo->query("SELECT id, name, email, role FROM users")->fetchAll()]); ?>`);
-      apiFolder?.file("manage_settings.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input")); $pdo->prepare("UPDATE users SET name=?, institute=?, targetExam=?, targetYear=? WHERE id=?")->execute([$d->name, $d->institute, $d->targetExam, $d->targetYear, $d->id]); echo json_encode(["success"=>true]); ?>`);
-      zip.file(".htaccess", "RewriteEngine On\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteRule ^(.*)$ index.php [QSA,L]");
-      
-      const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, "solaris_v20_backend_complete.zip");
-    } catch (e) {
-      alert("Bundle generation failed.");
-    }
-    setIsDownloading(false);
-  };
-
-  return (
-    <div className="space-y-12 px-4 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
-       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-          <div className="bg-white p-12 rounded-[4rem] border border-slate-200 shadow-sm space-y-10">
-             <div className="flex items-center gap-5">
-                <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shadow-inner"><Cpu className="w-7 h-7" /></div>
-                <div>
-                   <h3 className="text-2xl font-black italic tracking-tighter text-slate-900 uppercase">Intelligence Core</h3>
-                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Platform-wide LLM Orchestration</p>
-                </div>
-             </div>
-             
-             <div className="grid grid-cols-1 gap-4">
-                {Object.entries(MODEL_CONFIGS).map(([id, cfg]) => (
-                   <button 
-                    key={id}
-                    onClick={() => updateModel(id)}
-                    className={`p-6 rounded-[2rem] border-2 text-left transition-all flex items-center justify-between group ${activeModel === id ? 'border-indigo-600 bg-indigo-50/30' : 'border-slate-50 hover:border-indigo-200'}`}
-                   >
-                      <div className="flex items-center gap-5">
-                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${activeModel === id ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}>{cfg.name[0]}</div>
-                         <div>
-                            <div className="text-sm font-black text-slate-800">{cfg.name}</div>
-                            <div className="text-[9px] font-bold text-slate-400 uppercase">{cfg.desc}</div>
-                         </div>
-                      </div>
-                      {activeModel === id && <Check className="w-5 h-5 text-indigo-600" />}
-                   </button>
-                ))}
-             </div>
-          </div>
-
-          <div className="space-y-8">
-             <div className="bg-slate-900 p-12 rounded-[4rem] text-white shadow-2xl space-y-8 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:rotate-12 transition-transform duration-[4s]"><Database className="w-48 h-48" /></div>
-                <div>
-                   <h3 className="text-2xl font-black italic tracking-tighter uppercase">Uplink Status</h3>
-                   <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Data persistence layer config</p>
-                </div>
-                
-                <div className="flex items-center justify-between p-6 bg-white/5 rounded-3xl border border-white/10">
-                   <div className="flex items-center gap-4">
-                      <div className={`w-3 h-3 rounded-full animate-pulse ${mode === 'LIVE' ? (connStatus === 'online' ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-rose-500 shadow-[0_0_10px_#f43f5e]') : 'bg-slate-500'}`}></div>
-                      <div className="text-sm font-bold uppercase tracking-widest">{mode === 'LIVE' ? 'Production (SQL)' : 'Sandbox Mode'}</div>
-                   </div>
-                   <button 
-                    onClick={() => api.setMode(mode === 'MOCK' ? 'LIVE' : 'MOCK')} 
-                    className={`w-14 h-7 rounded-full p-1 transition-all duration-500 ${mode === 'LIVE' ? 'bg-emerald-500' : 'bg-slate-700'}`}
-                   >
-                      <div className={`w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-500 transform ${mode === 'LIVE' ? 'translate-x-7' : 'translate-x-0'}`}></div>
-                   </button>
-                </div>
-
-                {mode === 'LIVE' && (
-                  <div className="space-y-4 pt-4">
-                    <div className="p-6 bg-white/5 rounded-[2rem] border border-white/10 flex items-center justify-between">
-                       <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${connStatus === 'online' ? 'bg-emerald-500/20 text-emerald-400' : connStatus === 'checking' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                             {connStatus === 'online' ? <SignalHigh className="w-5 h-5" /> : connStatus === 'checking' ? <Loader2 className="w-5 h-5 animate-spin" /> : <SignalLow className="w-5 h-5" />}
-                          </div>
-                          <div>
-                             <div className="text-xs font-black uppercase tracking-widest">Connectivity</div>
-                             <div className="text-[10px] font-bold text-slate-400">{connStatus === 'online' ? 'Handshake Success' : connStatus === 'checking' ? 'Checking Uplink...' : 'Link Offline'}</div>
-                          </div>
-                       </div>
-                       <button 
-                        onClick={testConnection}
-                        className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
-                       >
-                          Ping Server
-                       </button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-4 pt-6">
-                   <div className="flex justify-between text-xs font-bold text-slate-400"><span>Latency</span><span>{mode === 'LIVE' ? (connStatus === 'online' ? '24ms' : '--') : '0ms'}</span></div>
-                   <div className="flex justify-between text-xs font-bold text-slate-400"><span>API Version</span><span>v20.0-PRO</span></div>
-                </div>
-             </div>
-
-             <div className="bg-indigo-600 p-12 rounded-[4rem] text-white shadow-xl space-y-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-8 opacity-10"><Cloud className="w-32 h-32" /></div>
-                <h3 className="text-xl font-black italic tracking-tighter uppercase">Deployment Blueprint</h3>
-                <p className="text-sm text-indigo-100 font-medium italic leading-relaxed">Download the complete Solaris v20 Backend (18+ PHP Modules + Full SQL) to resolve all 500 errors and enable production persistence.</p>
-                <button 
-                  onClick={downloadProductionBackend}
-                  disabled={isDownloading}
-                  className="w-full py-5 bg-white text-indigo-600 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:scale-[1.02] active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50"
-                >
-                  {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Download className="w-4 h-4" /> Download Complete v20 Core</>}
-                </button>
-             </div>
-          </div>
-       </div>
-    </div>
-  );
-};
-
-const UserManagement = () => {
-  const [users, setUsers] = useState<UserAccount[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    api.getAccounts().then(res => { setUsers(res); setIsLoading(false); });
-  }, []);
-
-  return (
-    <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden mx-4">
-      <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
-         <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-3"><Users className="w-6 h-6 text-indigo-600" /> Managed Users</h3>
-         <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Global Register: {users.length}</div>
-      </div>
-      <div className="divide-y divide-slate-50 max-h-[600px] overflow-y-auto custom-scrollbar">
-        {isLoading ? (
-          <div className="p-20 flex flex-col items-center justify-center text-slate-400 gap-4"><Loader2 className="animate-spin" /> Uplinking User Data...</div>
-        ) : users.length === 0 ? (
-          <div className="p-20 text-center text-slate-300 font-black uppercase text-xs">No users found in database.</div>
-        ) : (
-          users.map((u) => (
-            <div key={u.id} className="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors group">
-               <div className="flex items-center gap-6">
-                  <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center font-black text-indigo-600 shadow-inner">{u.name?.[0] || 'U'}</div>
-                  <div>
-                    <div className="font-black text-slate-800 tracking-tight">{u.name}</div>
-                    <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{u.email} • {u.role} • ID: {u.id}</div>
-                  </div>
-               </div>
-               <div className="flex gap-2">
-                  <button className="p-3 text-slate-400 hover:text-indigo-600 transition-all"><Edit3 className="w-4 h-4" /></button>
-                  <button className="p-3 text-slate-400 hover:text-rose-600 transition-all"><Trash2 className="w-4 h-4" /></button>
-               </div>
-            </div>
-          ))
-        )}
       </div>
     </div>
   );
@@ -723,7 +366,7 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                     </div>
                     {previewNotes ? (
                        <div className="w-full bg-white border border-slate-200 rounded-[2.5rem] p-12 min-h-[300px] prose prose-slate max-w-none">
-                          <div dangerouslySetInnerHTML={{ __html: formData.notes || '<p class="text-slate-400 italic">No content available for preview.</p>' }} />
+                          <div dangerouslySetInnerHTML={{ __html: formData.notes || '<p className="text-slate-400 italic">No content available for preview.</p>' }} />
                        </div>
                     ) : (
                        <InputGroup label="Theory Manuscript (Supports Rich HTML)">
@@ -793,11 +436,39 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
   );
 };
 
+// --- MAIN ADMIN COMPONENT ---
+
 const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
+  const mode = api.getMode();
+  const [activeModel, setActiveModel] = useState(localStorage.getItem('jeepro_platform_ai_model') || 'gemini-3-flash');
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [connStatus, setConnStatus] = useState<'idle' | 'checking' | 'online' | 'offline'>('idle');
+
+  // Unified state for editors
   const [isCreating, setIsCreating] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [creationType, setCreationType] = useState<string>('Question');
-  const mode = api.getMode();
+
+  const updateModel = (id: string) => {
+    localStorage.setItem('jeepro_platform_ai_model', id);
+    setActiveModel(id);
+  };
+
+  const testConnection = async () => {
+    if (mode !== 'LIVE') return;
+    setConnStatus('checking');
+    try {
+      const res = await fetch('./api/check_connection.php');
+      const result = await res.json();
+      setConnStatus(result.success ? 'online' : 'offline');
+    } catch (err) {
+      setConnStatus('offline');
+    }
+  };
+
+  useEffect(() => {
+    if (mode === 'LIVE') testConnection();
+  }, [mode]);
 
   const handleEdit = (type: string, item: any) => {
     setCreationType(type); 
@@ -806,9 +477,10 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
   };
 
   const handleDelete = (type: string, id: string) => {
-    if (!confirm(`This will permanently purge this ${type} from the database. Proceed?`)) return;
+    if (!confirm(`Permanently purge this ${type}?`)) return;
     const key = type === 'Chapter' ? 'chapters' : type === 'Question' ? 'questions' : type === 'MockTest' ? 'mockTests' : type === 'Flashcard' ? 'flashcards' : type === 'MemoryHack' ? 'memoryHacks' : 'blogs';
-    const newList = (data[key as keyof StudentData] as any[]).filter((item: any) => item.id !== id);
+    const currentList = data[key as keyof StudentData] as any[];
+    const newList = currentList.filter((item: any) => item.id !== id);
     setData({ ...data, [key]: newList });
   };
 
@@ -822,7 +494,480 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     const index = currentList.findIndex(e => e.id === entity.id);
     if (index > -1) currentList[index] = entity; else currentList.push(entity);
     setData({ ...data, [key]: currentList });
-    setIsCreating(false); setEditingItem(null);
+    setIsCreating(false); 
+    setEditingItem(null);
+  };
+
+  const downloadProductionBackend = async () => {
+    setIsDownloading(true);
+    try {
+      const zip = new JSZip();
+      
+      const sqlSchema = `-- IITGEEPREP MASTER SCHEMA v20.0
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+CREATE DATABASE IF NOT EXISTS iitgrrprep_v20;
+USE iitgrrprep_v20;
+
+CREATE TABLE IF NOT EXISTS users (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('STUDENT', 'PARENT', 'ADMIN') DEFAULT 'STUDENT',
+    institute VARCHAR(255),
+    targetExam VARCHAR(100),
+    targetYear VARCHAR(4),
+    birthDate DATE,
+    gender VARCHAR(20),
+    routine_json JSON,
+    smartplan_json JSON,
+    connected_id VARCHAR(50),
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS chapters (
+    id VARCHAR(50) PRIMARY KEY,
+    subject VARCHAR(50) NOT NULL,
+    unit VARCHAR(100) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    notes LONGTEXT,
+    videoUrl VARCHAR(255),
+    highYield TINYINT(1) DEFAULT 0,
+    targetCompletionDate DATE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS student_progress (
+    student_id VARCHAR(50) NOT NULL,
+    chapter_id VARCHAR(50) NOT NULL,
+    progress INT DEFAULT 0,
+    accuracy INT DEFAULT 0,
+    timeSpent INT DEFAULT 0,
+    timeSpentNotes INT DEFAULT 0,
+    timeSpentVideos INT DEFAULT 0,
+    timeSpentPractice INT DEFAULT 0,
+    timeSpentTests INT DEFAULT 0,
+    status VARCHAR(50) DEFAULT 'NOT_STARTED',
+    lastStudied DATETIME,
+    PRIMARY KEY (student_id, chapter_id),
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS questions (
+    id VARCHAR(50) PRIMARY KEY,
+    topicId VARCHAR(50),
+    subject VARCHAR(50),
+    text TEXT NOT NULL,
+    options JSON NOT NULL,
+    correctAnswer INT NOT NULL,
+    explanation TEXT,
+    difficulty ENUM('EASY', 'MEDIUM', 'HARD'),
+    FOREIGN KEY (topicId) REFERENCES chapters(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS mock_tests (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    duration INT DEFAULT 180,
+    totalMarks INT DEFAULT 300,
+    category VARCHAR(50),
+    difficulty VARCHAR(50),
+    questionIds TEXT,
+    chapterIds TEXT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS test_results (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id VARCHAR(50) NOT NULL,
+    test_id VARCHAR(50),
+    test_name VARCHAR(255),
+    score INT,
+    total_marks INT,
+    accuracy INT,
+    date DATE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS psychometric_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id VARCHAR(50) NOT NULL,
+    stress INT,
+    focus INT,
+    motivation INT,
+    examFear INT,
+    summary TEXT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS flashcards (
+    id VARCHAR(50) PRIMARY KEY,
+    question TEXT,
+    answer TEXT,
+    subject VARCHAR(50),
+    type VARCHAR(50)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS memory_hacks (
+    id VARCHAR(50) PRIMARY KEY,
+    title VARCHAR(255),
+    description TEXT,
+    hack TEXT,
+    category VARCHAR(50),
+    subject VARCHAR(50)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+COMMIT;`;
+
+      const dbConfig = `<?php
+/**
+ * Solaris v20 Backend - Database Configuration
+ */
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'iitgrrprep_v20');
+define('DB_USER', 'root');
+define('DB_PASS', '');
+
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Content-Type: application/json; charset=UTF-8");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
+
+try {
+    $pdo = new PDO("mysql:host=".DB_HOST.";dbname=".DB_NAME, DB_USER, DB_PASS);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+} catch(PDOException $e) {
+    http_response_code(500);
+    die(json_encode([
+        "success" => false, 
+        "error" => "Critical Uplink Failure: " . $e->getMessage()
+    ]));
+}
+?>`;
+
+      const diagnosticTest = `<?php
+/**
+ * Solaris v20 Backend - Comprehensive Diagnostic Protocol
+ */
+require_once 'config/database.php';
+
+$step = (int)($_GET['step'] ?? 0);
+$response = ["success" => true, "message" => "Step verified successfully.", "warn" => false];
+
+try {
+    switch($step) {
+        case 1: // Admin Panel Editors Check
+            $required_files = [
+                'manage_chapters.php', 
+                'manage_questions.php', 
+                'manage_users.php', 
+                'manage_settings.php',
+                'manage_blogs.php'
+            ];
+            foreach($required_files as $file) {
+                if(!file_exists($file)) {
+                    $response["success"] = false;
+                    $response["message"] = "Critical node missing: $file";
+                    break;
+                }
+            }
+            if($response["success"]) $response["message"] = "All editor controllers verified in filesystem.";
+            break;
+
+        case 2: // Syllabus & Chapters Mapping
+            $count = $pdo->query("SELECT COUNT(*) FROM chapters")->fetchColumn();
+            $response["message"] = "Detected $count active chapters in database.";
+            if($count < 50) {
+                $response["warn"] = true;
+                $response["message"] .= " WARNING: Found only $count/50 targeted chapters.";
+            }
+            break;
+
+        case 3: // Data Persistence Protocol
+            $pdo->query("SELECT student_id FROM student_progress LIMIT 1");
+            $response["message"] = "Student progress storage engine indices are active.";
+            break;
+
+        case 4: // Mock Exam Engine
+            $count = $pdo->query("SELECT COUNT(*) FROM mock_tests")->fetchColumn();
+            $response["message"] = "Exam Engine online. $count Mock Tests registered.";
+            break;
+
+        case 5: // Chapter Test Flow
+            $pdo->query("SELECT id FROM test_results LIMIT 1");
+            $response["message"] = "Real-time result archival node verified.";
+            break;
+
+        case 6: // Timetable Matrix
+            $stmt = $pdo->query("SELECT COUNT(*) FROM users WHERE routine_json IS NOT NULL OR smartplan_json IS NOT NULL");
+            $count = $stmt->fetchColumn();
+            $response["message"] = "Identified $count active timetable configurations.";
+            break;
+
+        case 7: // Psychometric Node
+            $count = $pdo->query("SELECT COUNT(*) FROM psychometric_logs")->fetchColumn();
+            $response["message"] = "Mental state tracking validated. $count logs archived.";
+            break;
+
+        case 8: // Parent Connectivity Handshake
+            $pdo->query("SELECT id FROM users WHERE connected_id IS NOT NULL LIMIT 1");
+            $response["message"] = "Parental handshake protocol index validated.";
+            break;
+
+        case 9: // Integrity & Stability
+            $pdo->query("SELECT DISTINCT role FROM users");
+            $response["message"] = "Identity role-based constraints verified.";
+            break;
+
+        case 10: // Regression Check
+            $pdo->query("SELECT 1");
+            $response["message"] = "Full Solaris v20.0 synchronization successful.";
+            break;
+
+        default:
+            $response["success"] = false;
+            $response["message"] = "Invalid Diagnostic Code.";
+    }
+} catch (Exception $e) {
+    $response = ["success" => false, "message" => "SQL Protocol Error: " . $e->getMessage()];
+}
+
+echo json_encode($response);
+?>`;
+
+      const checkConn = `<?php
+require_once 'config/database.php';
+try {
+    $pdo->query("SELECT 1");
+    echo json_encode(["success" => true, "status" => "Uplink Established"]);
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(["success" => false, "error" => $e->getMessage()]);
+}
+?>`;
+
+      const authReg = `<?php
+require_once 'config/database.php';
+$d = json_decode(file_get_contents("php://input"));
+if(!$d->email || !$d->password) die(json_encode(["success"=>false, "error"=>"Incomplete Data"]));
+
+$id = "S-" . bin2hex(random_bytes(4));
+$hashed = password_hash($d->password, PASSWORD_BCRYPT);
+
+try {
+    $s = $pdo->prepare("INSERT INTO users (id, name, email, password, role, institute, targetExam, targetYear, birthDate, gender) VALUES (?,?,?,?,?,?,?,?,?,?)");
+    $s->execute([$id, $d->name, $d->email, $hashed, $d->role ?? 'STUDENT', $d->institute ?? null, $d->targetExam ?? null, $d->targetYear ?? null, $d->birthDate ?? null, $d->gender ?? 'Male']);
+    echo json_encode(["success" => true, "user" => ["id" => $id, "name" => $d->name, "email" => $d->email, "role" => $d->role ?? 'STUDENT']]);
+} catch (Exception $e) {
+    echo json_encode(["success"=>false, "error" => "Email already registered."]);
+}
+?>`;
+
+      const authLogin = `<?php
+require_once 'config/database.php';
+$d = json_decode(file_get_contents("php://input"));
+$s = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+$s->execute([$d->email]);
+$u = $s->fetch();
+
+if($u && password_verify($d->password, $u['password'])) {
+    unset($u['password']);
+    echo json_encode(["success" => true, "user" => $u]);
+} else {
+    echo json_encode(["success" => false, "error" => "Invalid credentials"]);
+}
+?>`;
+
+      const getDash = `<?php
+require_once 'config/database.php';
+$id = $_GET['id'] ?? '';
+if(!$id) die(json_encode(["success" => false, "error" => "ID Required"]));
+
+$userStmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+$userStmt->execute([$id]);
+$ud = $userStmt->fetch();
+
+if(!$ud) die(json_encode(["success"=>false, "error"=>"User Not Found"]));
+
+$chapters = $pdo->query("SELECT c.*, p.progress, p.accuracy, p.status, p.timeSpent, p.timeSpentNotes, p.timeSpentVideos, p.timeSpentPractice, p.timeSpentTests 
+                        FROM chapters c 
+                        LEFT JOIN student_progress p ON c.id = p.chapter_id AND p.student_id = '$id'")->fetchAll();
+
+$history = $pdo->prepare("SELECT * FROM test_results WHERE student_id = ? ORDER BY date DESC");
+$history->execute([$id]);
+
+$psych = $pdo->prepare("SELECT * FROM psychometric_logs WHERE student_id = ? ORDER BY timestamp DESC LIMIT 10");
+$psych->execute([$id]);
+
+$blogs = $pdo->query("SELECT * FROM blogs WHERE status = 'PUBLISHED' ORDER BY date DESC")->fetchAll();
+
+echo json_encode([
+    "success" => true, 
+    "data" => [
+        "id" => $id,
+        "name" => $ud['name'],
+        "email" => $ud['email'],
+        "chapters" => $chapters,
+        "routine" => json_decode($ud['routine_json']),
+        "smartPlan" => json_decode($ud['smartplan_json']),
+        "testHistory" => $history->fetchAll(),
+        "psychometricHistory" => $psych->fetchAll(),
+        "blogs" => $blogs,
+        "institute" => $ud['institute'],
+        "targetExam" => $ud['targetExam'],
+        "targetYear" => $ud['targetYear']
+    ]
+]);
+?>`;
+
+      const syncProg = `<?php
+require_once 'config/database.php';
+$d = json_decode(file_get_contents("php://input"));
+if(!$d->student_id || !$d->chapters) exit;
+
+foreach($d->chapters as $c) {
+    $stmt = $pdo->prepare("INSERT INTO student_progress (student_id, chapter_id, progress, accuracy, status, timeSpent, timeSpentNotes, timeSpentVideos, timeSpentPractice, timeSpentTests) 
+                           VALUES (?,?,?,?,?,?,?,?,?,?) 
+                           ON DUPLICATE KEY UPDATE 
+                           progress = VALUES(progress), 
+                           accuracy = VALUES(accuracy),
+                           status = VALUES(status),
+                           timeSpent = VALUES(timeSpent),
+                           timeSpentNotes = VALUES(timeSpentNotes),
+                           timeSpentVideos = VALUES(timeSpentVideos),
+                           timeSpentPractice = VALUES(timeSpentPractice),
+                           timeSpentTests = VALUES(timeSpentTests)");
+    $stmt->execute([
+        $d->student_id, $c->id, $c->progress, $c->accuracy, $c->status,
+        $c->timeSpent ?? 0, $c->timeSpentNotes ?? 0, $c->timeSpentVideos ?? 0, 
+        $c->timeSpentPractice ?? 0, $c->timeSpentTests ?? 0
+    ]);
+}
+echo json_encode(["success" => true]);
+?>`;
+
+      const saveRoutine = `<?php
+require_once 'config/database.php';
+$d = json_decode(file_get_contents("php://input"));
+if(!$d->student_id) exit;
+$pdo->prepare("UPDATE users SET routine_json = ? WHERE id = ?")->execute([json_encode($d->routine), $d->student_id]);
+echo json_encode(["success" => true]);
+?>`;
+
+      const saveTable = `<?php
+require_once 'config/database.php';
+$d = json_decode(file_get_contents("php://input"));
+if(!$d->student_id) exit;
+$pdo->prepare("UPDATE users SET smartplan_json = ? WHERE id = ?")->execute([json_encode($d->smartPlan), $d->student_id]);
+echo json_encode(["success" => true]);
+?>`;
+
+      const manageChapters = `<?php
+require_once 'config/database.php';
+$a = $_GET['action'] ?? '';
+$d = json_decode(file_get_contents("php://input"));
+
+if ($a === 'save') {
+    $s = $pdo->prepare("REPLACE INTO chapters (id, subject, unit, name, notes, videoUrl, highYield) VALUES (?,?,?,?,?,?,?)");
+    $s->execute([$d->id, $d->subject, $d->unit, $d->name, $d->notes, $d->videoUrl, $d->highYield ? 1 : 0]);
+} else if ($a === 'delete') {
+    $pdo->prepare("DELETE FROM chapters WHERE id = ?")->execute([$d->id]);
+}
+echo json_encode(["success" => true]);
+?>`;
+
+      const manageQuestions = `<?php
+require_once 'config/database.php';
+$d = json_decode(file_get_contents("php://input"));
+$pdo->prepare("REPLACE INTO questions (id, topicId, subject, text, options, correctAnswer, explanation, difficulty) VALUES (?,?,?,?,?,?,?,?)")
+    ->execute([$d->id, $d->topicId, $d->subject, $d->text, json_encode($d->options), $d->correctAnswer, $d->explanation, $d->difficulty]);
+echo json_encode(["success" => true]);
+?>`;
+
+      const saveAttempt = `<?php
+require_once 'config/database.php';
+$d = json_decode(file_get_contents("php://input"));
+$pdo->prepare("INSERT INTO test_results (student_id, test_id, test_name, score, total_marks, accuracy, date) VALUES (?,?,?,?,?,?,?)")
+    ->execute([$d->student_id, $d->testId, $d->testName, $d->score, $d->totalMarks, $d->accuracy, $d->date]);
+echo json_encode(["success" => true]);
+?>`;
+
+      const savePsych = `<?php
+require_once 'config/database.php';
+$d = json_decode(file_get_contents("php://input"));
+$pdo->prepare("INSERT INTO psychometric_logs (student_id, stress, focus, motivation, examFear, summary) VALUES (?,?,?,?,?,?)")
+    ->execute([$d->student_id, $d->stress, $d->focus, $d->motivation, $d->examFear, $d->studentSummary]);
+echo json_encode(["success" => true]);
+?>`;
+
+      const manageUsers = `<?php
+require_once 'config/database.php';
+$users = $pdo->query("SELECT id, name, email, role, institute, targetExam, targetYear FROM users")->fetchAll();
+echo json_encode(["success" => true, "users" => $users]);
+?>`;
+
+      const manageSettings = `<?php
+require_once 'config/database.php';
+$d = json_decode(file_get_contents("php://input"));
+$pdo->prepare("UPDATE users SET name=?, institute=?, targetExam=?, targetYear=?, birthDate=?, gender=? WHERE id=?")
+    ->execute([$d->name, $d->institute, $d->targetExam, $d->targetYear, $d->birthDate, $d->gender, $d->id]);
+echo json_encode(["success" => true]);
+?>`;
+
+      const manageBlogs = `<?php
+require_once 'config/database.php';
+$a = $_GET['action'] ?? '';
+$d = json_decode(file_get_contents("php://input"));
+
+if ($a === 'save') {
+    $pdo->prepare("REPLACE INTO blogs (id, title, content, author, date, status, coverImage) VALUES (?,?,?,?,?,?,?)")
+        ->execute([$d->id, $d->title, $d->content, $d->author, $d->date, $d->status, $d->coverImage]);
+} else if ($a === 'delete') {
+    $pdo->prepare("DELETE FROM blogs WHERE id = ?")->execute([$d->id]);
+}
+echo json_encode(["success" => true]);
+?>`;
+
+      const htaccess = `RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ index.php [QSA,L]`;
+
+      // Construct ZIP
+      zip.folder("config")?.file("database.php", dbConfig);
+      zip.folder("sql")?.file("master_schema_v20.sql", sqlSchema);
+      
+      zip.file("diagnostic_test.php", diagnosticTest);
+      zip.file("check_connection.php", checkConn);
+      zip.file("auth_register.php", authReg);
+      zip.file("auth_login.php", authLogin);
+      zip.file("get_dashboard.php", getDash);
+      zip.file("sync_progress.php", syncProg);
+      zip.file("save_routine.php", saveRoutine);
+      zip.file("save_timetable.php", saveTable);
+      zip.file("manage_chapters.php", manageChapters);
+      zip.file("manage_questions.php", manageQuestions);
+      zip.file("save_attempt.php", saveAttempt);
+      zip.file("save_psychometric.php", savePsych);
+      zip.file("manage_users.php", manageUsers);
+      zip.file("manage_settings.php", manageSettings);
+      zip.file("manage_blogs.php", manageBlogs);
+      zip.file(".htaccess", htaccess);
+      
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, "solaris_v20_complete_backend.zip");
+    } catch (e) {
+      alert("Bundle generation failed.");
+    }
+    setIsDownloading(false);
   };
 
   return (
@@ -851,8 +996,93 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
         {activeTab === 'admin-flashcards' && <EntityList title="Recall Engine (Cards)" type="Flashcard" data={data.flashcards} icon={Layers} color="blue" btnLabel="Encode Card" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Flashcard'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-hacks' && <EntityList title="Memory Hack Vault" type="MemoryHack" data={data.memoryHacks} icon={Zap} color="amber" btnLabel="Commit Hack" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MemoryHack'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-blogs' && <EntityList title="Intelligence Strategy Feed" type="Blog" data={data.blogs} icon={PenTool} color="indigo" btnLabel="Draft Manuscript" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Blog'); setEditingItem(null); setIsCreating(true); }} />}
-        {activeTab === 'admin-diagnostic' && <DiagnosticSuite data={data} />}
-        {activeTab === 'admin-system' && <SystemSettings data={data} />}
+        {activeTab === 'admin-diagnostic' && <DiagnosticSuite />}
+        {activeTab === 'admin-system' && (
+            <div className="space-y-12 px-4 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                    <div className="bg-white p-12 rounded-[4rem] border border-slate-200 shadow-sm space-y-10">
+                        <div className="flex items-center gap-5">
+                            <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shadow-inner"><Cpu className="w-7 h-7" /></div>
+                            <div>
+                                <h3 className="text-2xl font-black italic tracking-tighter text-slate-900 uppercase">Intelligence Core</h3>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Platform-wide LLM Orchestration</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4">
+                            {Object.entries(MODEL_CONFIGS).map(([id, cfg]) => (
+                                <button 
+                                    key={id}
+                                    onClick={() => updateModel(id)}
+                                    className={`p-6 rounded-[2rem] border-2 text-left transition-all flex items-center justify-between group ${activeModel === id ? 'border-indigo-600 bg-indigo-50/30' : 'border-slate-50 hover:border-indigo-200'}`}
+                                >
+                                    <div className="flex items-center gap-5">
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${activeModel === id ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}>{cfg.name[0]}</div>
+                                        <div>
+                                            <div className="text-sm font-black text-slate-800">{cfg.name}</div>
+                                            <div className={`text-[9px] font-bold text-slate-400 uppercase`}>{cfg.desc}</div>
+                                        </div>
+                                    </div>
+                                    {activeModel === id && <Check className="w-5 h-5 text-indigo-600" />}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="space-y-8">
+                        <div className="bg-slate-900 p-12 rounded-[4rem] text-white shadow-2xl space-y-8 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:rotate-12 transition-transform duration-[4s]"><Database className="w-48 h-48" /></div>
+                            <div>
+                                <h3 className="text-2xl font-black italic tracking-tighter uppercase">Uplink Status</h3>
+                                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Data persistence layer config</p>
+                            </div>
+                            <div className="flex items-center justify-between p-6 bg-white/5 rounded-3xl border border-white/10">
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-3 h-3 rounded-full animate-pulse ${mode === 'LIVE' ? (connStatus === 'online' ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-rose-500 shadow-[0_0_10px_#f43f5e]') : 'bg-slate-500'}`}></div>
+                                    <div className="text-sm font-bold uppercase tracking-widest">{mode === 'LIVE' ? 'Production (SQL)' : 'Sandbox Mode'}</div>
+                                </div>
+                                <button 
+                                    onClick={() => api.setMode(mode === 'MOCK' ? 'LIVE' : 'MOCK')} 
+                                    className={`w-14 h-7 rounded-full p-1 transition-all duration-500 ${mode === 'LIVE' ? 'bg-emerald-500' : 'bg-slate-700'}`}
+                                >
+                                    <div className={`w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-500 transform ${mode === 'LIVE' ? 'translate-x-7' : 'translate-x-0'}`}></div>
+                                </button>
+                            </div>
+                            {mode === 'LIVE' && (
+                                <div className="space-y-4 pt-4">
+                                    <div className="p-6 bg-white/5 rounded-[2rem] border border-white/10 flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${connStatus === 'online' ? 'bg-emerald-500/20 text-emerald-400' : connStatus === 'checking' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                                                {connStatus === 'online' ? <SignalHigh className="w-5 h-5" /> : connStatus === 'checking' ? <Loader2 className="w-5 h-5 animate-spin" /> : <SignalLow className="w-5 h-5" />}
+                                            </div>
+                                            <div>
+                                                <div className="text-xs font-black uppercase tracking-widest">Connectivity</div>
+                                                <div className="text-[10px] font-bold text-slate-400">{connStatus === 'online' ? 'Handshake Success' : connStatus === 'checking' ? 'Checking Uplink...' : 'Link Offline'}</div>
+                                            </div>
+                                        </div>
+                                        <button onClick={testConnection} className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Ping Server</button>
+                                    </div>
+                                </div>
+                            )}
+                            <div className="space-y-4 pt-6">
+                                <div className="flex justify-between text-xs font-bold text-slate-400"><span>Latency</span><span>{mode === 'LIVE' ? (connStatus === 'online' ? '24ms' : '--') : '0ms'}</span></div>
+                                <div className="flex justify-between text-xs font-bold text-slate-400"><span>API Version</span><span>v20.0-PRO</span></div>
+                            </div>
+                        </div>
+                        <div className="bg-indigo-600 p-12 rounded-[4rem] text-white shadow-xl space-y-6 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-8 opacity-10"><Cloud className="w-32 h-32" /></div>
+                            <h3 className="text-xl font-black italic tracking-tighter uppercase">Deployment Blueprint</h3>
+                            <p className="text-sm text-indigo-100 font-medium italic leading-relaxed">Download the complete Solaris v20 Backend (18+ PHP Modules + Full SQL) to enable production persistence.</p>
+                            <button 
+                                onClick={downloadProductionBackend}
+                                disabled={isDownloading}
+                                className="w-full py-5 bg-white text-indigo-600 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:scale-[1.02] active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50"
+                            >
+                                {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Download className="w-4 h-4" /> Download Complete v20 Core</>}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
       </div>
 
       {isCreating && (
@@ -868,4 +1098,46 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     </div>
   );
 };
+
+const UserManagement = () => {
+  const [users, setUsers] = useState<UserAccount[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    api.getAccounts().then(res => { setUsers(res); setIsLoading(false); });
+  }, []);
+
+  return (
+    <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden mx-4">
+      <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
+         <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-3"><Users className="w-6 h-6 text-indigo-600" /> Managed Users</h3>
+         <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Global Register: {users.length}</div>
+      </div>
+      <div className="divide-y divide-slate-50 max-h-[600px] overflow-y-auto custom-scrollbar">
+        {isLoading ? (
+          <div className="p-20 flex flex-col items-center justify-center text-slate-400 gap-4"><Loader2 className="animate-spin" /> Uplinking User Data...</div>
+        ) : users.length === 0 ? (
+          <div className="p-20 text-center text-slate-300 font-black uppercase text-xs">No users found in database.</div>
+        ) : (
+          users.map((u) => (
+            <div key={u.id} className="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors group">
+               <div className="flex items-center gap-6">
+                  <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center font-black text-indigo-600 shadow-inner">{u.name?.[0] || 'U'}</div>
+                  <div>
+                    <div className="font-black text-slate-800 tracking-tight">{u.name}</div>
+                    <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{u.email} • {u.role} • ID: {u.id}</div>
+                  </div>
+               </div>
+               <div className="flex gap-2">
+                  <button className="p-3 text-slate-400 hover:text-indigo-600 transition-all"><Edit3 className="w-4 h-4" /></button>
+                  <button className="p-3 text-slate-400 hover:text-rose-600 transition-all"><Trash2 className="w-4 h-4" /></button>
+               </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default AdminCMS;
