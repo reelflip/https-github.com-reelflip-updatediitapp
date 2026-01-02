@@ -4,7 +4,7 @@ import { StudentData, UserAccount, Subject, Question, MockTest, Chapter, Flashca
 import { api } from '../services/apiService';
 import { MODEL_CONFIGS } from '../services/intelligenceService';
 import JSZip from 'jszip';
-import { saveAs } from 'file-saver';
+import saveAs from 'file-saver';
 import { 
   ShieldCheck, BookOpen, Layers, Zap, Loader2, Plus, Trash2, Edit3, X, Target, Code2, Save, Users, PenTool, Check, HelpCircle, Video, Award, Type, Lightbulb, Activity, Filter, Search, Clock, ChevronRight, Layout, List, FileText, Calendar, Globe, Settings, Cpu, Database, Cloud, Download, Eye, AlertTriangle, Star, Signal, SignalHigh, SignalLow, Activity as DiagnosticIcon, ClipboardCheck, RefreshCw, CheckCircle, ShieldAlert, FlaskConical, Map, HeartHandshake, Trash, Mail, Bell, Shield, FileBox, Heart, Bold, Italic, List as ListIcon, Heading1, Heading2, Link as LinkIcon, Maximize2, Minimize2
 } from 'lucide-react';
