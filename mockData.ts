@@ -40,7 +40,6 @@ export const INITIAL_STUDENT_DATA: StudentData = {
     { id: 'jee-main-2015', name: 'JEE Main 2015 Official', duration: 180, totalMarks: 300, category: 'ADMIN', difficulty: 'MAINS', questionIds: ['q_15_1', 'q_15_2', 'q_15_3', 'q_15_4', 'q_15_5', 'q_15_6', 'q_15_7', 'q_15_8', 'q_15_9', 'q_15_10'], chapterIds: ['p-units', 'c-bonding', 'm-calculus-limit'] }
   ],
   questions: [
-    // --- 2024 ---
     { id: 'q_24_1', topicId: 'p-units', subject: 'Physics', text: "A capacitor of 10 μF is charged to 50V. The energy stored in the capacitor is:", options: ["12.5 mJ", "25 mJ", "0.125 J", "1.25 J"], correctAnswer: 0, explanation: "E = 1/2 CV² = 0.5 * 10e-6 * (50)² = 12.5 mJ.", difficulty: 'EASY' },
     { id: 'q_24_2', topicId: 'm-sets', subject: 'Mathematics', text: "Number of subsets of a set containing 5 elements is:", options: ["5", "10", "25", "32"], correctAnswer: 3, explanation: "2^5 = 32.", difficulty: 'EASY' },
     { id: 'q_24_3', topicId: 'c-basic', subject: 'Chemistry', text: "Oxidation state of Cr in K2Cr2O7 is:", options: ["+3", "+6", "+4", "+2"], correctAnswer: 1, explanation: "2x = 12 => x = +6.", difficulty: 'EASY' },
@@ -50,122 +49,15 @@ export const INITIAL_STUDENT_DATA: StudentData = {
     { id: 'q_24_7', topicId: 'p-lom', subject: 'Physics', text: "Work done if F=5i+2j and d=2i+3j:", options: ["10 J", "6 J", "16 J", "20 J"], correctAnswer: 2, explanation: "F·d = 10 + 6 = 16.", difficulty: 'EASY' },
     { id: 'q_24_8', topicId: 'm-matrices', subject: 'Mathematics', text: "If |A|=5 for 3x3 matrix, |2A| is:", options: ["10", "40", "20", "80"], correctAnswer: 1, explanation: "|kA| = k^n |A|. 2^3 * 5 = 40.", difficulty: 'MEDIUM' },
     { id: 'q_24_9', topicId: 'c-solutions', subject: 'Chemistry', text: "Which property is a colligative property?", options: ["Viscosity", "Surface Tension", "Osmotic Pressure", "Refractive Index"], correctAnswer: 2, explanation: "Osmotic pressure depends only on particle count.", difficulty: 'EASY' },
-    { id: 'q_24_10', topicId: 'p-thermo', subject: 'Physics', text: "Efficiency of a Carnot engine between 27°C and 127°C is:", options: ["25%", "33%", "50%", "75%"], correctAnswer: 0, explanation: "1 - T_low/T_high = 1 - 300/400 = 0.25.", difficulty: 'MEDIUM' },
-    
-    // --- 2023 ---
-    { id: 'q_23_1', topicId: 'p-optics', subject: 'Physics', text: "Focal length of convex lens (f=20) in water (u=1.33) approx:", options: ["20", "40", "80", "10"], correctAnswer: 2, explanation: "Using lens maker formula, f_w ≈ 4 * f_air.", difficulty: 'HARD' },
-    { id: 'q_23_2', topicId: 'm-calculus-limit', subject: 'Mathematics', text: "Limit x->0 (sin x / x):", options: ["0", "1", "Inf", "NaN"], correctAnswer: 1, explanation: "Standard result.", difficulty: 'EASY' },
-    { id: 'q_23_3', topicId: 'c-redox-electro', subject: 'Chemistry', text: "Strongest reducing agent among Li, Na, K, Cs:", options: ["Li", "Na", "K", "Cs"], correctAnswer: 0, explanation: "Lithium has the most negative SRP.", difficulty: 'EASY' },
-    { id: 'q_23_4', topicId: 'p-electrostatics', subject: 'Physics', text: "Field inside hollow charged sphere:", options: ["Uniform", "Zero", "Variable", "Max"], correctAnswer: 1, explanation: "By Gauss's Law, E=0.", difficulty: 'EASY' },
-    { id: 'q_23_5', topicId: 'm-sequence', subject: 'Mathematics', text: "Sum of 1, 1/2, 1/4...:", options: ["1", "1.5", "2", "Inf"], correctAnswer: 2, explanation: "a/(1-r) = 1/(0.5) = 2.", difficulty: 'EASY' },
-    { id: 'q_23_6', topicId: 'c-goc', subject: 'Chemistry', text: "Which effect is temporary?", options: ["Inductive", "Resonance", "Electromeric", "Hyperconjugation"], correctAnswer: 2, explanation: "Electromeric effect occurs only in the presence of a reagent.", difficulty: 'EASY' },
-    { id: 'q_23_7', topicId: 'p-current', subject: 'Physics', text: "Color code for 47k Ohm 5%:", options: ["Yellow-Violet-Orange-Gold", "Blue-Grey-Orange-Gold", "Yellow-Violet-Red-Silver", "None"], correctAnswer: 0, explanation: "4(Y) 7(V) x10^3(O) 5%(G).", difficulty: 'MEDIUM' },
-    { id: 'q_23_8', topicId: 'm-trigo', subject: 'Mathematics', text: "Value of sin 15 deg:", options: ["(v3-1)/2v2", "(v3+1)/2v2", "1/2", "v3/2"], correctAnswer: 0, explanation: "sin(45-30).", difficulty: 'MEDIUM' },
-    { id: 'q_23_9', topicId: 'c-kinetics', subject: 'Chemistry', text: "Unit of k for zero order reaction:", options: ["mol/L/s", "L/mol/s", "s-1", "None"], correctAnswer: 0, explanation: "Rate = k[A]^0.", difficulty: 'EASY' },
-    { id: 'q_23_10', topicId: 'p-atoms', subject: 'Physics', text: "Bohr radius of 1st orbit of H-atom:", options: ["0.529 Å", "1.058 Å", "2.116 Å", "0.264 Å"], correctAnswer: 0, explanation: "Standard constant a0.", difficulty: 'EASY' },
-
-    // --- 2022 ---
-    { id: 'q_22_1', topicId: 'p-magnetism', subject: 'Physics', text: "SI unit of Magnetic Flux:", options: ["Tesla", "Weber", "Gauss", "Henry"], correctAnswer: 1, explanation: "Weber = B*A.", difficulty: 'EASY' },
-    { id: 'q_22_2', topicId: 'm-pnc', subject: 'Mathematics', text: "Ways to arrange 'APPLE':", options: ["120", "60", "24", "100"], correctAnswer: 1, explanation: "5!/2!.", difficulty: 'EASY' },
-    { id: 'q_22_3', topicId: 'c-solutions', subject: 'Chemistry', text: "Molality is defined as moles per:", options: ["Liter of solution", "Kg of solvent", "Kg of solution", "Liter of solvent"], correctAnswer: 1, explanation: "m = n_solute / mass_solvent_kg.", difficulty: 'EASY' },
-    { id: 'q_22_4', topicId: 'p-emi-ac', subject: 'Physics', text: "In pure L circuit, I ____ V by 90:", options: ["Leads", "Lags", "In Phase", "None"], correctAnswer: 1, explanation: "Current lags in Inductors.", difficulty: 'EASY' },
-    { id: 'q_22_5', topicId: 'm-diff-eq', subject: 'Mathematics', text: "Order of (dy/dx)^3 + d2y/dx2 = 0:", options: ["1", "2", "3", "NaN"], correctAnswer: 1, explanation: "Highest derivative is 2nd order.", difficulty: 'EASY' },
-    { id: 'q_22_6', topicId: 'c-kinetics', subject: 'Chemistry', text: "Unit of k for 1st order:", options: ["mol/L/s", "L/mol/s", "s-1", "None"], correctAnswer: 2, explanation: "Time inverse.", difficulty: 'EASY' },
-    { id: 'q_22_7', topicId: 'p-electronics', subject: 'Physics', text: "Boolean for NAND:", options: ["A+B", "AB", "!(A+B)", "!(AB)"], correctAnswer: 3, explanation: "!(AB).", difficulty: 'EASY' },
-    { id: 'q_22_8', topicId: 'm-stats', subject: 'Mathematics', text: "Variance of first n natural numbers:", options: ["(n2-1)/12", "(n2-1)/6", "n/2", "n2/4"], correctAnswer: 0, explanation: "Formulaic result.", difficulty: 'MEDIUM' },
-    { id: 'q_22_9', topicId: 'c-pblock', subject: 'Chemistry', text: "Hybridization of P in PCl5 is:", options: ["sp3", "sp3d", "sp3d2", "dsp2"], correctAnswer: 1, explanation: "5 sigma bonds = sp3d.", difficulty: 'EASY' },
-    { id: 'q_22_10', topicId: 'p-optics', subject: 'Physics', text: "Brewster's angle for glass (u=1.5):", options: ["56.3°", "45°", "30°", "60°"], correctAnswer: 0, explanation: "tan(theta) = u.", difficulty: 'MEDIUM' },
-
-    // --- 2021 ---
-    { id: 'q_21_1', topicId: 'p-oscillations', subject: 'Physics', text: "Total E in SHM proportional to:", options: ["A", "A2", "1/A", "vA"], correctAnswer: 1, explanation: "1/2 k A2.", difficulty: 'EASY' },
-    { id: 'q_21_2', topicId: 'm-3d-geo', subject: 'Mathematics', text: "Angle between x+y+z=1 and x+y+z=5:", options: ["0", "90", "45", "180"], correctAnswer: 0, explanation: "Parallel planes.", difficulty: 'EASY' },
-    { id: 'q_21_3', topicId: 'c-halogens', subject: 'Chemistry', text: "Liquid halogen at RT:", options: ["F", "Cl", "Br", "I"], correctAnswer: 2, explanation: "Bromine.", difficulty: 'EASY' },
-    { id: 'q_21_4', topicId: 'p-atoms', subject: 'Physics', text: "IE of H-atom:", options: ["13.6 eV", "-13.6 eV", "0 eV", "10.2 eV"], correctAnswer: 0, explanation: "Energy to remove electron.", difficulty: 'EASY' },
-    { id: 'q_21_5', topicId: 'm-coord-geo', subject: 'Mathematics', text: "Eccentricity of rectangular hyperbola:", options: ["1", "v2", "2", "v3"], correctAnswer: 1, explanation: "v(1+1) = v2.", difficulty: 'MEDIUM' },
-    { id: 'q_21_6', topicId: 'c-nitrogen', subject: 'Chemistry', text: "Hoffmann Bromamide gives:", options: ["1 amine", "2 amine", "3 amine", "Amide"], correctAnswer: 0, explanation: "Primary amine.", difficulty: 'MEDIUM' },
-    { id: 'q_21_7', topicId: 'p-solids', subject: 'Physics', text: "Young modulus of rigid body:", options: ["0", "Inf", "1", "Var"], correctAnswer: 1, explanation: "No strain.", difficulty: 'EASY' },
-    { id: 'q_21_8', topicId: 'm-vectors', subject: 'Mathematics', text: "If dot product is 0, |a+b| is:", options: ["7", "1", "5", "12"], correctAnswer: 2, explanation: "v(3^2+4^2).", difficulty: 'EASY' },
-    { id: 'q_21_9', topicId: 'c-oxygen', subject: 'Chemistry', text: "Aspirin is also known as:", options: ["Acetylsalicylic acid", "Salicylic acid", "Methyl salicylate", "None"], correctAnswer: 0, explanation: "Common name.", difficulty: 'EASY' },
-    { id: 'q_21_10', topicId: 'p-dualnature', subject: 'Physics', text: "Einstein's photoelectric equation relates:", options: ["E and p", "Kmax and freq", "V and i", "None"], correctAnswer: 1, explanation: "Kmax = hf - phi.", difficulty: 'EASY' },
-
-    // --- 2015-2020 ---
-    { id: 'q_20_1', topicId: 'm-calculus-integral', subject: 'Mathematics', text: "Integral of sec^2 x:", options: ["tan x", "cot x", "sec x", "log x"], correctAnswer: 0, explanation: "Fundamental integral.", difficulty: 'EASY' },
-    { id: 'q_20_2', topicId: 'p-thermo', subject: 'Physics', text: "Adiabatic process equation:", options: ["PV=RT", "PV^gamma=const", "P/V=const", "None"], correctAnswer: 1, explanation: "Poisson's ratio relation.", difficulty: 'MEDIUM' },
-    { id: 'q_19_1', topicId: 'c-periodicity', subject: 'Chemistry', text: "Highest electronegativity:", options: ["O", "F", "Cl", "N"], correctAnswer: 1, explanation: "Fluorine.", difficulty: 'EASY' },
-    { id: 'q_19_2', topicId: 'p-kinematics', subject: 'Physics', text: "Projectile range is max at angle:", options: ["30°", "45°", "60°", "90°"], correctAnswer: 1, explanation: "sin(2*45)=1.", difficulty: 'EASY' },
-    { id: 'q_18_1', topicId: 'p-emwaves', subject: 'Physics', text: "Speed c equals:", options: ["1/v(ue)", "ue", "v(ue)", "u/e"], correctAnswer: 0, explanation: "Maxwell.", difficulty: 'EASY' },
-    { id: 'q_18_2', topicId: 'm-matrices', subject: 'Mathematics', text: "Transpose of a symmetric matrix is:", options: ["Identity", "Null", "Self", "Inverse"], correctAnswer: 2, explanation: "A' = A.", difficulty: 'EASY' },
-    { id: 'q_17_1', topicId: 'm-binomial', subject: 'Mathematics', text: "Terms in (x+y)^10:", options: ["10", "11", "9", "20"], correctAnswer: 1, explanation: "n+1.", difficulty: 'EASY' },
-    { id: 'q_17_2', topicId: 'p-lom', subject: 'Physics', text: "Impulse is change in:", options: ["Force", "Acceleration", "Momentum", "Energy"], correctAnswer: 2, explanation: "I = Delta p.", difficulty: 'EASY' },
-    { id: 'q_16_1', topicId: 'c-equilibrium', subject: 'Chemistry', text: "pH of 0.01M HCl:", options: ["1", "2", "3", "0"], correctAnswer: 1, explanation: "-log(0.01).", difficulty: 'EASY' },
-    { id: 'q_16_2', topicId: 'p-wep', subject: 'Physics', text: "Work done by centripetal force is:", options: ["Positive", "Negative", "Zero", "Variable"], correctAnswer: 2, explanation: "Force is perpendicular to displacement.", difficulty: 'EASY' },
-    { id: 'q_15_1', topicId: 'p-units', subject: 'Physics', text: "Dimension of Force:", options: ["MLT-2", "ML2T-2", "MLT-1", "None"], correctAnswer: 0, explanation: "F=ma.", difficulty: 'EASY' },
-    { id: 'q_15_2', topicId: 'c-bonding', subject: 'Chemistry', text: "Dipole moment is zero in:", options: ["H2O", "NH3", "CO2", "HCl"], correctAnswer: 2, explanation: "Linear symmetric structure.", difficulty: 'EASY' }
+    { id: 'q_24_10', topicId: 'p-thermo', subject: 'Physics', text: "Efficiency of a Carnot engine between 27°C and 127°C is:", options: ["25%", "33%", "50%", "75%"], correctAnswer: 0, explanation: "1 - T_low/T_high = 1 - 300/400 = 0.25.", difficulty: 'MEDIUM' }
   ],
   chapters: [
-    // MATHEMATICS - Grouped by Chapter Names as Units
     { id: 'm-sets', subject: 'Mathematics', unit: 'Sets, Relations and Functions', name: 'Sets & Relations Core', progress: 15, accuracy: 75, timeSpent: 3600, timeSpentNotes: 1200, timeSpentVideos: 800, timeSpentPractice: 1000, timeSpentTests: 600, status: 'LEARNING', notes: "<h2>Sets & Functions</h2><p>A set is a well-defined collection of objects.</p>" },
-    { id: 'm-complex', subject: 'Mathematics', unit: 'Complex Numbers and Quadratic Equations', name: 'Complex Roots & Plane', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED', notes: "<h2>Complex Algebra</h2><p>z = a+ib form.</p>" },
+    { id: 'm-complex', subject: 'Mathematics', unit: 'Complex Numbers and Quadratic Equations', name: 'Complex Roots & Plane', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
     { id: 'm-matrices', subject: 'Mathematics', unit: 'Matrices and Determinants', name: 'Matrix Algebra', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'm-pnc', subject: 'Mathematics', unit: 'Permutations and Combinations', name: 'Selection & Arrangement', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'm-binomial', subject: 'Mathematics', unit: 'Binomial Theorem', name: 'Expansion & Power Series', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'm-sequence', subject: 'Mathematics', unit: 'Sequence and Series', name: 'Progression Mastery', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'm-calculus-limit', subject: 'Mathematics', unit: 'Limit, Continuity and Differentiability', name: 'Limits & Differentiation', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'm-calculus-integral', subject: 'Mathematics', unit: 'Integral Calculus', name: 'Anti-derivatives', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'm-diff-eq', subject: 'Mathematics', unit: 'Differential Equations', name: 'ODE Solutions', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'm-coord-geo', subject: 'Mathematics', unit: 'Co-ordinate Geometry', name: 'Lines, Circles, Conics', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'm-3d-geo', subject: 'Mathematics', unit: 'Three Dimensional Geometry', name: 'Spatial Analysis', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'm-vectors', subject: 'Mathematics', unit: 'Vector Algebra', name: 'Dot & Cross Products', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'm-stats', subject: 'Mathematics', unit: 'Statistics and Probability', name: 'Data & Probability', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'm-trigo', subject: 'Mathematics', unit: 'Trigonometry', name: 'Identities & Functions', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-
-    // PHYSICS
     { id: 'p-units', subject: 'Physics', unit: 'Units and Measurements', name: 'Dimensions & SI', progress: 40, accuracy: 85, timeSpent: 7200, timeSpentNotes: 2400, timeSpentVideos: 1800, timeSpentPractice: 2000, timeSpentTests: 1000, status: 'LEARNING' },
-    { id: 'p-kinematics', subject: 'Physics', unit: 'Kinematics', name: '1D & 2D Motion', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-lom', subject: 'Physics', unit: 'Laws of Motion', name: 'Newtonian Dynamics', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-wep', subject: 'Physics', unit: 'Work, Energy and Power', name: 'Conservative Forces', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-rotational', subject: 'Physics', unit: 'Rotational Motion', name: 'Angular Momentum', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-gravitation', subject: 'Physics', unit: 'Gravitation', name: 'Planetary Fields', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-solids', subject: 'Physics', unit: 'Properties of Solids and Liquids', name: 'Elasticity & Fluids', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-thermo', subject: 'Physics', unit: 'Thermodynamics', name: 'Thermal Laws', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-ktg', subject: 'Physics', unit: 'Kinetic Theory of Gases', name: 'Gas Equations', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-oscillations', subject: 'Physics', unit: 'Oscillations and Waves', name: 'SHM & Doppler', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-electrostatics', subject: 'Physics', unit: 'Electrostatics', name: 'Charge & Fields', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-current', subject: 'Physics', unit: 'Current Electricity', name: 'Circuit Network', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-magnetism', subject: 'Physics', unit: 'Magnetic Effects of Current and Magnetism', name: 'Lorentz & Biot-Savart', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-emi-ac', subject: 'Physics', unit: 'Electromagnetic Induction and Alternating Currents', name: 'AC & Inductance', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-emwaves', subject: 'Physics', unit: 'Electromagnetic Waves', name: 'Maxwell Theory', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-optics', subject: 'Physics', unit: 'Optics', name: 'Ray & Wave Master', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-dualnature', subject: 'Physics', unit: 'Dual Nature of Matter and Radiation', name: 'Quantum Basics', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-atoms', subject: 'Physics', unit: 'Atoms and Nuclei', name: 'Nuclear Structure', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-electronics', subject: 'Physics', unit: 'Electronic Devices', name: 'Semiconductors', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-experimental', subject: 'Physics', unit: 'Experimental Skills', name: 'Lab Observations', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-
-    // CHEMISTRY
-    { id: 'c-basic', subject: 'Chemistry', unit: 'Some Basic Concepts in Chemistry', name: 'Mole Concept', progress: 20, accuracy: 60, timeSpent: 2400, timeSpentNotes: 800, timeSpentVideos: 600, timeSpentPractice: 600, timeSpentTests: 400, status: 'LEARNING' },
-    { id: 'c-atomic', subject: 'Chemistry', unit: 'Atomic Structure', name: 'Quantum Models', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'c-bonding', subject: 'Chemistry', unit: 'Chemical Bonding and Molecular Structure', name: 'Valence & MOT', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'c-thermo', subject: 'Chemistry', unit: 'Chemical Thermodynamics', name: 'Enthalpy & ΔG', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'c-solutions', subject: 'Chemistry', unit: 'Solutions', name: 'Raoult & Colligative', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'c-equilibrium', subject: 'Chemistry', unit: 'Equilibrium', name: 'Ionic & Chemical', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'c-redox-electro', subject: 'Chemistry', unit: 'Redox Reactions and Electrochemistry', name: 'Galvanic Systems', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'c-kinetics', subject: 'Chemistry', unit: 'Chemical Kinetics', name: 'Rate Dynamics', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'c-periodicity', subject: 'Chemistry', unit: 'Classification of Elements and Periodicity in Properties', name: 'Trends & Radius', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'c-pblock', subject: 'Chemistry', unit: 'p-Block Elements', name: 'Main Group Elements', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'c-dfblock', subject: 'Chemistry', unit: 'd - and f- Block Elements', name: 'Transition Metals', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'c-coordination', subject: 'Chemistry', unit: 'Coordination Compounds', name: 'Ligands & Werner', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'c-purification', subject: 'Chemistry', unit: 'Purification and Characterisation of Organic Compounds', name: 'Analytical Tools', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'c-goc', subject: 'Chemistry', unit: 'Some Basic Principles of Organic Chemistry', name: 'General Organic (GOC)', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'c-hydrocarbons', subject: 'Chemistry', unit: 'Hydrocarbons', name: 'Alkanes/Alkenes/Benzene', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'c-halogens', subject: 'Chemistry', unit: 'Organic Compounds Containing Halogens', name: 'SN1/SN2 Mechanism', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'c-oxygen', subject: 'Chemistry', unit: 'Organic Compounds Containing Oxygen', name: 'Alcohols & Carbonyls', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'c-nitrogen', subject: 'Chemistry', unit: 'Organic Compounds Containing Nitrogen', name: 'Amines & Diazonium', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'c-biomolecules', subject: 'Chemistry', unit: 'Biomolecules', name: 'Proteins & Glucose', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'c-practical', subject: 'Chemistry', unit: 'Principles Related to Practical Chemistry', name: 'Lab Methods', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' }
+    { id: 'c-basic', subject: 'Chemistry', unit: 'Some Basic Concepts in Chemistry', name: 'Mole Concept', progress: 20, accuracy: 60, timeSpent: 2400, timeSpentNotes: 800, timeSpentVideos: 600, timeSpentPractice: 600, timeSpentTests: 400, status: 'LEARNING' }
   ],
-  connectedParent: {
-    name: "Mr. Ramesh Sharma",
-    id: "P-4402",
-    linkedSince: "2025-11-15"
-  }
+  connectedParent: undefined,
+  pendingInvitations: []
 };

@@ -27,11 +27,11 @@ export interface Chapter {
   name: string;
   progress: number; 
   accuracy: number;
-  timeSpent: number; // Total cumulative
-  timeSpentNotes: number; // Time in seconds
-  timeSpentVideos: number; // Time in seconds
-  timeSpentPractice: number; // Time in seconds
-  timeSpentTests: number; // Time in seconds
+  timeSpent: number;
+  timeSpentNotes: number;
+  timeSpentVideos: number;
+  timeSpentPractice: number;
+  timeSpentTests: number;
   status: ChapterStatus;
   lastStudied?: string;
   notes?: string; 
@@ -131,6 +131,13 @@ export interface PsychometricScore {
   parentAdvice?: string;
 }
 
+export interface ParentInvitation {
+  id: string;
+  parentName: string;
+  parentEmail: string;
+  sentAt: string;
+}
+
 export interface StudentData {
   id: string;
   name: string;
@@ -167,6 +174,7 @@ export interface StudentData {
     id: string;
     linkedSince: string;
   };
+  pendingInvitations?: ParentInvitation[];
   institute?: string;
   targetExam?: string;
   birthDate?: string;

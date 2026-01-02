@@ -94,6 +94,7 @@ export const api = {
         chapters: INITIAL_STUDENT_DATA.chapters.map(c => ({ ...c, progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' })),
         testHistory: [],
         psychometricHistory: [],
+        pendingInvitations: [],
         timeSummary: { notes: 0, videos: 0, practice: 0, tests: 0 }
     };
   },
@@ -103,7 +104,6 @@ export const api = {
 
     if (this.getMode() === 'LIVE') {
       try {
-        // Explicitly passing all granular time spent fields
         await fetch(`${API_CONFIG.BASE_URL}sync_progress.php`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -119,7 +119,9 @@ export const api = {
               timeSpentVideos: c.timeSpentVideos,
               timeSpentPractice: c.timeSpentPractice,
               timeSpentTests: c.timeSpentTests
-            }))
+            })),
+            connectedParent: updatedData.connectedParent,
+            pendingInvitations: updatedData.pendingInvitations
           })
         });
       } catch(e) {}
