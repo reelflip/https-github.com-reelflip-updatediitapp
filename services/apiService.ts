@@ -7,7 +7,6 @@ const API_CONFIG = {
   MODE_KEY: 'jeepro_datasource_mode_v10_final'
 };
 
-// CRITICAL: Hardcoded bypass for demo credentials
 const DEMO_ACCOUNTS: Record<string, UserAccount> = {
   'ishu@gmail.com': { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2025-01-01' },
   'parent@demo.in': { id: 'P-4402', name: 'Mr. Ramesh Sharma', email: 'parent@demo.in', role: UserRole.PARENT, createdAt: '2025-01-01' },
@@ -72,14 +71,12 @@ export const api = {
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
-    // 1. Check for user-specific local storage first
     const localKey = `jeepro_data_${studentId}`;
     const localData = localStorage.getItem(localKey);
     if (localData) {
         try { return JSON.parse(localData); } catch(e) {}
     }
 
-    // 2. Fetch from Live if applicable
     if (this.getMode() === 'LIVE') {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}get_dashboard.php?id=${studentId}`);
@@ -88,15 +85,13 @@ export const api = {
       } catch(e) { console.error("Data Sync Failure:", e); }
     }
 
-    // 3. Fallback: Return Demo data ONLY for Demo ID, otherwise return fresh state
     if (studentId === '163110') return INITIAL_STUDENT_DATA;
 
-    // Fresh template for new users (Syllabus with 0 progress)
     return {
         ...INITIAL_STUDENT_DATA,
         id: studentId,
         name: studentId.startsWith('USER') ? 'New Aspirant' : studentId,
-        chapters: INITIAL_STUDENT_DATA.chapters.map(c => ({ ...c, progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' })),
+        chapters: INITIAL_STUDENT_DATA.chapters.map(c => ({ ...c, progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' })),
         testHistory: [],
         psychometricHistory: [],
         timeSummary: { notes: 0, videos: 0, practice: 0, tests: 0 }
@@ -104,15 +99,28 @@ export const api = {
   },
 
   async updateStudentData(studentId: string, updatedData: StudentData) {
-    // Persist to user-specific localStorage
     localStorage.setItem(`jeepro_data_${studentId}`, JSON.stringify(updatedData));
 
     if (this.getMode() === 'LIVE') {
       try {
+        // Explicitly passing all granular time spent fields
         await fetch(`${API_CONFIG.BASE_URL}sync_progress.php`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ student_id: studentId, chapters: updatedData.chapters })
+          body: JSON.stringify({ 
+            student_id: studentId, 
+            chapters: updatedData.chapters.map(c => ({
+              id: c.id,
+              progress: c.progress,
+              accuracy: c.accuracy,
+              status: c.status,
+              timeSpent: c.timeSpent,
+              timeSpentNotes: c.timeSpentNotes,
+              timeSpentVideos: c.timeSpentVideos,
+              timeSpentPractice: c.timeSpentPractice,
+              timeSpentTests: c.timeSpentTests
+            }))
+          })
         });
       } catch(e) {}
     }
@@ -173,13 +181,13 @@ export const api = {
     return { success: true };
   },
 
-  async saveTimetable(studentId: string, tasks: any) {
+  async saveTimetable(studentId: string, smartPlan: any) {
     if (this.getMode() === 'LIVE') {
       try {
         await fetch(`${API_CONFIG.BASE_URL}save_timetable.php`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ student_id: studentId, tasks })
+          body: JSON.stringify({ student_id: studentId, smartPlan })
         });
       } catch(e) {}
     }

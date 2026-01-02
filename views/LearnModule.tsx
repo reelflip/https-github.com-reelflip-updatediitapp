@@ -22,7 +22,6 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
   const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
   const [tempProgress, setTempProgress] = useState(0);
 
-  // Persistence Refs
   const sessionDataRef = useRef({ notes: 0, video: 0, practice: 0 });
   const [sessionDisplay, setSessionDisplay] = useState(0);
 
@@ -53,13 +52,13 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
     if (!activeChapter) return;
     const updatedChapters = data.chapters.map(c => {
       if (c.id === activeChapter.id) {
-        // IMPORTANT: Preserve existing progress/accuracy from the chapter object
         return {
           ...c,
-          timeSpent: c.timeSpent + (sessionDataRef.current.notes + sessionDataRef.current.video + sessionDataRef.current.practice),
+          timeSpent: (c.timeSpent || 0) + (sessionDataRef.current.notes + sessionDataRef.current.video + sessionDataRef.current.practice),
           timeSpentNotes: (c.timeSpentNotes || 0) + sessionDataRef.current.notes,
           timeSpentVideos: (c.timeSpentVideos || 0) + sessionDataRef.current.video,
-          timeSpentPractice: (c.timeSpentPractice || 0) + sessionDataRef.current.practice
+          timeSpentPractice: (c.timeSpentPractice || 0) + sessionDataRef.current.practice,
+          timeSpentTests: c.timeSpentTests || 0 // Tests are tracked via Mock Tests module
         };
       }
       return c;
@@ -266,8 +265,12 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
                <input type="range" min="0" max="100" step="5" value={tempProgress} onChange={(e) => setTempProgress(parseInt(e.target.value))} className="w-full h-2 bg-slate-100 rounded-full appearance-none accent-indigo-600 mb-6" />
                <div className="text-center text-3xl font-black text-indigo-600 mb-8">{tempProgress}%</div>
                <button onClick={() => {
-                 const updated = data.chapters.map(c => c.id === editingStatusId ? {...c, progress: tempProgress, status: tempProgress === 100 ? 'COMPLETED' : 'LEARNING' as ChapterStatus} : c);
+                 const newStatus = tempProgress === 100 ? 'COMPLETED' : tempProgress === 0 ? 'NOT_STARTED' : 'LEARNING';
+                 const updated = data.chapters.map(c => c.id === editingStatusId ? {...c, progress: tempProgress, status: newStatus as ChapterStatus} : c);
+                 
+                 // CRITICAL: Global Sync Call
                  setData({...data, chapters: updated});
+                 
                  setActiveChapter(updated.find(c => c.id === editingStatusId) || null);
                  setEditingStatusId(null);
                }} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest">Apply Metrics</button>

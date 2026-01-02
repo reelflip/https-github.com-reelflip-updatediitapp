@@ -62,7 +62,6 @@ const SystemSettings = ({ data }: { data: StudentData }) => {
     setConnStatus('checking');
     setConnError(null);
     try {
-      // We expect a check_connection.php endpoint to exist in the generated zip
       const res = await fetch('./api/check_connection.php', { cache: 'no-cache' });
       const result = await res.json();
       if (result.success) {
@@ -86,7 +85,6 @@ const SystemSettings = ({ data }: { data: StudentData }) => {
     try {
       const zip = new JSZip();
       
-      // 1. MASTER SQL SCHEMA - FULL FLEDGED
       const sqlSchema = `-- IITGEEPREP MASTER SCHEMA v20.0
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -95,7 +93,6 @@ SET time_zone = "+00:00";
 CREATE DATABASE IF NOT EXISTS iitgrrprep_v20;
 USE iitgrrprep_v20;
 
--- USERS CORE
 CREATE TABLE IF NOT EXISTS users (
     id VARCHAR(50) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -112,7 +109,6 @@ CREATE TABLE IF NOT EXISTS users (
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- SYLLABUS NODES
 CREATE TABLE IF NOT EXISTS chapters (
     id VARCHAR(50) PRIMARY KEY,
     subject VARCHAR(50) NOT NULL,
@@ -124,12 +120,12 @@ CREATE TABLE IF NOT EXISTS chapters (
     targetCompletionDate DATE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- TRACKING ENGINE
 CREATE TABLE IF NOT EXISTS student_progress (
     student_id VARCHAR(50) NOT NULL,
     chapter_id VARCHAR(50) NOT NULL,
     progress INT DEFAULT 0,
     accuracy INT DEFAULT 0,
+    timeSpent INT DEFAULT 0,
     timeSpentNotes INT DEFAULT 0,
     timeSpentVideos INT DEFAULT 0,
     timeSpentPractice INT DEFAULT 0,
@@ -141,7 +137,6 @@ CREATE TABLE IF NOT EXISTS student_progress (
     FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- QUESTION BANK
 CREATE TABLE IF NOT EXISTS questions (
     id VARCHAR(50) PRIMARY KEY,
     topicId VARCHAR(50),
@@ -154,7 +149,6 @@ CREATE TABLE IF NOT EXISTS questions (
     FOREIGN KEY (topicId) REFERENCES chapters(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- MOCK EXAMS
 CREATE TABLE IF NOT EXISTS mock_tests (
     id VARCHAR(50) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -166,7 +160,6 @@ CREATE TABLE IF NOT EXISTS mock_tests (
     chapterIds TEXT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- EXAM LOGS
 CREATE TABLE IF NOT EXISTS test_results (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id VARCHAR(50) NOT NULL,
@@ -179,7 +172,6 @@ CREATE TABLE IF NOT EXISTS test_results (
     FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- COGNITIVE LOGS
 CREATE TABLE IF NOT EXISTS psychometric_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_id VARCHAR(50) NOT NULL,
@@ -192,7 +184,6 @@ CREATE TABLE IF NOT EXISTS psychometric_logs (
     FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- KNOWLEDGE BASE
 CREATE TABLE IF NOT EXISTS flashcards (
     id VARCHAR(50) PRIMARY KEY,
     question TEXT,
@@ -212,25 +203,16 @@ CREATE TABLE IF NOT EXISTS memory_hacks (
 
 COMMIT;`;
 
-      // 2. CORE DATABASE CONFIG
       const dbConfig = `<?php
-// Solaris v20 - Database Access Point
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'iitgrrprep_v20');
 define('DB_USER', 'root');
 define('DB_PASS', '');
-
-// Mandatory CORS Headers for Deployment
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
 header("Content-Type: application/json; charset=UTF-8");
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
-
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit(); }
 try {
     $pdo = new PDO("mysql:host=".DB_HOST.";dbname=".DB_NAME, DB_USER, DB_PASS);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -252,87 +234,27 @@ try {
 }
 ?>`;
 
-      // 3. AUTH MODULES
-      const authRegister = `<?php
-require_once 'config/database.php';
-$data = json_decode(file_get_contents("php://input"));
-
-if(!isset($data->email) || !isset($data->password) || !isset($data->name)) {
-    http_response_code(400);
-    echo json_encode(["success" => false, "error" => "Input validation failed"]);
-    exit;
-}
-
-$id = "S-" . bin2hex(random_bytes(4));
-$hashed = password_hash($data->password, PASSWORD_BCRYPT);
-
-try {
-    $stmt = $pdo->prepare("INSERT INTO users (id, name, email, password, role, institute, targetExam, targetYear, birthDate, gender) VALUES (?,?,?,?,?,?,?,?,?,?)");
-    $stmt->execute([
-        $id, $data->name, $data->email, $hashed, 
-        $data->role ?? 'STUDENT', $data->institute ?? null, 
-        $data->targetExam ?? null, $data->targetYear ?? null, 
-        $data->birthDate ?? null, $data->gender ?? 'Male'
-    ]);
-    
-    echo json_encode(["success" => true, "user" => ["id" => $id, "name" => $data->name, "email" => $data->email, "role" => $data->role ?? 'STUDENT']]);
-} catch(PDOException $e) {
-    http_response_code(500);
-    echo json_encode(["success" => false, "error" => "Identity Collision: " . $e->getMessage()]);
-}
-?>`;
-
-      const authLogin = `<?php
-require_once 'config/database.php';
-$data = json_decode(file_get_contents("php://input"));
-
-if(!isset($data->email) || !isset($data->password)) {
-    echo json_encode(["success" => false, "error" => "Missing credentials"]);
-    exit;
-}
-
-$stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
-$stmt->execute([$data->email]);
-$user = $stmt->fetch();
-
-if($user && password_verify($data->password, $user['password'])) {
-    unset($user['password']);
-    echo json_encode(["success" => true, "user" => $user]);
-} else {
-    echo json_encode(["success" => false, "error" => "Invalid credentials handshake"]);
-}
-?>`;
-
-      // 4. SYNC NODES
       const getDashboard = `<?php
 require_once 'config/database.php';
 $id = $_GET['id'] ?? '';
-
 if(!$id) die(json_encode(["success" => false, "error" => "Student ID required"]));
-
-// Fetch User Profile with Routine/SmartPlan
 $user = $pdo->prepare("SELECT name, email, role, institute, targetExam, targetYear, birthDate, gender, routine_json, smartplan_json FROM users WHERE id = ?");
 $user->execute([$id]);
 $userData = $user->fetch();
-
-// Fetch Extended Student Context
-$chapters = $pdo->query("SELECT c.*, p.progress, p.accuracy, p.timeSpentNotes, p.timeSpentVideos, p.timeSpentPractice, p.timeSpentTests, p.status, p.lastStudied 
+$chapters = $pdo->query("SELECT c.*, p.progress, p.accuracy, p.timeSpent, p.timeSpentNotes, p.timeSpentVideos, p.timeSpentPractice, p.timeSpentTests, p.status, p.lastStudied 
                         FROM chapters c 
                         LEFT JOIN student_progress p ON c.id = p.chapter_id AND p.student_id = '$id'")->fetchAll();
-
 $testHistory = $pdo->prepare("SELECT * FROM test_results WHERE student_id = ? ORDER BY date DESC");
 $testHistory->execute([$id]);
-
 $psych = $pdo->prepare("SELECT * FROM psychometric_logs WHERE student_id = ? ORDER BY timestamp DESC LIMIT 5");
 $psych->execute([$id]);
-
 $flashcards = $pdo->query("SELECT * FROM flashcards")->fetchAll();
 $hacks = $pdo->query("SELECT * FROM memory_hacks")->fetchAll();
-
 echo json_encode([
     "success" => true, 
     "data" => [
         "name" => $userData['name'],
+        "id" => $id,
         "routine" => json_decode($userData['routine_json'] ?? 'null'),
         "smartPlan" => json_decode($userData['smartplan_json'] ?? 'null'),
         "chapters" => $chapters,
@@ -347,29 +269,26 @@ echo json_encode([
       const syncProgress = `<?php
 require_once 'config/database.php';
 $data = json_decode(file_get_contents("php://input"));
-
 if(!$data->student_id || !$data->chapters) exit;
-
 foreach($data->chapters as $ch) {
-    $stmt = $pdo->prepare("INSERT INTO student_progress (student_id, chapter_id, progress, accuracy, timeSpentNotes, timeSpentVideos, timeSpentPractice, timeSpentTests, status, lastStudied) 
-                           VALUES (?,?,?,?,?,?,?,?,?,NOW()) 
+    $stmt = $pdo->prepare("INSERT INTO student_progress (student_id, chapter_id, progress, accuracy, timeSpent, timeSpentNotes, timeSpentVideos, timeSpentPractice, timeSpentTests, status, lastStudied) 
+                           VALUES (?,?,?,?,?,?,?,?,?,?,NOW()) 
                            ON DUPLICATE KEY UPDATE 
                            progress = VALUES(progress), 
                            accuracy = VALUES(accuracy),
+                           timeSpent = VALUES(timeSpent),
                            timeSpentNotes = VALUES(timeSpentNotes),
                            timeSpentVideos = VALUES(timeSpentVideos),
                            timeSpentPractice = VALUES(timeSpentPractice),
                            timeSpentTests = VALUES(timeSpentTests),
                            status = VALUES(status),
                            lastStudied = NOW()");
-
     $stmt->execute([
-        $data->student_id, $ch->id, $ch->progress, $ch->accuracy,
+        $data->student_id, $ch->id, $ch->progress, $ch->accuracy, $ch->timeSpent,
         $ch->timeSpentNotes, $ch->timeSpentVideos, $ch->timeSpentPractice, $ch->timeSpentTests,
         $ch->status
     ]);
 }
-
 echo json_encode(["success" => true]);
 ?>`;
 
@@ -387,31 +306,27 @@ require_once 'config/database.php';
 $data = json_decode(file_get_contents("php://input"));
 if(!$data->student_id) exit;
 $stmt = $pdo->prepare("UPDATE users SET smartplan_json = ? WHERE id = ?");
-$stmt->execute([json_encode($data->tasks), $data->student_id]);
+$stmt->execute([json_encode($data->smartPlan), $data->student_id]);
 echo json_encode(["success" => true]);
 ?>`;
 
-      // Building ZIP structure
       zip.folder("api/config")?.file("database.php", dbConfig);
       zip.folder("api/sql")?.file("master_schema_v20.sql", sqlSchema);
-      
       const apiFolder = zip.folder("api");
       apiFolder?.file("check_connection.php", checkConnection);
-      apiFolder?.file("auth_register.php", authRegister);
-      apiFolder?.file("auth_login.php", authLogin);
+      apiFolder?.file("auth_register.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input")); $id = "S-" . bin2hex(random_bytes(4)); $hashed = password_hash($d->password, PASSWORD_BCRYPT); $s = $pdo->prepare("INSERT INTO users (id, name, email, password, role, institute, targetExam, targetYear, birthDate, gender) VALUES (?,?,?,?,?,?,?,?,?,?)"); $s->execute([$id, $d->name, $d->email, $hashed, $d->role ?? 'STUDENT', $d->institute ?? null, $d->targetExam ?? null, $d->targetYear ?? null, $d->birthDate ?? null, $d->gender ?? 'Male']); echo json_encode(["success" => true, "user" => ["id" => $id, "name" => $d->name, "email" => $d->email, "role" => $d->role ?? 'STUDENT']]); ?>`);
+      apiFolder?.file("auth_login.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input")); $s = $pdo->prepare("SELECT * FROM users WHERE email = ?"); $s->execute([$d->email]); $u = $stmt->fetch(); if($u && password_verify($d->password, $u['password'])) { unset($u['password']); echo json_encode(["success" => true, "user" => $u]); } else { echo json_encode(["success" => false, "error" => "Invalid credentials"]); } ?>`);
       apiFolder?.file("get_dashboard.php", getDashboard);
       apiFolder?.file("sync_progress.php", syncProgress);
       apiFolder?.file("save_routine.php", saveRoutine);
       apiFolder?.file("save_timetable.php", saveTimetable);
-      apiFolder?.file("manage_chapters.php", `<?php require_once 'config/database.php'; /* Logic */ echo json_encode(["success"=>true]); ?>`);
-      apiFolder?.file("manage_questions.php", `<?php require_once 'config/database.php'; /* Logic */ echo json_encode(["success"=>true]); ?>`);
+      apiFolder?.file("manage_chapters.php", `<?php require_once 'config/database.php'; $a = $_GET['action'] ?? ''; $d = json_decode(file_get_contents("php://input")); if($a === 'save') { $s = $pdo->prepare("REPLACE INTO chapters (id, subject, unit, name, notes, videoUrl, highYield, targetCompletionDate) VALUES (?,?,?,?,?,?,?,?)"); $s->execute([$d->id, $d->subject, $d->unit, $d->name, $d->notes, $d->videoUrl, $d->highYield ? 1 : 0, $d->targetCompletionDate]); } else if ($a === 'delete') { $s = $pdo->prepare("DELETE FROM chapters WHERE id = ?"); $s->execute([$d->id]); } echo json_encode(["success"=>true]); ?>`);
+      apiFolder?.file("manage_questions.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input")); $s = $pdo->prepare("REPLACE INTO questions (id, topicId, subject, text, options, correctAnswer, explanation, difficulty) VALUES (?,?,?,?,?,?,?,?)"); $s->execute([$d->id, $d->topicId, $d->subject, $d->text, json_encode($d->options), $d->correctAnswer, $d->explanation, $d->difficulty]); echo json_encode(["success"=>true]); ?>`);
       apiFolder?.file("save_attempt.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input")); $s = $pdo->prepare("INSERT INTO test_results (student_id, test_id, test_name, score, total_marks, accuracy, date) VALUES (?,?,?,?,?,?,?)"); $s->execute([$d->student_id, $d->testId, $d->testName, $d->score, $d->totalMarks, $d->accuracy, $d->date]); echo json_encode(["success"=>true]); ?>`);
       apiFolder?.file("save_psychometric.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input")); $s = $pdo->prepare("INSERT INTO psychometric_logs (student_id, stress, focus, motivation, examFear, summary) VALUES (?,?,?,?,?,?)"); $s->execute([$d->student_id, $d->stress, $d->focus, $d->motivation, $d->examFear, $d->studentSummary]); echo json_encode(["success"=>true]); ?>`);
       apiFolder?.file("manage_users.php", `<?php require_once 'config/database.php'; echo json_encode(["success"=>true, "users"=>$pdo->query("SELECT id, name, email, role, createdAt FROM users")->fetchAll()]); ?>`);
       apiFolder?.file("manage_settings.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input")); $s = $pdo->prepare("UPDATE users SET name=?, targetExam=?, targetYear=?, institute=?, birthDate=?, gender=? WHERE id=?"); $s->execute([$d->name, $d->targetExam, $d->targetYear, $d->institute, $d->birthDate, $d->gender, $d->id]); echo json_encode(["success"=>true]); ?>`);
-      
       zip.file(".htaccess", "RewriteEngine On\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteRule ^(.*)$ index.php [QSA,L]");
-
       const content = await zip.generateAsync({ type: "blob" });
       saveAs(content, "solaris_v20_complete_backend.zip");
     } catch (e) {
