@@ -14,8 +14,8 @@ const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
     { id: 'about', label: 'About Us' },
     { id: 'features', label: 'Features' },
     { id: 'examguide', label: 'Exam Pattern' },
-    { id: 'blog', label: 'Strategy Reports' },
-    { id: 'contact', label: 'Technical Support' },
+    { id: 'blog', label: 'Blog' },
+    { id: 'contact', label: 'Contact' },
   ];
 
   const handleNav = (id: string) => {

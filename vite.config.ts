@@ -1,5 +1,5 @@
 
-import { defineConfig } from 'react-scripts';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
@@ -12,10 +12,11 @@ export default defineConfig({
     sourcemap: false,
     rollupOptions: {
       output: {
-        // Preserves folder structure for generated JS files
+        // Preserves folder structure for generated entry files
         entryFileNames: '[name].js',
-        chunkFileNames: (chunkInfo) => {
-          // Use the original module path to name the chunk
+        // Preserves folder structure for chunks/lazy-loaded modules
+        chunkFileNames: (chunkInfo: any) => {
+          // Use the original module name to ensure 1:1 mapping in chunks
           const name = chunkInfo.name;
           return `${name}.js`;
         },

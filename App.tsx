@@ -198,13 +198,13 @@ const App: React.FC = () => {
          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
             <div className="flex flex-col items-center md:items-start gap-4">
               <div className="flex items-center gap-1">
-                 <span className="font-black tracking-tight text-2xl uppercase text-[#2b4c8c]">IITJEEPRO</span>
+                 <span className="font-black tracking-tight text-2xl uppercase text-[#2b4c8c]">IITGEEPREP</span>
               </div>
               <p className="text-xs font-bold text-slate-400">Solaris v10.5: Elite Performance Engine.</p>
             </div>
             <div className="flex flex-wrap justify-center gap-6 md:gap-12">
-               {['Methodology', 'Functionality', 'Privacy', 'Legal'].map(link => (
-                 <button key={link} className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors">{link}</button>
+               {['About Us', 'Features', 'Privacy', 'Legal'].map(link => (
+                 <button key={link} onClick={() => setActiveTab(link === 'About Us' ? 'about' : link === 'Features' ? 'features' : activeTab)} className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors">{link}</button>
                ))}
             </div>
             <p className="text-[10px] font-black uppercase text-slate-300 tracking-widest">&copy; 2025 Solaris Ultimate v10.5</p>

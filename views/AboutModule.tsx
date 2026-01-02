@@ -18,7 +18,7 @@ import {
 const AboutModule: React.FC = () => {
   return (
     <div className="bg-white min-h-screen animate-in fade-in duration-700">
-      {/* --- FUNCTIONAL HERO --- */}
+      {/* --- HERO SECTION --- */}
       <section className="py-20 md:py-32 px-6 md:px-12 text-center max-w-6xl mx-auto relative">
         <div className="inline-flex items-center gap-3 px-5 py-1.5 bg-slate-50 border border-slate-200 rounded-full text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-8">
            Performance Monitoring Kernel v10.5
@@ -45,30 +45,36 @@ const AboutModule: React.FC = () => {
         </div>
       </section>
 
-      {/* --- BRAND NOMENCLATURE BREAKDOWN --- */}
+      {/* --- IDENTITY DECODED --- */}
       <section className="py-20 px-6 md:px-12 max-w-7xl mx-auto">
         <div className="bg-slate-50 rounded-[4rem] p-12 md:p-20 border border-slate-200 relative overflow-hidden">
           <div className="absolute top-0 left-0 p-10 opacity-5"><Zap className="w-64 h-64 text-indigo-600" /></div>
           <div className="text-center mb-16 space-y-4 relative z-10">
             <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight uppercase italic leading-none">The Solaris <span className="text-indigo-600">Identity.</span></h2>
-            <p className="text-slate-400 font-bold uppercase text-[11px] tracking-[0.3em]">Decoding the IITGEEPREP protocol</p>
+            <p className="text-slate-400 font-bold uppercase text-[11px] tracking-[0.3em]">Decoding the IITGEEPREP Protocol</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
             <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100 hover:border-indigo-300 transition-all group">
                <div className="w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform shadow-lg shadow-indigo-100"><Target className="w-8 h-8" /></div>
                <h3 className="text-4xl font-black text-slate-900 mb-2 italic">IIT.</h3>
-               <p className="text-slate-500 font-medium leading-relaxed">Representing the <b>Indian Institutes of Technology</b>—the primary objective and the pinnacle of global engineering rigor.</p>
+               <p className="text-slate-500 font-medium leading-relaxed italic">
+                 "Standing for <b>Indian Institutes of Technology</b>, the primary goal of our ecosystem. We focus every metric on achieving the depth required for this elite target."
+               </p>
             </div>
             <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100 hover:border-indigo-300 transition-all group">
                <div className="w-14 h-14 bg-emerald-500 text-white rounded-2xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform shadow-lg shadow-emerald-100"><Globe className="w-8 h-8" /></div>
                <h3 className="text-4xl font-black text-slate-900 mb-2 italic">GEE.</h3>
-               <p className="text-slate-500 font-medium leading-relaxed">Symbolizing <b>General Engineering Excellence</b>. It represents the logical bridge between raw potential and advanced technical skillsets.</p>
+               <p className="text-slate-500 font-medium leading-relaxed italic">
+                 "Representing <b>General Engineering Excellence</b>. Beyond specific exams, we build the logical rigor and technical foundation necessary for future world-class engineers."
+               </p>
             </div>
             <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100 hover:border-indigo-300 transition-all group">
                <div className="w-14 h-14 bg-indigo-900 text-white rounded-2xl flex items-center justify-center mb-6 group-hover:rotate-12 transition-transform shadow-lg shadow-indigo-200"><Cpu className="w-8 h-8" /></div>
                <h3 className="text-4xl font-black text-slate-900 mb-2 italic">PREP.</h3>
-               <p className="text-slate-500 font-medium leading-relaxed">Focusing on <b>Preparation</b>. The systematic, data-driven methodology required to dominate the entrance lifecycle.</p>
+               <p className="text-slate-500 font-medium leading-relaxed italic">
+                 "Dedicated to <b>Preparation</b>. We believe consistency is superior to intensity. Our platform tracks every study hour to ensure high-yield preparation cycles."
+               </p>
             </div>
           </div>
         </div>
