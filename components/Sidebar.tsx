@@ -5,7 +5,7 @@ import {
   LayoutDashboard, BookOpen, Bot, FileText, Brain, Timer, 
   BarChart3, Calendar, RefreshCw, AlertCircle, Layers, 
   ListChecks, Lightbulb, Heart, User, ShieldCheck,
-  Users, Inbox, PenTool, Settings, LogOut, Info, Sparkles, Mail, Target, FileCode
+  Users, Inbox, PenTool, Settings, LogOut, Info, Sparkles, Mail, Target, FileCode, Activity
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -31,7 +31,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, handle
     { id: 'aitutor', label: 'AI Tutor', icon: Bot },
     { id: 'tests', label: 'Tests & Exams', icon: FileText },
     { id: 'psychometric', label: 'Mindset Test', icon: Brain },
-    { id: 'blog', label: 'Strategy Feed', icon: PenTool }, // Added blog access for students
+    { id: 'blog', label: 'Strategy Feed', icon: PenTool },
     { id: 'focus', label: 'Focus Timer', icon: Timer },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'timetable', label: 'Schedule', icon: Calendar },
@@ -53,6 +53,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, handle
     { id: 'admin-flashcards', label: 'Card Manager', icon: Layers },
     { id: 'admin-hacks', label: 'Hack Manager', icon: Lightbulb },
     { id: 'admin-blogs', label: 'Blog Manager', icon: PenTool },
+    { id: 'admin-diagnostic', label: 'Diagnostic Suite', icon: Activity },
     { id: 'admin-system', label: 'System Settings', icon: Settings },
   ];
 
@@ -76,7 +77,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, handle
             <div className="leading-tight text-sm font-black tracking-tighter">
               {role === UserRole.ADMIN ? 'ADMIN CENTER' : role === UserRole.PARENT ? 'FAMILY PORTAL' : 'IITGRRPREP'}
             </div>
-            <div className="text-[7px] font-black tracking-[0.4em] text-indigo-400 uppercase">Solaris v9.0</div>
+            <div className="text-[7px] font-black tracking-[0.4em] text-indigo-400 uppercase">Solaris v10.5</div>
           </div>
         </h1>
       </div>
