@@ -141,7 +141,7 @@ const App: React.FC = () => {
         case 'psychometric': return <PsychometricTest data={studentData} setData={syncStudentData} />;
         case 'flashcards': return <FlashcardsModule data={studentData} />;
         case 'hacks': return <HacksModule data={studentData} />;
-        case 'timetable': return <TimetableModule data={studentData} />;
+        case 'timetable': return <TimetableModule data={studentData} setData={syncStudentData} />;
         case 'revision': return <RevisionModule data={studentData} />;
         case 'mistakes': return <MistakesLog data={studentData} />;
         case 'backlogs': return <BacklogModule data={studentData} />;

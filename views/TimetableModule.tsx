@@ -21,7 +21,7 @@ interface RoadmapWeek {
   isDone: boolean;
 }
 
-const TimetableModule: React.FC<{ data: StudentData }> = ({ data }) => {
+const TimetableModule: React.FC<{ data: StudentData; setData: (data: StudentData) => void }> = ({ data, setData }) => {
   const [activeTab, setActiveTab] = useState<'daily' | 'course'>('daily');
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -115,8 +115,27 @@ const TimetableModule: React.FC<{ data: StudentData }> = ({ data }) => {
 
   const handleSave = async () => {
     setIsSaving(true);
-    await api.saveRoutine(data.id, routine);
-    await api.saveTimetable(data.id, { schedule: generatedSchedule, roadmap });
+    
+    // Construct the new state
+    const newData = {
+        ...data,
+        routine: routine,
+        smartPlan: {
+            ...data.smartPlan,
+            schedule: generatedSchedule,
+            roadmap: roadmap
+        }
+    };
+
+    // Global App Sync (Handles LocalStorage and LIVE API if enabled)
+    setData(newData);
+
+    // Call individual API endpoints if in LIVE mode
+    if (api.getMode() === 'LIVE') {
+        await api.saveRoutine(data.id, routine);
+        await api.saveTimetable(data.id, { schedule: generatedSchedule, roadmap });
+    }
+
     setTimeout(() => setIsSaving(false), 800);
   };
 
