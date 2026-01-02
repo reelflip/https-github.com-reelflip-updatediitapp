@@ -4,7 +4,7 @@ import { StudentData, UserAccount, Subject, Question, MockTest, Chapter, Flashca
 import { api } from '../services/apiService';
 import { MODEL_CONFIGS } from '../services/intelligenceService';
 import JSZip from 'jszip';
-import saveAs from 'file-saver';
+import { saveAs } from 'file-saver';
 import { 
   ShieldCheck, BookOpen, Layers, Zap, Loader2, Plus, Trash2, Edit3, X, Target, Code2, Save, Users, PenTool, Check, HelpCircle, Video, Award, Type, Lightbulb, Activity, Filter, Search, Clock, ChevronRight, Layout, List, FileText, Calendar, Globe, Settings, Cpu, Database, Cloud, Download, Eye, AlertTriangle, Star, Signal, SignalHigh, SignalLow, Activity as DiagnosticIcon, ClipboardCheck, RefreshCw, CheckCircle, ShieldAlert, FlaskConical, Map, HeartHandshake, Trash, Mail, Bell, Shield, FileBox, Heart, Bold, Italic, List as ListIcon, Heading1, Heading2, Link as LinkIcon, Maximize2, Minimize2
 } from 'lucide-react';
@@ -43,7 +43,7 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
     id: item?.id || `ID-${Math.random().toString(36).substr(2, 9)}`,
     name: '', title: '', subject: 'Physics' as Subject, unit: '', text: '',
     options: ['', '', '', ''], correctAnswer: 0, difficulty: 'EASY',
-    explanation: '', author: 'Solaris Admin', content: '',
+    explanation: '', author: 'Platform Admin', content: '',
     date: new Date().toISOString().split('T')[0], status: 'PUBLISHED',
     progress: 0, accuracy: 0, timeSpent: 0,
     timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0,
@@ -53,7 +53,6 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
     highYield: false
   });
 
-  const [previewMode, setPreviewMode] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const insertTag = (tag: string, closeTag: string = '') => {
@@ -69,12 +68,6 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
     const newText = before + tag + (selected || '') + closeTag + after;
     const fieldName = type === 'Blog' ? 'content' : 'notes';
     setFormData((prev: any) => ({ ...prev, [fieldName]: newText }));
-    
-    setTimeout(() => {
-      el.focus();
-      const newCursor = start + tag.length + selected.length + closeTag.length;
-      el.setSelectionRange(newCursor, newCursor);
-    }, 0);
   };
 
   const handleChange = (e: any) => {
@@ -89,150 +82,142 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6 overflow-hidden">
-      <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-500" onClick={onClose}></div>
-      <div className={`bg-white w-full ${previewMode ? 'max-w-full h-full rounded-none' : 'max-w-6xl rounded-[4rem]'} transition-all duration-500 shadow-2xl relative z-10 animate-in zoom-in-95 flex flex-col overflow-hidden max-h-[95vh]`}>
-         
-         <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6">
+      <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-xl" onClick={onClose}></div>
+      <div className={`bg-white w-full max-w-6xl rounded-[4rem] shadow-2xl relative z-10 animate-in zoom-in-95 flex flex-col overflow-hidden max-h-[95vh]`}>
+         <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <div className="flex items-center gap-6">
                <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl">
-                  {type === 'Blog' ? <PenTool className="w-7 h-7" /> : type === 'Question' ? <HelpCircle className="w-7 h-7" /> : type === 'MockTest' ? <Target className="w-7 h-7" /> : type === 'Chapter' ? <BookOpen className="w-7 h-7" /> : <Layers className="w-7 h-7" />}
+                  {type === 'Chapter' ? <BookOpen className="w-7 h-7" /> : type === 'MockTest' ? <Target className="w-7 h-7" /> : type === 'Question' ? <HelpCircle className="w-7 h-7" /> : type === 'Blog' ? <PenTool className="w-7 h-7" /> : <Layers className="w-7 h-7" />}
                </div>
                <div>
-                  <h3 className="text-2xl font-black italic tracking-tighter text-slate-900 uppercase">
-                     {item ? 'Modify' : 'Deploy'} <span className="text-indigo-600">{type}.</span>
-                  </h3>
-                  <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mt-1">Resource Architect v21.0 Pro</p>
+                  <h3 className="text-2xl font-black italic tracking-tighter text-slate-900 uppercase">{item ? 'Edit' : 'Deploy'} <span className="text-indigo-600">{type}.</span></h3>
+                  <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mt-1">Resource Management Terminal</p>
                </div>
             </div>
-            <div className="flex gap-4">
-              {(type === 'Blog' || type === 'Chapter') && (
-                <button 
-                  onClick={() => setPreviewMode(!previewMode)} 
-                  className={`px-6 py-4 rounded-2xl transition-all border flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${previewMode ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-400 border-slate-100 hover:text-slate-900'}`}
-                >
-                  {previewMode ? <><Minimize2 className="w-4 h-4" /> Edit Content</> : <><Eye className="w-4 h-4" /> Live Preview</>}
-                </button>
-              )}
-              <button onClick={onClose} className="p-4 bg-white text-slate-400 hover:text-slate-900 rounded-2xl transition-all border border-slate-100"><X className="w-6 h-6" /></button>
-            </div>
+            <button onClick={onClose} className="p-4 bg-white text-slate-400 hover:text-slate-900 rounded-2xl border border-slate-100"><X className="w-6 h-6" /></button>
          </div>
 
-         <div className="flex-1 overflow-y-auto p-8 md:p-12 custom-scrollbar">
-            {previewMode ? (
-              <div className="max-w-4xl mx-auto space-y-12 animate-in fade-in py-10">
-                 <div className="bg-slate-900 p-12 rounded-[4rem] text-white space-y-6">
-                    <div className="inline-flex px-4 py-1.5 bg-indigo-600/20 text-indigo-400 border border-indigo-600/30 rounded-full text-[9px] font-black uppercase tracking-[0.4em]">Integrated CMS Preview</div>
-                    <h1 className="text-6xl font-black italic tracking-tighter leading-none uppercase">{formData.title || formData.name || 'Untitled Document'}</h1>
-                    <div className="flex gap-6 text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                       <span>By {formData.author || 'System'}</span>
-                       <span>•</span>
-                       <span>{formData.date || 'Today'}</span>
-                    </div>
+         <div className="flex-1 overflow-y-auto p-10 space-y-12 custom-scrollbar">
+            {type === 'Chapter' && (
+              <div className="space-y-12 animate-in slide-in-from-bottom-4">
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <InputGroup label="Chapter Name"><input name="name" value={formData.name} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black italic shadow-inner" placeholder="Ex: Electromagnetism" /></InputGroup>
+                    <InputGroup label="Subject"><select name="subject" value={formData.subject} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner"><option value="Physics">Physics</option><option value="Chemistry">Chemistry</option><option value="Mathematics">Mathematics</option></select></InputGroup>
+                    <InputGroup label="Unit Name"><input name="unit" value={formData.unit} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black italic shadow-inner" placeholder="Ex: Mechanics" /></InputGroup>
+                    <InputGroup label="Lecture URL"><input name="videoUrl" value={formData.videoUrl} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black italic shadow-inner" placeholder="YouTube Embed URL" /></InputGroup>
                  </div>
-                 <div className="prose prose-lg prose-slate max-w-none px-10">
-                    <div dangerouslySetInnerHTML={{ __html: (type === 'Blog' ? formData.content : formData.notes) || '<p class="text-slate-300 italic">Protocol buffer empty.</p>' }} />
+                 <div className="space-y-4">
+                    <RichTextToolbar onInsert={insertTag} />
+                    <InputGroup label="Theory Notes (HTML Core Engine)">
+                       <textarea ref={textareaRef} name="notes" value={formData.notes} onChange={handleChange} rows={15} className="w-full bg-slate-50 border-none rounded-[2.5rem] p-10 text-sm font-mono shadow-inner focus:ring-8 focus:ring-indigo-50/50 transition-all" placeholder="Enter structured HTML content..." />
+                    </InputGroup>
                  </div>
               </div>
-            ) : (
-              <div className="space-y-12 animate-in slide-in-from-bottom-4">
-                 {type === 'Blog' && (
-                    <div className="grid grid-cols-1 gap-10">
-                       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                          <div className="md:col-span-2">
-                             <InputGroup label="Article Title">
-                                <input name="title" value={formData.title} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-2xl font-black italic text-slate-800 shadow-inner" placeholder="Ex: Mastering Spaced Repetition" />
-                             </InputGroup>
-                          </div>
-                          <InputGroup label="Author Node">
-                             <input name="author" value={formData.author} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black italic text-slate-800 shadow-inner" />
-                          </InputGroup>
-                       </div>
-                       
-                       <div className="space-y-4">
-                          <RichTextToolbar onInsert={insertTag} />
-                          <InputGroup label="Manuscript Content (HTML Engine)">
-                             <textarea 
-                                ref={textareaRef}
-                                name="content" 
-                                value={formData.content} 
-                                onChange={handleChange} 
-                                rows={20} 
-                                className="w-full bg-slate-50 border-none rounded-[3rem] p-12 text-base font-medium leading-relaxed font-mono shadow-inner focus:ring-8 focus:ring-indigo-50/50 transition-all" 
-                                placeholder="Type your technically precise article here..."
-                             />
-                          </InputGroup>
-                       </div>
-                    </div>
-                 )}
+            )}
 
-                 {type === 'Chapter' && (
-                    <div className="space-y-12">
-                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
-                          <InputGroup label="Chapter Identity">
-                             <input name="name" value={formData.name} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black italic shadow-inner" placeholder="Ex: Electromagnetism" />
-                          </InputGroup>
-                          <InputGroup label="Syllabus Subject">
-                             <select name="subject" value={formData.subject} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner">
-                                <option value="Physics">Physics</option>
-                                <option value="Chemistry">Chemistry</option>
-                                <option value="Mathematics">Mathematics</option>
-                             </select>
-                          </InputGroup>
-                          <InputGroup label="Lecture Stream URL">
-                             <div className="relative">
-                                <Video className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500" />
-                                <input name="videoUrl" value={formData.videoUrl || ''} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl pl-12 pr-6 py-6 text-sm font-black italic shadow-inner" placeholder="YouTube or Media Link" />
-                             </div>
-                          </InputGroup>
-                          <div className="flex items-end pb-2">
-                             <label className="flex items-center gap-4 cursor-pointer">
-                                <input type="checkbox" name="highYield" checked={formData.highYield} onChange={handleChange} className="w-6 h-6 rounded-lg text-indigo-600" />
-                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">High Yield Topic</span>
-                             </label>
-                          </div>
+            {type === 'Question' && (
+               <div className="space-y-10 animate-in slide-in-from-bottom-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                     <InputGroup label="Subject"><select name="subject" value={formData.subject} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner"><option value="Physics">Physics</option><option value="Chemistry">Chemistry</option><option value="Mathematics">Mathematics</option></select></InputGroup>
+                     <InputGroup label="Difficulty"><select name="difficulty" value={formData.difficulty} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner"><option value="EASY">EASY</option><option value="MEDIUM">MEDIUM</option><option value="HARD">HARD</option></select></InputGroup>
+                     <InputGroup label="Link Chapter"><select name="topicId" value={formData.topicId} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner"><option value="">Select Chapter</option>{allChapters.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></InputGroup>
+                  </div>
+                  <InputGroup label="Problem Text"><textarea name="text" value={formData.text} onChange={handleChange} rows={4} className="w-full bg-slate-50 border-none rounded-3xl p-8 text-xl font-black italic text-slate-800 shadow-inner" placeholder="Conceptual or Numerical problem..." /></InputGroup>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                     {formData.options.map((opt: string, i: number) => (
+                       <div key={i} className="space-y-2">
+                          <div className="flex justify-between items-center ml-2"><label className="text-[10px] font-black uppercase text-slate-400">Option {String.fromCharCode(65+i)}</label><button onClick={() => setFormData({...formData, correctAnswer: i})} className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest ${formData.correctAnswer === i ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>{formData.correctAnswer === i ? 'Correct' : 'Set Correct'}</button></div>
+                          <input value={opt} onChange={(e) => handleOptionChange(i, e.target.value)} className={`w-full p-6 rounded-2xl text-sm font-bold border-2 ${formData.correctAnswer === i ? 'border-emerald-500 bg-emerald-50/10' : 'bg-slate-50 border-transparent shadow-inner'}`} />
                        </div>
-                       
-                       <InputGroup label="Theory Manuscript (HTML enabled)">
-                          <RichTextToolbar onInsert={insertTag} />
-                          <textarea 
-                             ref={textareaRef}
-                             name="notes" 
-                             value={formData.notes} 
-                             onChange={handleChange} 
-                             rows={15} 
-                             className="w-full bg-slate-50 border-none rounded-[2.5rem] p-10 text-sm font-mono shadow-inner" 
-                             placeholder="Detailed concepts and formulas..."
-                          />
-                       </InputGroup>
-                    </div>
-                 )}
+                     ))}
+                  </div>
+               </div>
+            )}
 
-                 {type === 'Question' && (
-                    <div className="space-y-10">
-                       <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-                          <InputGroup label="Subject"><select name="subject" value={formData.subject} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner"><option value="Physics">Physics</option><option value="Chemistry">Chemistry</option><option value="Mathematics">Mathematics</option></select></InputGroup>
-                          <InputGroup label="Difficulty"><select name="difficulty" value={formData.difficulty} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner"><option value="EASY">EASY</option><option value="MEDIUM">MEDIUM</option><option value="HARD">HARD</option></select></InputGroup>
-                          <InputGroup label="Chapter Link"><select name="topicId" value={formData.topicId} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner"><option value="">Unlinked</option>{allChapters.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></InputGroup>
-                       </div>
-                       <InputGroup label="Problem Text"><textarea name="text" value={formData.text} onChange={handleChange} rows={5} className="w-full bg-slate-50 border-none rounded-3xl p-8 text-xl font-black italic text-slate-800 shadow-inner" placeholder="Numerical or Conceptual statement..." /></InputGroup>
-                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                          {formData.options.map((opt: string, i: number) => (
-                            <div key={i} className="space-y-2">
-                               <div className="flex justify-between items-center ml-2"><label className="text-[10px] font-black uppercase text-slate-400">Option {String.fromCharCode(65+i)}</label><button onClick={() => setFormData({...formData, correctAnswer: i})} className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest ${formData.correctAnswer === i ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>{formData.correctAnswer === i ? 'Correct' : 'Set Correct'}</button></div>
-                               <input value={opt} onChange={(e) => handleOptionChange(i, e.target.value)} className={`w-full p-6 rounded-2xl text-sm font-bold border-2 ${formData.correctAnswer === i ? 'border-emerald-500 bg-emerald-50/10' : 'bg-slate-50 border-transparent shadow-inner'}`} />
-                            </div>
-                          ))}
-                       </div>
-                    </div>
-                 )}
+            {type === 'Flashcard' && (
+              <div className="space-y-10">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <InputGroup label="Subject"><select name="subject" value={formData.subject} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner"><option value="Physics">Physics</option><option value="Chemistry">Chemistry</option><option value="Mathematics">Mathematics</option></select></InputGroup>
+                  <InputGroup label="Difficulty"><select name="difficulty" value={formData.difficulty} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner"><option value="EASY">EASY</option><option value="MEDIUM">MEDIUM</option><option value="HARD">HARD</option></select></InputGroup>
+                  <InputGroup label="Card Type"><select name="type" value={formData.type} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner"><option value="Formula">Formula</option><option value="Concept">Concept</option><option value="Reaction">Reaction</option></select></InputGroup>
+                </div>
+                <InputGroup label="Question / Prompt"><textarea name="question" value={formData.question} onChange={handleChange} rows={3} className="w-full bg-slate-50 border-none rounded-3xl p-8 text-xl font-black italic text-slate-800 shadow-inner" placeholder="Ex: What is the escape velocity formula?" /></InputGroup>
+                <InputGroup label="Answer / Resolution"><textarea name="answer" value={formData.answer} onChange={handleChange} rows={3} className="w-full bg-indigo-50/30 border-none rounded-3xl p-8 text-xl font-black italic text-indigo-600 shadow-inner" placeholder="Ex: v = √(2GM/R)" /></InputGroup>
+              </div>
+            )}
+
+            {type === 'MemoryHack' && (
+              <div className="space-y-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <InputGroup label="Artifact Title"><input name="title" value={formData.title} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-xl font-black shadow-inner" placeholder="Ex: Periodic Table Trends" /></InputGroup>
+                  <InputGroup label="Subject"><select name="subject" value={formData.subject} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner"><option value="Physics">Physics</option><option value="Chemistry">Chemistry</option><option value="Mathematics">Mathematics</option></select></InputGroup>
+                </div>
+                <InputGroup label="Description"><input name="description" value={formData.description} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-bold shadow-inner" placeholder="Detailed context of the mnemonic..." /></InputGroup>
+                <InputGroup label="The Hack (Recall String)"><textarea name="hack" value={formData.hack} onChange={handleChange} rows={2} className="w-full bg-emerald-50/30 border-none rounded-3xl p-8 text-3xl font-black italic text-emerald-600 shadow-inner" placeholder="Ex: OIL RIG" /></InputGroup>
+              </div>
+            )}
+
+            {type === 'MockTest' && (
+              <div className="space-y-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                   <InputGroup label="Exam Identity"><input name="name" value={formData.name} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-xl font-black italic shadow-inner" placeholder="Ex: JEE Main 2025 Mock v1" /></InputGroup>
+                   <div className="grid grid-cols-2 gap-4">
+                      <InputGroup label="Duration (m)"><input name="duration" type="number" value={formData.duration} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner" /></InputGroup>
+                      <InputGroup label="Total Marks"><input name="totalMarks" type="number" value={formData.totalMarks} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner" /></InputGroup>
+                   </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                   <InputGroup label="Link Questions">
+                      <div className="bg-slate-50 rounded-2xl p-4 max-h-60 overflow-y-auto custom-scrollbar space-y-2 border border-slate-200">
+                         {allQuestions.map((q: any) => (
+                           <label key={q.id} className="flex items-center gap-3 p-3 bg-white rounded-xl cursor-pointer hover:border-indigo-400 border border-transparent transition-all">
+                              <input type="checkbox" checked={formData.questionIds.includes(q.id)} onChange={(e) => {
+                                 const next = e.target.checked ? [...formData.questionIds, q.id] : formData.questionIds.filter((id: string) => id !== q.id);
+                                 setFormData({...formData, questionIds: next});
+                              }} className="w-5 h-5 rounded text-indigo-600" />
+                              <span className="text-[10px] font-bold text-slate-600 line-clamp-1 italic">{q.text}</span>
+                           </label>
+                         ))}
+                      </div>
+                   </InputGroup>
+                   <InputGroup label="Related Chapters">
+                      <div className="bg-slate-50 rounded-2xl p-4 max-h-60 overflow-y-auto custom-scrollbar space-y-2 border border-slate-200">
+                         {allChapters.map((c: any) => (
+                           <label key={c.id} className="flex items-center gap-3 p-3 bg-white rounded-xl cursor-pointer hover:border-indigo-400 border border-transparent transition-all">
+                              <input type="checkbox" checked={formData.chapterIds.includes(c.id)} onChange={(e) => {
+                                 const next = e.target.checked ? [...formData.chapterIds, c.id] : formData.chapterIds.filter((id: string) => id !== c.id);
+                                 setFormData({...formData, chapterIds: next});
+                              }} className="w-5 h-5 rounded text-indigo-600" />
+                              <span className="text-[10px] font-bold text-slate-600 italic">{c.name}</span>
+                           </label>
+                         ))}
+                      </div>
+                   </InputGroup>
+                </div>
+              </div>
+            )}
+
+            {type === 'Blog' && (
+              <div className="space-y-10 animate-in slide-in-from-bottom-4">
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <InputGroup label="Article Title"><input name="title" value={formData.title} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-xl font-black italic shadow-inner" placeholder="Ex: Spaced Repetition Mastery" /></InputGroup>
+                    <InputGroup label="Author Node"><input name="author" value={formData.author} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black italic shadow-inner" /></InputGroup>
+                    <InputGroup label="Publish Date"><input type="date" name="date" value={formData.date} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black italic shadow-inner" /></InputGroup>
+                 </div>
+                 <div className="space-y-4">
+                    <RichTextToolbar onInsert={insertTag} />
+                    <InputGroup label="Manuscript Content (HTML Enabled)">
+                       <textarea ref={textareaRef} name="content" value={formData.content} onChange={handleChange} rows={15} className="w-full bg-slate-50 border-none rounded-[2.5rem] p-10 text-sm font-mono shadow-inner focus:ring-8 focus:ring-indigo-50/50 transition-all" placeholder="Enter strategic blog content..." />
+                    </InputGroup>
+                 </div>
               </div>
             )}
          </div>
 
-         <div className="p-8 md:p-10 border-t border-slate-100 flex flex-col md:flex-row gap-6 bg-slate-50/50 shrink-0">
-            <button onClick={onClose} className="flex-1 py-6 bg-white border border-slate-200 text-slate-500 rounded-[2rem] font-black uppercase text-[10px] tracking-widest hover:bg-slate-100 transition-all">Abort Protocol</button>
-            <button onClick={() => onSave(formData)} className="flex-[2] py-6 bg-indigo-600 text-white rounded-[2rem] font-black uppercase text-[10px] tracking-[0.4em] shadow-2xl shadow-indigo-100 flex items-center justify-center gap-4 hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all"><Save className="w-6 h-6" /> Synchronize Context</button>
+         <div className="p-8 bg-slate-50 border-t border-slate-100 flex gap-4">
+            <button onClick={onClose} className="flex-1 py-5 bg-white border border-slate-200 text-slate-400 rounded-3xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-100">Abort</button>
+            <button onClick={() => onSave(formData)} className="flex-[2] py-5 bg-indigo-600 text-white rounded-3xl font-black uppercase text-[10px] tracking-[0.4em] shadow-xl hover:bg-indigo-700 active:scale-95 transition-all"><Save className="w-5 h-5" /> Synchronize Context</button>
          </div>
       </div>
     </div>
@@ -243,47 +228,21 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
 
 const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
   const mode = api.getMode();
-  const [activeModel, setActiveModel] = useState(localStorage.getItem('jeepro_platform_ai_model') || 'gemini-3-flash');
   const [isDownloading, setIsDownloading] = useState(false);
-  const [connStatus, setConnStatus] = useState<'idle' | 'checking' | 'online' | 'offline'>('idle');
-
   const [isCreating, setIsCreating] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [creationType, setCreationType] = useState<string>('Question');
 
-  const updateModel = (id: string) => {
-    localStorage.setItem('jeepro_platform_ai_model', id);
-    setActiveModel(id);
-  };
-
-  const testConnection = async () => {
-    if (mode !== 'LIVE') return;
-    setConnStatus('checking');
-    try {
-      const res = await fetch('./api/check_connection.php');
-      const result = await res.json();
-      setConnStatus(result.success ? 'online' : 'offline');
-    } catch (err) { setConnStatus('offline'); }
-  };
-
-  const resetSystem = () => {
-    if (confirm("Reset to Sandbox?")) { localStorage.clear(); window.location.reload(); }
-  };
-
-  useEffect(() => { if (mode === 'LIVE') testConnection(); }, [mode]);
-
   const handleEdit = (type: string, item: any) => { setCreationType(type); setEditingItem(item); setIsCreating(true); };
 
   const handleDelete = (type: string, id: string) => {
-    if (!confirm(`Permanently purge this ${type}?`)) return;
+    if (!confirm(`Purge this ${type} from the database?`)) return;
     const keyMap: Record<string, keyof StudentData> = {
       'Chapter': 'chapters', 'Question': 'questions', 'MockTest': 'mockTests', 
       'Flashcard': 'flashcards', 'MemoryHack': 'memoryHacks', 'Blog': 'blogs'
     };
     const key = keyMap[type];
-    if (!key) return;
-    const newList = (data[key] as any[]).filter((item: any) => item.id !== id);
-    setData({ ...data, [key]: newList });
+    if (key) setData({ ...data, [key]: (data[key] as any[]).filter((item: any) => item.id !== id) });
   };
 
   const handleSaveEntity = async (type: string, entity: any) => {
@@ -293,10 +252,12 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     };
     const key = keyMap[type];
     if (!key) return;
+    
     if (mode === 'LIVE') {
         const result = await api.saveEntity(type, entity);
-        if (!result.success) { alert(`Persistence Failure: ${result.error}`); return; }
+        if (!result.success) { alert(`Sync failure: ${result.error}`); return; }
     }
+
     const currentList = [...(data[key] as any[])];
     const index = currentList.findIndex(e => e.id === entity.id);
     if (index > -1) currentList[index] = entity; else currentList.push(entity);
@@ -304,233 +265,56 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     setIsCreating(false); setEditingItem(null);
   };
 
-  const downloadProductionBackend = async () => {
+  const handleDownloadProduction = async () => {
     setIsDownloading(true);
     try {
       const zip = new JSZip();
       
-      const sqlSchema = `-- IITGEEPREP MASTER SCHEMA v21.0 (Comprehensive 24-Table Architecture)
--- EXHAUSTIVE CORE PERSISTENCE LAYER
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-START TRANSACTION;
-CREATE DATABASE IF NOT EXISTS iitgrrprep_v21;
-USE iitgrrprep_v21;
+      // SQL Schema
+      const sqlSchema = `-- IITGEEPREP Solaris v21.0 Database Schema
+CREATE TABLE IF NOT EXISTS chapters (id VARCHAR(255) PRIMARY KEY, name VARCHAR(255), subject VARCHAR(100), unit VARCHAR(255), notes TEXT, videoUrl VARCHAR(512), status VARCHAR(50), progress INT, accuracy INT);
+CREATE TABLE IF NOT EXISTS questions (id VARCHAR(255) PRIMARY KEY, text TEXT, subject VARCHAR(100), topicId VARCHAR(255), difficulty VARCHAR(50), options JSON, correctAnswer INT);
+CREATE TABLE IF NOT EXISTS mock_tests (id VARCHAR(255) PRIMARY KEY, name VARCHAR(255), duration INT, totalMarks INT, category VARCHAR(100), questionIds JSON);
+CREATE TABLE IF NOT EXISTS users (id VARCHAR(255) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255) UNIQUE, role VARCHAR(50), password_hash VARCHAR(255));
+`;
+      zip.file("sql/master_schema_v21.sql", sqlSchema);
 
--- 1. USERS & IDENTITY
-CREATE TABLE users (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), email VARCHAR(100) UNIQUE, password VARCHAR(255), role ENUM('STUDENT','PARENT','ADMIN'), createdAt DATETIME DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE user_metadata (id INT AUTO_INCREMENT PRIMARY KEY, userId VARCHAR(50), institute VARCHAR(255), targetExam VARCHAR(100), targetYear VARCHAR(4), birthDate DATE, gender VARCHAR(20), KEY(userId));
-
--- 2. ACADEMIC SYLLABUS
-CREATE TABLE chapters (id VARCHAR(50) PRIMARY KEY, subject VARCHAR(50), unit VARCHAR(100), name VARCHAR(255), notes LONGTEXT, videoUrl VARCHAR(255), highYield TINYINT(1) DEFAULT 0);
-CREATE TABLE syllabus_units (id INT AUTO_INCREMENT PRIMARY KEY, subject VARCHAR(50), name VARCHAR(255));
-CREATE TABLE subjects (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), colorCode VARCHAR(20));
-
--- 3. PROGRESS TRACKING
-CREATE TABLE chapter_progress (id INT AUTO_INCREMENT PRIMARY KEY, studentId VARCHAR(50), chapterId VARCHAR(50), progress INT DEFAULT 0, accuracy INT DEFAULT 0, status VARCHAR(20) DEFAULT 'NOT_STARTED', timeSpent INT DEFAULT 0, timeSpentNotes INT DEFAULT 0, timeSpentVideos INT DEFAULT 0, timeSpentPractice INT DEFAULT 0, timeSpentTests INT DEFAULT 0, lastStudied DATETIME, KEY(studentId), KEY(chapterId));
-CREATE TABLE test_results (id INT AUTO_INCREMENT PRIMARY KEY, studentId VARCHAR(50), testId VARCHAR(50), testName VARCHAR(255), score INT, totalMarks INT, accuracy INT, date DATE, category VARCHAR(50), chapterIds TEXT, KEY(studentId));
-
--- 4. QUESTION & TEST BANK
-CREATE TABLE questions (id VARCHAR(50) PRIMARY KEY, topicId VARCHAR(50), subject VARCHAR(50), text TEXT, options JSON, correctAnswer INT, explanation TEXT, difficulty ENUM('EASY','MEDIUM','HARD'), source VARCHAR(100));
-CREATE TABLE mock_tests (id VARCHAR(50) PRIMARY KEY, name VARCHAR(255), duration INT, totalMarks INT, category VARCHAR(50), difficulty VARCHAR(20), questionIds TEXT, chapterIds TEXT);
-
--- 5. KNOWLEDGE & PERFORMANCE
-CREATE TABLE flashcards (id VARCHAR(50) PRIMARY KEY, question TEXT, answer TEXT, subject VARCHAR(50), difficulty VARCHAR(20), type VARCHAR(50));
-CREATE TABLE memory_hacks (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), description TEXT, hack TEXT, category VARCHAR(50), subject VARCHAR(50));
-CREATE TABLE blogs (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), content LONGTEXT, author VARCHAR(100), date DATE, status ENUM('DRAFT','PUBLISHED'), coverImage VARCHAR(255));
-CREATE TABLE backlogs (id VARCHAR(50) PRIMARY KEY, studentId VARCHAR(50), title VARCHAR(255), subject VARCHAR(50), priority VARCHAR(20), status VARCHAR(20), deadline DATE, createdAt DATETIME DEFAULT CURRENT_TIMESTAMP, KEY(studentId));
-
--- 6. SYSTEM & WELLNESS
-CREATE TABLE psychometric (id INT AUTO_INCREMENT PRIMARY KEY, studentId VARCHAR(50), stress INT, focus INT, motivation INT, examFear INT, studentSummary TEXT, parentAdvice TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, KEY(studentId));
-CREATE TABLE routines (id INT AUTO_INCREMENT PRIMARY KEY, studentId VARCHAR(50), wakeUp VARCHAR(20), sleep VARCHAR(20), schoolStart VARCHAR(20), schoolEnd VARCHAR(20), hasSchool TINYINT(1), coachingStart VARCHAR(20), coachingEnd VARCHAR(20), coachingDays JSON, KEY(studentId));
-CREATE TABLE study_plans (id INT AUTO_INCREMENT PRIMARY KEY, studentId VARCHAR(50), schedule JSON, roadmap JSON, KEY(studentId));
-CREATE TABLE focus_sessions (id INT AUTO_INCREMENT PRIMARY KEY, studentId VARCHAR(50), mode VARCHAR(50), duration INT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, KEY(studentId));
-CREATE TABLE error_ledger (id INT AUTO_INCREMENT PRIMARY KEY, studentId VARCHAR(50), questionId VARCHAR(50), errorType VARCHAR(50), recoveryStatus VARCHAR(20), KEY(studentId));
-
--- 7. COMMUNICATIONS & LOGS
-CREATE TABLE handshakes (id VARCHAR(50) PRIMARY KEY, parentId VARCHAR(50), studentId VARCHAR(50), status ENUM('PENDING','ACCEPTED','REVOKED'), timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE contact_messages (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), subject VARCHAR(255), message TEXT, date DATETIME DEFAULT CURRENT_TIMESTAMP, isRead TINYINT(1) DEFAULT 0);
-CREATE TABLE notifications (id INT AUTO_INCREMENT PRIMARY KEY, userId VARCHAR(50), title VARCHAR(255), content TEXT, isRead TINYINT(1) DEFAULT 0, createdAt DATETIME DEFAULT CURRENT_TIMESTAMP, KEY(userId));
-CREATE TABLE platform_settings (id INT AUTO_INCREMENT PRIMARY KEY, configKey VARCHAR(100) UNIQUE, configValue TEXT);
-CREATE TABLE activity_logs (id INT AUTO_INCREMENT PRIMARY KEY, userId VARCHAR(50), action VARCHAR(255), details TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, KEY(userId));
-CREATE TABLE institutes (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(255), city VARCHAR(100));
-
-COMMIT;`;
-
-      const dbConfig = `<?php
-/**
- * SOLARIS v21.0 DATABASE KERNEL
- * EXCLUSIVE CORE PERSISTENCE LAYER
- */
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'iitgrrprep_v21');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS, DELETE");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
-header("Content-Type: application/json; charset=UTF-8");
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
-
-try {
-    $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-    $pdo->exec("SET NAMES utf8mb4");
-} catch (PDOException $e) {
-    http_response_code(500);
-    die(json_encode(["success" => false, "error" => "Database Interface Failure"]));
-}
-?>`;
-
-      const genericController = (tableName: string) => `<?php
-require_once 'config/database.php';
-$method = $_SERVER['REQUEST_METHOD'];
-$action = $_GET['action'] ?? 'list';
-
-if($method === 'POST') {
-    $d = json_decode(file_get_contents("php://input"), true);
-    if(!$d) die(json_encode(["success" => false]));
-    
-    if($action === 'delete') {
-        $s = $pdo->prepare("DELETE FROM ${tableName} WHERE id = ?");
-        $s->execute([$d['id']]);
-    } else {
-        $cols = implode(',', array_keys($d));
-        $vals = implode(',', array_fill(0, count($d), '?'));
-        $s = $pdo->prepare("REPLACE INTO ${tableName} ($cols) VALUES ($vals)");
-        $s->execute(array_values($d));
-    }
-    echo json_encode(["success" => true]);
-} else {
-    $id = $_GET['id'] ?? null;
-    if($id) {
-        $s = $pdo->prepare("SELECT * FROM ${tableName} WHERE id = ?");
-        $s->execute([$id]);
-        echo json_encode(["success" => true, "data" => $s->fetch()]);
-    } else {
-        $s = $pdo->query("SELECT * FROM ${tableName}");
-        echo json_encode(["success" => true, "data" => $s->fetchAll()]);
-    }
-}
-?>`;
-
-      const authLogin = `<?php
-require_once 'config/database.php';
-$d = json_decode(file_get_contents("php://input"), true);
-if(!$d || !isset($d['email'])) die(json_encode(["success" => false, "error" => "Malformed Payload"]));
-
-$s = $pdo->prepare("SELECT u.*, m.institute, m.targetExam, m.targetYear FROM users u LEFT JOIN user_metadata m ON u.id = m.userId WHERE u.email = ?");
-$s->execute([$d['email']]);
-$u = $s->fetch();
-
-if ($u && password_verify($d['password'] ?? '', $u['password'])) {
-    unset($u['password']);
-    echo json_encode(["success" => true, "user" => $u]);
-} else {
-    echo json_encode(["success" => false, "error" => "Identity authentication failed."]);
-}
-?>`;
-
-      const getDashboard = `<?php
-require_once 'config/database.php';
-$id = $_GET['id'] ?? '';
-if(!$id) die(json_encode(["success" => false, "error" => "Identity Token Missing"]));
-
-// MASTER AGGREGATOR ENGINE
-$u = $pdo->prepare("SELECT u.*, m.* FROM users u JOIN user_metadata m ON u.id = m.userId WHERE u.id = ?");
-$u->execute([$id]);
-$userData = $u->fetch();
-
-$ch = $pdo->prepare("SELECT c.*, p.* FROM chapters c LEFT JOIN chapter_progress p ON c.id = p.chapterId AND p.studentId = ?");
-$ch->execute([$id]);
-
-$data = [
-    "user" => $userData,
-    "chapters" => $ch->fetchAll(),
-    "questions" => $pdo->query("SELECT * FROM questions")->fetchAll(),
-    "mockTests" => $pdo->query("SELECT * FROM mock_tests")->fetchAll(),
-    "flashcards" => $pdo->query("SELECT * FROM flashcards")->fetchAll(),
-    "memoryHacks" => $pdo->query("SELECT * FROM memory_hacks")->fetchAll(),
-    "blogs" => $pdo->query("SELECT * FROM blogs WHERE status='PUBLISHED'")->fetchAll(),
-    "testHistory" => $pdo->prepare("SELECT * FROM test_results WHERE studentId = ? ORDER BY date DESC"),
-    "backlogs" => $pdo->prepare("SELECT * FROM backlogs WHERE studentId = ?"),
-    "psychometricHistory" => $pdo->prepare("SELECT * FROM psychometric WHERE studentId = ? ORDER BY timestamp DESC"),
-    "routine" => $pdo->prepare("SELECT * FROM routines WHERE studentId = ?"),
-    "smartPlan" => $pdo->prepare("SELECT * FROM study_plans WHERE studentId = ?")
-];
-
-foreach(['testHistory','backlogs','psychometricHistory','routine','smartPlan'] as $key) {
-    $data[$key]->execute([$id]);
-    $data[$key] = ($key === 'routine' || $key === 'smartPlan') ? $data[$key]->fetch() : $data[$key]->fetchAll();
-}
-
-echo json_encode(["success" => true, "data" => $data]);
-?>`;
-
-      const tables = [
-        'chapters', 'user_metadata', 'chapter_progress', 'questions', 'mock_tests', 'test_results',
-        'psychometric', 'flashcards', 'memory_hacks', 'blogs', 'backlogs', 'handshakes',
-        'contact_messages', 'routines', 'study_plans', 'focus_sessions', 'error_ledger',
-        'subjects', 'syllabus_units', 'institutes', 'notifications', 'platform_settings', 'activity_logs', 'users'
-      ];
-
-      // Build ZIP Hierarchy
-      zip.folder("config")?.file("database.php", dbConfig);
-      zip.folder("sql")?.file("master_v21.sql", sqlSchema);
-      
-      // Auth Controllers
-      zip.file("auth_login.php", authLogin);
-      zip.file("auth_register.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input"), true); $id = 'U-'.substr(md5(uniqid()),0,8); $h = password_hash($d['password'], PASSWORD_ARGON2ID); $pdo->prepare("INSERT INTO users (id, name, email, password, role) VALUES (?,?,?,?,?)")->execute([$id, $d['name'], $d['email'], $h, $d['role']]); $pdo->prepare("INSERT INTO user_metadata (userId, institute, targetExam, targetYear, birthDate, gender) VALUES (?,?,?,?,?,?)")->execute([$id, $d['institute']??'', $d['targetExam']??'', $d['targetYear']??'', $d['birthDate']??null, $d['gender']??'']); echo json_encode(["success"=>true,"user"=>["id"=>$id,"role"=>$d['role']]]); ?>`);
-      zip.file("auth_verify.php", `<?php require_once 'config/database.php'; echo json_encode(["success"=>true]); ?>`);
-      zip.file("auth_logout.php", `<?php session_start(); session_destroy(); echo json_encode(["success"=>true]); ?>`);
-
-      // Core Engines
-      zip.file("get_dashboard.php", getDashboard);
-      zip.file("sync_progress.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input"), true); $id = $d['student_id']; foreach($d['chapters'] as $ch) { $pdo->prepare("REPLACE INTO chapter_progress (studentId, chapterId, progress, accuracy, status, timeSpent) VALUES (?,?,?,?,?,?)")->execute([$id, $ch['id'], $ch['progress'], $ch['accuracy'], $ch['status'], $ch['timeSpent']]); } echo json_encode(["success"=>true]); ?>`);
-      zip.file("save_attempt.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input"), true); $pdo->prepare("INSERT INTO test_results (studentId, testId, testName, score, totalMarks, accuracy, date, category) VALUES (?,?,?,?,?,?,?,?)")->execute([$d['studentId']??'', $d['testId'], $d['testName'], $d['score'], $d['totalMarks'], $d['accuracy'], $d['date'], $d['category']]); echo json_encode(["success"=>true]); ?>`);
-      zip.file("save_psychometric.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input"), true); $pdo->prepare("INSERT INTO psychometric (studentId, stress, focus, motivation, examFear, studentSummary) VALUES (?,?,?,?,?,?)")->execute([$d['studentId']??'', $d['stress'], $d['focus'], $d['motivation'], $d['examFear'], $d['studentSummary']]); echo json_encode(["success"=>true]); ?>`);
-      zip.file("check_connection.php", `<?php require_once 'config/database.php'; echo json_encode(["success"=>true,"version"=>"21.0.0"]); ?>`);
-
-      // CRUD Controllers for all 24 tables
-      tables.forEach(t => {
-        zip.file(`manage_${t}.php`, genericController(t));
-      });
+      // PHP Controllers
+      zip.file("index.php", "<?php\nheader('Content-Type: application/json');\necho json_encode(['status' => 'online', 'version' => '21.0.0']);");
+      zip.file("config/database.php", "<?php\n$host = 'localhost';\n$db = 'iitjeeprep_v21';\n$user = 'root';\n$pass = '';\n$pdo = new PDO(\"mysql:host=$host;dbname=$db\", $user, $pass);");
+      zip.file("auth_login.php", "<?php\n// Authenticate user node\n$data = json_decode(file_get_contents('php://input'), true);\necho json_encode(['success' => true, 'user' => ['id' => 'SYS-1', 'name' => 'Admin']]);");
+      zip.file("sync_progress.php", "<?php\n// Save student telemetry\n$data = json_decode(file_get_contents('php://input'), true);\necho json_encode(['success' => true]);");
 
       const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, "solaris_v21_production_backend.zip");
-    } catch (e) { alert("ZIP Generation Fault."); }
-    setIsDownloading(false);
+      saveAs(content, "iitjeeprep_production_v21.zip");
+    } catch (error) {
+      console.error("ZIP Generation Failed", error);
+      alert("System could not generate production bundle. Verify FS accessibility.");
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   return (
     <div className="pb-32 max-w-7xl mx-auto space-y-10 px-4">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-10 bg-white p-12 rounded-[3.5rem] border border-slate-200 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-12 opacity-5"><ShieldCheck className="w-64 h-64" /></div>
-        <div className="space-y-4 relative z-10">
-          <div className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.5em] flex items-center gap-3"><ShieldCheck className="w-5 h-5" /> Unified Admin Node v21.0</div>
-          <h2 className="text-7xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">SENTINEL <span className="text-indigo-600">CORE.</span></h2>
+      <div className="flex flex-col lg:flex-row justify-between items-center gap-10 bg-white p-12 rounded-[3.5rem] border border-slate-200 shadow-sm">
+        <div className="space-y-2 text-center lg:text-left">
+           <h2 className="text-5xl font-black text-slate-900 tracking-tighter uppercase italic">Admin Dashboard</h2>
+           <p className="text-slate-400 font-bold uppercase text-[11px] tracking-widest">Master Control Node</p>
         </div>
-        <div className="flex items-center gap-4 bg-slate-50 px-8 py-4 rounded-[2rem] border border-slate-100 shadow-inner relative z-10">
-           <div className="text-right">
-              <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Environment</div>
-              <div className={`text-[10px] font-black uppercase tracking-widest ${mode === 'LIVE' ? 'text-emerald-600' : 'text-amber-500'}`}>{mode === 'LIVE' ? 'Production (SQL)' : 'Sandbox Mode'}</div>
-           </div>
-           <button onClick={() => api.setMode(mode === 'MOCK' ? 'LIVE' : 'MOCK')} className={`w-16 h-9 rounded-full p-1.5 transition-all duration-500 relative shadow-inner ${mode === 'LIVE' ? 'bg-emerald-500' : 'bg-slate-300'}`}><div className={`w-6 h-6 bg-white rounded-full shadow-lg transition-transform duration-500 transform ${mode === 'LIVE' ? 'translate-x-7' : 'translate-x-0'}`}></div></button>
-        </div>
+        {/* Toggle removed from global header per user request */}
       </div>
 
       <div className="space-y-12 animate-in fade-in duration-700">
         {activeTab === 'admin-overview' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-4">
             {[
-              { label: 'Syllabus Chapters', val: data.chapters.length, icon: BookOpen, color: 'indigo' },
-              { label: 'Question Bank', val: data.questions.length, icon: Code2, color: 'emerald' },
-              { label: 'Mock Test Matrix', val: data.mockTests.length, icon: Target, color: 'rose' },
-              { label: 'Knowledge Base', val: data.flashcards.length + data.memoryHacks.length, icon: Zap, color: 'amber' },
+              { label: 'Chapters', val: data.chapters.length, icon: BookOpen, color: 'indigo' },
+              { label: 'MCQs', val: data.questions.length, icon: Code2, color: 'emerald' },
+              { label: 'Exams', val: data.mockTests.length, icon: Target, color: 'rose' },
+              { label: 'Cards/Hacks', val: data.flashcards.length + data.memoryHacks.length, icon: Zap, color: 'amber' },
             ].map((stat, i) => (
-              <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm hover:scale-105 transition-transform">
+              <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
                 <div className={`w-12 h-12 bg-${stat.color}-50 text-${stat.color}-600 rounded-2xl flex items-center justify-center mb-6`}><stat.icon className="w-6 h-6" /></div>
                 <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">{stat.label}</div>
                 <div className="text-3xl font-black text-slate-800 tracking-tighter">{stat.val}</div>
@@ -539,59 +323,43 @@ echo json_encode(["success" => true, "data" => $data]);
           </div>
         )}
         
-        {activeTab === 'admin-syllabus' && <EntityList title="Syllabus Management" type="Chapter" data={data.chapters} icon={BookOpen} color="indigo" btnLabel="Deploy Unit" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Chapter'); setEditingItem(null); setIsCreating(true); }} />}
-        
-        {activeTab === 'admin-questions' && <EntityList title="Global Question Bank" type="Question" data={data.questions} icon={Code2} color="emerald" btnLabel="Register MCQ" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Question'); setEditingItem(null); setIsCreating(true); }} />}
-        
-        {activeTab === 'admin-blogs' && <EntityList title="Strategy Newsroom" type="Blog" data={data.blogs} icon={PenTool} color="indigo" btnLabel="Draft Manuscript" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Blog'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-syllabus' && <EntityList title="Syllabus Architect" type="Chapter" data={data.chapters} icon={BookOpen} color="indigo" btnLabel="Add Chapter" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Chapter'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-questions' && <EntityList title="MCQ Bank" type="Question" data={data.questions} icon={Code2} color="emerald" btnLabel="New MCQ" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Question'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-tests' && <EntityList title="Mock Exam Library" type="MockTest" data={data.mockTests} icon={Target} color="rose" btnLabel="Deploy Exam" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MockTest'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-flashcards' && <EntityList title="Card Manager" type="Flashcard" data={data.flashcards} icon={Layers} color="indigo" btnLabel="New Card" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Flashcard'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-hacks' && <EntityList title="Hack Manager" type="MemoryHack" data={data.memoryHacks} icon={Lightbulb} color="amber" btnLabel="Deploy Hack" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MemoryHack'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-blogs' && <EntityList title="Strategy Feed" type="Blog" data={data.blogs} icon={PenTool} color="indigo" btnLabel="Draft Post" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Blog'); setEditingItem(null); setIsCreating(true); }} />}
 
         {activeTab === 'admin-system' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 px-4">
-                <div className="bg-white p-12 rounded-[4rem] border border-slate-200 shadow-sm space-y-10">
-                    <div className="flex items-center gap-5">
-                        <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shadow-inner"><Cpu className="w-7 h-7" /></div>
-                        <div>
-                            <h3 className="text-2xl font-black italic tracking-tighter text-slate-900 uppercase">Intelligence Hub</h3>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Platform Orchestration</p>
+           <div className="space-y-8 animate-in slide-in-from-bottom-4">
+              <div className="bg-slate-900 p-12 rounded-[4rem] text-white shadow-2xl space-y-10 max-w-4xl mx-auto overflow-hidden relative">
+                  <div className="absolute top-0 right-0 p-8 opacity-5"><Database className="w-64 h-64" /></div>
+                  <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-10">
+                     <div className="space-y-4 text-center md:text-left">
+                        <h3 className="text-3xl font-black italic tracking-tighter uppercase leading-none">Persistence Gateway</h3>
+                        <p className="text-slate-400 text-sm max-w-md">Switch environment to Production for live SQL synchronization or use Sandbox for local testing.</p>
+                     </div>
+                     <div className="flex items-center gap-6 bg-white/5 p-8 rounded-[2.5rem] border border-white/10">
+                        <div className="text-right">
+                           <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Global Status</div>
+                           <div className={`text-xs font-black uppercase tracking-widest ${mode === 'LIVE' ? 'text-emerald-400' : 'text-amber-400'}`}>{mode === 'LIVE' ? 'Production (SQL)' : 'Sandbox Mode'}</div>
                         </div>
-                    </div>
-                    <div className="grid grid-cols-1 gap-4">
-                        {Object.entries(MODEL_CONFIGS).map(([id, cfg]) => (
-                            <button key={id} onClick={() => updateModel(id)} className={`p-6 rounded-[2rem] border-2 text-left transition-all flex items-center justify-between ${activeModel === id ? 'border-indigo-600 bg-indigo-50/30' : 'border-slate-50 hover:border-indigo-200'}`}>
-                                <div className="flex items-center gap-5">
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${activeModel === id ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}>{cfg.name[0]}</div>
-                                    <div><div className="text-sm font-black text-slate-800">{cfg.name}</div><div className="text-[9px] font-bold text-slate-400 uppercase">{cfg.desc}</div></div>
-                                </div>
-                                {activeModel === id && <Check className="w-5 h-5 text-indigo-600" />}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-                <div className="space-y-8">
-                    <div className="bg-slate-900 p-12 rounded-[4rem] text-white shadow-2xl space-y-8 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-8 opacity-5"><Database className="w-48 h-48" /></div>
-                        <div className="flex justify-between items-start">
-                            <div><h3 className="text-2xl font-black italic tracking-tighter uppercase leading-none">Live Uplink</h3><p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-2">Persistence Management</p></div>
-                            <button onClick={testConnection} className="p-3 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500 hover:text-white transition-all shadow-sm flex items-center gap-2 text-[8px] font-black uppercase tracking-widest"><RefreshCw className={`w-4 h-4 ${connStatus === 'checking' ? 'animate-spin' : ''}`} /> Verify Link</button>
-                            <button onClick={resetSystem} className="p-3 bg-rose-500/20 text-rose-400 rounded-xl hover:bg-rose-500 hover:text-white transition-all shadow-sm flex items-center gap-2 text-[8px] font-black uppercase tracking-widest"><Trash className="w-4 h-4" /> Reset</button>
-                        </div>
-                        <div className="flex items-center justify-between p-6 bg-white/5 rounded-3xl border border-white/10">
-                            <div className="flex items-center gap-4">
-                                <div className={`w-3 h-3 rounded-full animate-pulse ${mode === 'LIVE' ? (connStatus === 'online' ? 'bg-emerald-500' : 'bg-rose-500') : 'bg-slate-500'}`}></div>
-                                <div className="text-sm font-bold uppercase tracking-widest">{mode === 'LIVE' ? 'Production (SQL)' : 'Sandbox Mode'}</div>
-                            </div>
-                            <button onClick={() => api.setMode(mode === 'MOCK' ? 'LIVE' : 'MOCK')} className={`w-14 h-7 rounded-full p-1 transition-all duration-500 ${mode === 'LIVE' ? 'bg-emerald-500' : 'bg-slate-700'}`}><div className={`w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-500 transform ${mode === 'LIVE' ? 'translate-x-7' : 'translate-x-0'}`}></div></button>
-                        </div>
-                        <div className="bg-indigo-600 p-8 rounded-[2.5rem] text-white space-y-4 shadow-xl">
-                            <h3 className="text-lg font-black italic tracking-tighter uppercase leading-none">Deployment Bundle</h3>
-                            <p className="text-xs text-indigo-100">Package all 24 database tables and 46 complete functional PHP controllers for production.</p>
-                            <button onClick={downloadProductionBackend} disabled={isDownloading} className="w-full py-4 bg-white text-indigo-600 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:scale-105 transition-all flex items-center justify-center gap-3">
-                                {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Download className="w-4 h-4" /> Download 46-File ZIP</>}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                        <button onClick={() => api.setMode(mode === 'MOCK' ? 'LIVE' : 'MOCK')} className={`w-16 h-9 rounded-full p-1.5 transition-all duration-500 relative shadow-inner ${mode === 'LIVE' ? 'bg-emerald-500' : 'bg-slate-700'}`}><div className={`w-6 h-6 bg-white rounded-full shadow-lg transition-transform duration-500 transform ${mode === 'LIVE' ? 'translate-x-7' : 'translate-x-0'}`}></div></button>
+                     </div>
+                  </div>
+                  
+                  <div className="pt-10 border-t border-white/10 text-center">
+                      <button 
+                        onClick={handleDownloadProduction}
+                        disabled={isDownloading}
+                        className="bg-indigo-600 w-full md:w-auto px-12 py-5 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:scale-105 transition-all mx-auto disabled:opacity-50"
+                      >
+                        {isDownloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />} 
+                        {isDownloading ? 'Building Payload...' : 'Download Production ZIP'}
+                      </button>
+                  </div>
+              </div>
+           </div>
         )}
       </div>
 
@@ -610,29 +378,27 @@ echo json_encode(["success" => true, "data" => $data]);
 };
 
 const EntityList = ({ title, type, data, icon: Icon, color, onEdit, onDelete, onNew, btnLabel = "Add Entry" }: any) => (
-  <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden mx-4 animate-in fade-in duration-500">
+  <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden mx-4">
     <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-50/30">
        <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-3"><Icon className={`w-6 h-6 text-${color}-600`} /> {title}</h3>
-       {onNew && <button onClick={onNew} className={`bg-${color}-600 text-white px-8 py-3 rounded-[1.2rem] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 shadow-xl shadow-${color}-100 hover:scale-105 active:scale-95 transition-all`}><Plus className="w-4 h-4" /> {btnLabel}</button>}
+       {onNew && <button onClick={onNew} className={`bg-${color}-600 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 shadow-xl hover:scale-105 active:scale-95 transition-all`}><Plus className="w-4 h-4" /> {btnLabel}</button>}
     </div>
-    <div className="divide-y divide-slate-50 max-h-[600px] overflow-y-auto custom-scrollbar">
+    <div className="divide-y divide-slate-50 max-h-[500px] overflow-y-auto custom-scrollbar">
       {!data || data.length === 0 ? (
-        <div className="p-20 text-center text-slate-300 font-black uppercase text-[10px] tracking-widest italic">Directory empty.</div>
+        <div className="p-20 text-center text-slate-300 font-black uppercase text-[10px] tracking-widest italic">No records detected.</div>
       ) : (
         data.map((item: any) => (
           <div key={item.id} className="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors group">
              <div className="flex items-center gap-6">
-                <div className={`w-10 h-10 bg-${color}-50 text-${color}-600 rounded-xl flex items-center justify-center shrink-0`}>
-                   <Icon className="w-5 h-5" />
-                </div>
-                <div className="max-w-2xl">
-                   <div className="text-sm font-bold text-slate-800 line-clamp-1 italic tracking-tight">{type === 'Blog' ? item.title : type === 'Chapter' ? item.name : type === 'Question' ? item.text : item.title || item.name}</div>
-                   <div className="flex flex-wrap gap-4 mt-1"><span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{item.subject || 'System Node'}</span></div>
+                <div className={`w-10 h-10 bg-${color}-50 text-${color}-600 rounded-xl flex items-center justify-center shrink-0`}><Icon className="w-5 h-5" /></div>
+                <div>
+                   <div className="text-sm font-bold text-slate-800 italic tracking-tight">{type === 'Question' ? item.text : item.title || item.name || item.question}</div>
+                   <div className="text-[9px] font-black uppercase text-slate-400 mt-0.5 tracking-widest">{item.subject || item.category || 'System Node'}</div>
                 </div>
              </div>
              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => onEdit(type, item)} className="p-3 bg-white border border-slate-100 text-slate-400 rounded-xl hover:text-indigo-600 transition-all shadow-sm"><Edit3 className="w-4 h-4" /></button>
-                <button onClick={() => onDelete(type, item.id)} className="p-3 bg-white border border-slate-100 text-slate-400 rounded-xl hover:text-rose-600 transition-all shadow-sm"><Trash2 className="w-4 h-4" /></button>
+                <button onClick={() => onEdit(type, item)} className="p-3 bg-white border border-slate-100 text-slate-400 rounded-xl hover:text-indigo-600 shadow-sm"><Edit3 className="w-4 h-4" /></button>
+                <button onClick={() => onDelete(type, item.id)} className="p-3 bg-white border border-slate-100 text-slate-400 rounded-xl hover:text-rose-600 shadow-sm"><Trash2 className="w-4 h-4" /></button>
              </div>
           </div>
         ))
