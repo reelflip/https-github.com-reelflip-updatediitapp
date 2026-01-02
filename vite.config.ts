@@ -1,20 +1,25 @@
 
-import { defineConfig } from 'vite';
+import { defineConfig } from 'react-scripts';
 import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  // CRITICAL: This ensures the app works in subfolders like /iittracker/
-  base: './', 
+  base: './',
   build: {
     outDir: 'dist',
-    minify: 'esbuild', 
+    minify: false, // Ensure compiled JS remains indented and readable as requested
     sourcemap: false,
     rollupOptions: {
       output: {
-        // Standard bundling is more reliable for XAMPP deployments
-        manualChunks: undefined,
+        // Preserves folder structure for generated JS files
+        entryFileNames: '[name].js',
+        chunkFileNames: (chunkInfo) => {
+          // Use the original module path to name the chunk
+          const name = chunkInfo.name;
+          return `${name}.js`;
+        },
+        assetFileNames: 'assets/[name].[ext]',
       },
     },
   },

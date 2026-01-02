@@ -11,9 +11,9 @@ const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
   const [isOpen, setIsOpen] = useState(false);
   
   const menuItems = [
-    { id: 'about', label: 'Methodology' },
-    { id: 'features', label: 'Functionality' },
-    { id: 'examguide', label: 'Exam Matrix' },
+    { id: 'about', label: 'About Us' },
+    { id: 'features', label: 'Features' },
+    { id: 'examguide', label: 'Exam Pattern' },
     { id: 'blog', label: 'Strategy Reports' },
     { id: 'contact', label: 'Technical Support' },
   ];
@@ -28,7 +28,7 @@ const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         {/* Logo Branding */}
         <div className="flex items-center gap-1 cursor-pointer group shrink-0" onClick={() => handleNav('about')}>
-           <span className="text-2xl font-black tracking-tighter text-[#2b4c8c] uppercase italic font-space">IITJEEPRO</span>
+           <span className="text-2xl font-black tracking-tighter text-[#2b4c8c] uppercase italic font-space">IITGEEPREP</span>
         </div>
         
         {/* Desktop Menu */}

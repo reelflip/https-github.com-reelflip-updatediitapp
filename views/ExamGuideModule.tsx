@@ -45,7 +45,7 @@ const ExamGuideModule: React.FC = () => {
              <ClipboardCheck className="w-4 h-4" /> Exam Matrix Alignment
           </div>
           <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter uppercase italic font-space">
-            Tactical <br /><span className="text-indigo-600">Alignment.</span>
+            Exam <br /><span className="text-indigo-600">Pattern.</span>
           </h1>
           <p className="text-slate-500 text-lg md:text-xl font-medium italic max-w-2xl mx-auto leading-relaxed">
             Success in entrance exams is a function of aligning your tracking methodology with the specific patterns of your target exam.

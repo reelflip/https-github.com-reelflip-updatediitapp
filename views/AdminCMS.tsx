@@ -205,7 +205,7 @@ const DiagnosticSuite = () => {
                      <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Activity className="w-6 h-6" />
                      </div>
-                     <p className="text-[11px] font-black text-indigo-400 uppercase tracking-[0.5em]">Polling Server Endpoints...</p>
+                     <p className="text-[11px] font-black text-indigo-400 uppercase tracking-[0.4em]">Polling Server Endpoints...</p>
                   </div>
                 )}
               </div>
@@ -642,10 +642,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 try {
-    $pdo = new PDO("mysql:host=".DB_HOST.";dbname=".DB_NAME, DB_USER, DB_PASS);
+    $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME, DB_USER, DB_PASS);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-} catch(PDOException $e) {
+} catch (PDOException $e) {
     http_response_code(500);
     die(json_encode([
         "success" => false, 
@@ -664,29 +664,30 @@ $step = (int)($_GET['step'] ?? 0);
 $response = ["success" => true, "message" => "Step verified successfully.", "warn" => false];
 
 try {
-    switch($step) {
+    switch ($step) {
         case 1: // Admin Panel Editors Check
             $required_files = [
                 'manage_chapters.php', 
                 'manage_questions.php', 
                 'manage_users.php', 
-                'manage_settings.php',
-                'manage_blogs.php'
+                'manage_settings.php'
             ];
-            foreach($required_files as $file) {
-                if(!file_exists($file)) {
+            foreach ($required_files as $file) {
+                if (!file_exists($file)) {
                     $response["success"] = false;
                     $response["message"] = "Critical node missing: $file";
                     break;
                 }
             }
-            if($response["success"]) $response["message"] = "All editor controllers verified in filesystem.";
+            if ($response["success"]) {
+                $response["message"] = "All editor controllers verified in filesystem.";
+            }
             break;
 
         case 2: // Syllabus & Chapters Mapping
             $count = $pdo->query("SELECT COUNT(*) FROM chapters")->fetchColumn();
             $response["message"] = "Detected $count active chapters in database.";
-            if($count < 50) {
+            if ($count < 50) {
                 $response["warn"] = true;
                 $response["message"] .= " WARNING: Found only $count/50 targeted chapters.";
             }
@@ -758,17 +759,27 @@ try {
       const authReg = `<?php
 require_once 'config/database.php';
 $d = json_decode(file_get_contents("php://input"));
-if(!$d->email || !$d->password) die(json_encode(["success"=>false, "error"=>"Incomplete Data"]));
+if (!$d->email || !$d->password) {
+    die(json_encode(["success" => false, "error" => "Incomplete Data"]));
+}
 
 $id = "S-" . bin2hex(random_bytes(4));
 $hashed = password_hash($d->password, PASSWORD_BCRYPT);
 
 try {
-    $s = $pdo->prepare("INSERT INTO users (id, name, email, password, role, institute, targetExam, targetYear, birthDate, gender) VALUES (?,?,?,?,?,?,?,?,?,?)");
-    $s->execute([$id, $d->name, $d->email, $hashed, $d->role ?? 'STUDENT', $d->institute ?? null, $d->targetExam ?? null, $d->targetYear ?? null, $d->birthDate ?? null, $d->gender ?? 'Male']);
-    echo json_encode(["success" => true, "user" => ["id" => $id, "name" => $d->name, "email" => $d->email, "role" => $d->role ?? 'STUDENT']]);
+    $s = $pdo->prepare("INSERT INTO users (id, name, email, password, role, institute, targetExam, targetYear) VALUES (?,?,?,?,?,?,?,?)");
+    $s->execute([$id, $d->name, $d->email, $hashed, $d->role ?? 'STUDENT', $d->institute ?? null, $d->targetExam ?? null, $d->targetYear ?? null]);
+    echo json_encode([
+        "success" => true, 
+        "user" => [
+            "id" => $id, 
+            "name" => $d->name, 
+            "email" => $d->email, 
+            "role" => $d->role ?? 'STUDENT'
+        ]
+    ]);
 } catch (Exception $e) {
-    echo json_encode(["success"=>false, "error" => "Email already registered."]);
+    echo json_encode(["success" => false, "error" => "Email already registered."]);
 }
 ?>`;
 
@@ -779,7 +790,7 @@ $s = $pdo->prepare("SELECT * FROM users WHERE email = ?");
 $s->execute([$d->email]);
 $u = $s->fetch();
 
-if($u && password_verify($d->password, $u['password'])) {
+if ($u && password_verify($d->password, $u['password'])) {
     unset($u['password']);
     echo json_encode(["success" => true, "user" => $u]);
 } else {
@@ -790,13 +801,17 @@ if($u && password_verify($d->password, $u['password'])) {
       const getDash = `<?php
 require_once 'config/database.php';
 $id = $_GET['id'] ?? '';
-if(!$id) die(json_encode(["success" => false, "error" => "ID Required"]));
+if (!$id) {
+    die(json_encode(["success" => false, "error" => "ID Required"]));
+}
 
 $userStmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
 $userStmt->execute([$id]);
 $ud = $userStmt->fetch();
 
-if(!$ud) die(json_encode(["success"=>false, "error"=>"User Not Found"]));
+if (!$ud) {
+    die(json_encode(["success" => false, "error" => "User Not Found"]));
+}
 
 $chapters = $pdo->query("SELECT c.*, p.progress, p.accuracy, p.status, p.timeSpent, p.timeSpentNotes, p.timeSpentVideos, p.timeSpentPractice, p.timeSpentTests 
                         FROM chapters c 
@@ -807,8 +822,6 @@ $history->execute([$id]);
 
 $psych = $pdo->prepare("SELECT * FROM psychometric_logs WHERE student_id = ? ORDER BY timestamp DESC LIMIT 10");
 $psych->execute([$id]);
-
-$blogs = $pdo->query("SELECT * FROM blogs WHERE status = 'PUBLISHED' ORDER BY date DESC")->fetchAll();
 
 echo json_encode([
     "success" => true, 
@@ -821,7 +834,6 @@ echo json_encode([
         "smartPlan" => json_decode($ud['smartplan_json']),
         "testHistory" => $history->fetchAll(),
         "psychometricHistory" => $psych->fetchAll(),
-        "blogs" => $blogs,
         "institute" => $ud['institute'],
         "targetExam" => $ud['targetExam'],
         "targetYear" => $ud['targetYear']
@@ -832,9 +844,11 @@ echo json_encode([
       const syncProg = `<?php
 require_once 'config/database.php';
 $d = json_decode(file_get_contents("php://input"));
-if(!$d->student_id || !$d->chapters) exit;
+if (!$d->student_id || !$d->chapters) {
+    exit;
+}
 
-foreach($d->chapters as $c) {
+foreach ($d->chapters as $c) {
     $stmt = $pdo->prepare("INSERT INTO student_progress (student_id, chapter_id, progress, accuracy, status, timeSpent, timeSpentNotes, timeSpentVideos, timeSpentPractice, timeSpentTests) 
                            VALUES (?,?,?,?,?,?,?,?,?,?) 
                            ON DUPLICATE KEY UPDATE 
@@ -858,7 +872,9 @@ echo json_encode(["success" => true]);
       const saveRoutine = `<?php
 require_once 'config/database.php';
 $d = json_decode(file_get_contents("php://input"));
-if(!$d->student_id) exit;
+if (!$d->student_id) {
+    exit;
+}
 $pdo->prepare("UPDATE users SET routine_json = ? WHERE id = ?")->execute([json_encode($d->routine), $d->student_id]);
 echo json_encode(["success" => true]);
 ?>`;
@@ -866,7 +882,9 @@ echo json_encode(["success" => true]);
       const saveTable = `<?php
 require_once 'config/database.php';
 $d = json_decode(file_get_contents("php://input"));
-if(!$d->student_id) exit;
+if (!$d->student_id) {
+    exit;
+}
 $pdo->prepare("UPDATE users SET smartplan_json = ? WHERE id = ?")->execute([json_encode($d->smartPlan), $d->student_id]);
 echo json_encode(["success" => true]);
 ?>`;
@@ -923,28 +941,15 @@ $pdo->prepare("UPDATE users SET name=?, institute=?, targetExam=?, targetYear=?,
 echo json_encode(["success" => true]);
 ?>`;
 
-      const manageBlogs = `<?php
-require_once 'config/database.php';
-$a = $_GET['action'] ?? '';
-$d = json_decode(file_get_contents("php://input"));
-
-if ($a === 'save') {
-    $pdo->prepare("REPLACE INTO blogs (id, title, content, author, date, status, coverImage) VALUES (?,?,?,?,?,?,?)")
-        ->execute([$d->id, $d->title, $d->content, $d->author, $d->date, $d->status, $d->coverImage]);
-} else if ($a === 'delete') {
-    $pdo->prepare("DELETE FROM blogs WHERE id = ?")->execute([$d->id]);
-}
-echo json_encode(["success" => true]);
-?>`;
-
       const htaccess = `RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^(.*)$ index.php [QSA,L]`;
 
-      // Construct ZIP
+      // Construct ZIP mirroring source structure where possible for the API
       zip.folder("config")?.file("database.php", dbConfig);
       zip.folder("sql")?.file("master_schema_v20.sql", sqlSchema);
       
+      // Core Controllers
       zip.file("diagnostic_test.php", diagnosticTest);
       zip.file("check_connection.php", checkConn);
       zip.file("auth_register.php", authReg);
@@ -959,7 +964,6 @@ RewriteRule ^(.*)$ index.php [QSA,L]`;
       zip.file("save_psychometric.php", savePsych);
       zip.file("manage_users.php", manageUsers);
       zip.file("manage_settings.php", manageSettings);
-      zip.file("manage_blogs.php", manageBlogs);
       zip.file(".htaccess", htaccess);
       
       const content = await zip.generateAsync({ type: "blob" });

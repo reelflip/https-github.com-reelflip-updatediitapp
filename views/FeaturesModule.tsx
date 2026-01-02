@@ -15,8 +15,8 @@ const FeaturesModule: React.FC = () => {
              <MonitorCheck className="w-4 h-4" /> Platform Functionality Matrix
           </div>
           <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter uppercase italic font-space">
-            Technical <br />
-            <span className="text-indigo-600">Mechanics.</span>
+            Platform <br />
+            <span className="text-indigo-600">Features.</span>
           </h1>
           <p className="text-slate-500 text-lg max-w-2xl mx-auto italic font-medium">
             A suite of analytical tools designed to remove ambiguity from engineering entrance preparation.

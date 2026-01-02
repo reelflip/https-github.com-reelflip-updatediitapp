@@ -1,35 +1,43 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { UserRole, StudentData, UserAccount } from './types';
 import { INITIAL_STUDENT_DATA } from './mockData';
 import { api } from './services/apiService';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import AboutModule from './views/AboutModule';
-import FeaturesModule from './views/FeaturesModule';
-import ExamGuideModule from './views/ExamGuideModule';
-import BlogModule from './views/BlogModule';
-import ContactModule from './views/ContactModule';
-import LoginModule from './views/LoginModule';
-import StudentDashboard from './views/StudentDashboard';
-import ParentDashboard from './views/ParentDashboard';
-import AdminCMS from './views/AdminCMS';
-import LearnModule from './views/LearnModule';
-import AITutor from './views/AITutor';
-import TestsView from './views/TestsView';
-import AnalyticsView from './views/AnalyticsView';
-import WellnessModule from './views/WellnessModule';
-import PsychometricTest from './views/PsychometricTest';
-import FlashcardsModule from './views/FlashcardsModule';
-import HacksModule from './views/HacksModule';
-import TimetableModule from './views/TimetableModule';
-import RevisionModule from './views/RevisionModule';
-import MistakesLog from './views/MistakesLog';
-import BacklogModule from './views/BacklogModule';
-import FocusTimer from './views/FocusTimer';
-import ProfileModule from './views/ProfileModule';
-import { LayoutDashboard, BookOpen, Bot, FileText, Menu, Settings } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Bot, FileText, Menu, Settings, Loader2 } from 'lucide-react';
+
+// Lazy loading views to maintain 1:1 mapping in build output
+const AboutModule = lazy(() => import('./views/AboutModule'));
+const FeaturesModule = lazy(() => import('./views/FeaturesModule'));
+const ExamGuideModule = lazy(() => import('./views/ExamGuideModule'));
+const BlogModule = lazy(() => import('./views/BlogModule'));
+const ContactModule = lazy(() => import('./views/ContactModule'));
+const LoginModule = lazy(() => import('./views/LoginModule'));
+const StudentDashboard = lazy(() => import('./views/StudentDashboard'));
+const ParentDashboard = lazy(() => import('./views/ParentDashboard'));
+const AdminCMS = lazy(() => import('./views/AdminCMS'));
+const LearnModule = lazy(() => import('./views/LearnModule'));
+const AITutor = lazy(() => import('./views/AITutor'));
+const TestsView = lazy(() => import('./views/TestsView'));
+const AnalyticsView = lazy(() => import('./views/AnalyticsView'));
+const WellnessModule = lazy(() => import('./views/WellnessModule'));
+const PsychometricTest = lazy(() => import('./views/PsychometricTest'));
+const FlashcardsModule = lazy(() => import('./views/FlashcardsModule'));
+const HacksModule = lazy(() => import('./views/HacksModule'));
+const TimetableModule = lazy(() => import('./views/TimetableModule'));
+const RevisionModule = lazy(() => import('./views/RevisionModule'));
+const MistakesLog = lazy(() => import('./views/MistakesLog'));
+const BacklogModule = lazy(() => import('./views/BacklogModule'));
+const FocusTimer = lazy(() => import('./views/FocusTimer'));
+const ProfileModule = lazy(() => import('./views/ProfileModule'));
+
+const LoadingFallback = () => (
+  <div className="flex h-full w-full items-center justify-center p-20">
+    <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
+  </div>
+);
 
 const App: React.FC = () => {
   const [user, setUser] = useState<UserAccount | null>(null);
@@ -157,7 +165,9 @@ const App: React.FC = () => {
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
           <Header role={role} studentName={user.name} />
           <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10 pb-24 lg:pb-10 custom-scrollbar">
-            {renderPrivateContent()}
+            <Suspense fallback={<LoadingFallback />}>
+              {renderPrivateContent()}
+            </Suspense>
           </main>
           <BottomNav />
         </div>
@@ -180,7 +190,9 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-white font-sans flex flex-col overflow-x-hidden">
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
       <main className="flex-1 w-full">
-        {renderPublicContent()}
+        <Suspense fallback={<LoadingFallback />}>
+          {renderPublicContent()}
+        </Suspense>
       </main>
       <footer className="py-12 md:py-20 border-t border-slate-100 bg-white relative z-10 px-6 safe-pb">
          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-10">
