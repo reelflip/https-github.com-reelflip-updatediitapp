@@ -54,7 +54,6 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
   });
 
   const [previewMode, setPreviewMode] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const insertTag = (tag: string, closeTag: string = '') => {
@@ -142,13 +141,14 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                           <div className="md:col-span-2">
                              <InputGroup label="Article Title">
-                                <input name="title" value={formData.title} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-2xl font-black italic text-slate-800 shadow-inner" placeholder="Ex: Spaced Repetition Logic" />
+                                <input name="title" value={formData.title} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-2xl font-black italic text-slate-800 shadow-inner" placeholder="Ex: Mastering Spaced Repetition" />
                              </InputGroup>
                           </div>
                           <InputGroup label="Author Node">
                              <input name="author" value={formData.author} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black italic text-slate-800 shadow-inner" />
                           </InputGroup>
                        </div>
+                       
                        <div className="space-y-4">
                           <RichTextToolbar onInsert={insertTag} />
                           <InputGroup label="Manuscript Content (HTML Engine)">
@@ -170,7 +170,7 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                     <div className="space-y-12">
                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                           <InputGroup label="Chapter Identity">
-                             <input name="name" value={formData.name} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black italic shadow-inner" placeholder="Ex: Ray Optics" />
+                             <input name="name" value={formData.name} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black italic shadow-inner" placeholder="Ex: Electromagnetism" />
                           </InputGroup>
                           <InputGroup label="Syllabus Subject">
                              <select name="subject" value={formData.subject} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner">
@@ -186,6 +186,7 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                              </label>
                           </div>
                        </div>
+                       
                        <InputGroup label="Theory Manuscript (HTML enabled)">
                           <RichTextToolbar onInsert={insertTag} />
                           <textarea 
@@ -195,6 +196,7 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                              onChange={handleChange} 
                              rows={15} 
                              className="w-full bg-slate-50 border-none rounded-[2.5rem] p-10 text-sm font-mono shadow-inner" 
+                             placeholder="Detailed concepts and formulas..."
                           />
                        </InputGroup>
                     </div>
@@ -307,22 +309,25 @@ START TRANSACTION;
 CREATE DATABASE IF NOT EXISTS iitgrrprep_v20;
 USE iitgrrprep_v20;
 
+-- USER MANAGEMENT
 CREATE TABLE users (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), email VARCHAR(100) UNIQUE, password VARCHAR(255), role ENUM('STUDENT','PARENT','ADMIN'), institute VARCHAR(255), targetExam VARCHAR(100), targetYear VARCHAR(4), birthDate DATE, gender VARCHAR(20), routine_json JSON, smartplan_json JSON, connected_id VARCHAR(50), createdAt DATETIME DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE handshakes (id VARCHAR(50) PRIMARY KEY, parent_id VARCHAR(50), student_id VARCHAR(50), status ENUM('PENDING','ACCEPTED','REVOKED'), timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE syllabus (id VARCHAR(50) PRIMARY KEY, subject VARCHAR(50), name VARCHAR(255));
-CREATE TABLE chapters (id VARCHAR(50) PRIMARY KEY, syllabus_id VARCHAR(50), subject VARCHAR(50), unit VARCHAR(100), name VARCHAR(255), notes LONGTEXT, videoUrl VARCHAR(255), highYield TINYINT(1));
+
+-- ACADEMIC CONTENT
+CREATE TABLE chapters (id VARCHAR(50) PRIMARY KEY, subject VARCHAR(50), unit VARCHAR(100), name VARCHAR(255), notes LONGTEXT, videoUrl VARCHAR(255), highYield TINYINT(1), progress INT DEFAULT 0, accuracy INT DEFAULT 0, status VARCHAR(20) DEFAULT 'NOT_STARTED', timeSpent INT DEFAULT 0);
 CREATE TABLE questions (id VARCHAR(50) PRIMARY KEY, topicId VARCHAR(50), subject VARCHAR(50), text TEXT, options JSON, correctAnswer INT, explanation TEXT, difficulty ENUM('EASY','MEDIUM','HARD'));
 CREATE TABLE mock_tests (id VARCHAR(50) PRIMARY KEY, name VARCHAR(255), duration INT, totalMarks INT, category VARCHAR(50), questionIds TEXT, chapterIds TEXT);
-CREATE TABLE results (id INT AUTO_INCREMENT PRIMARY KEY, userId VARCHAR(50), testId VARCHAR(50), score INT, total INT, accuracy INT, date DATE);
-CREATE TABLE test_results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), test_id VARCHAR(50), test_name VARCHAR(255), score INT, total_marks INT, accuracy INT, date DATE);
+
+-- PERFORMANCE TRACKING
+CREATE TABLE test_results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), test_id VARCHAR(50), test_name VARCHAR(255), score INT, total_marks INT, accuracy INT, date DATE, category VARCHAR(50));
+CREATE TABLE psychometric (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), stress INT, focus INT, motivation INT, examFear INT, summary TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
+
+-- KNOWLEDGE BASE
 CREATE TABLE flashcards (id VARCHAR(50) PRIMARY KEY, question TEXT, answer TEXT, subject VARCHAR(50), type VARCHAR(50));
 CREATE TABLE memory_hacks (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), description TEXT, hack TEXT, category VARCHAR(50), subject VARCHAR(50));
 CREATE TABLE blogs (id VARCHAR(50) PRIMARY KEY, title VARCHAR(255), content LONGTEXT, author VARCHAR(100), date DATE, status ENUM('DRAFT','PUBLISHED'));
-CREATE TABLE backlogs (id VARCHAR(50) PRIMARY KEY, userId VARCHAR(50), title VARCHAR(255), priority VARCHAR(20), status VARCHAR(20), deadline DATE);
-CREATE TABLE wellness (id VARCHAR(50) PRIMARY KEY, userId VARCHAR(50), sleep DECIMAL(4,2), water INT, mood VARCHAR(50), date DATE);
-CREATE TABLE psychometric (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(50), stress INT, focus INT, motivation INT, examFear INT, summary TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE contact_messages (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), email VARCHAR(100), subject VARCHAR(255), message TEXT, date DATETIME, isRead TINYINT(1));
-CREATE TABLE notifications (id VARCHAR(50) PRIMARY KEY, userId VARCHAR(50), title VARCHAR(255), message TEXT, type VARCHAR(20), isRead TINYINT(1), createdAt DATETIME);
+
+-- LOGS AND SECURITY
 CREATE TABLE activity_logs (id INT AUTO_INCREMENT PRIMARY KEY, userId VARCHAR(50), action VARCHAR(255), details TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);
 COMMIT;`;
 
@@ -345,95 +350,103 @@ try {
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     http_response_code(500);
-    die(json_encode(["success" => false, "error" => "Uplink Failure"]));
+    die(json_encode(["success" => false, "error" => "Database Connection Failure"]));
 }
-?>`;
-
-      const authLogin = `<?php
-require_once 'config/database.php';
-$d = json_decode(file_get_contents("php://input"));
-$s = $pdo->prepare("SELECT * FROM users WHERE email = ? LIMIT 1");
-$s->execute([$d->email]);
-$u = $s->fetch();
-if ($u && password_verify($d->password, $u['password'])) {
-    unset($u['password']);
-    echo json_encode(["success" => true, "user" => $u]);
-} else {
-    echo json_encode(["success" => false, "error" => "Invalid Credentials"]);
-}
-?>`;
-
-      const authRegister = `<?php
-require_once 'config/database.php';
-$d = json_decode(file_get_contents("php://input"));
-$h = password_hash($d->password, PASSWORD_BCRYPT);
-$id = uniqid('USER_');
-$s = $pdo->prepare("INSERT INTO users (id, name, email, password, role, institute, targetExam, targetYear, birthDate, gender) VALUES (?,?,?,?,?,?,?,?,?,?)");
-$s->execute([$id, $d->name, $d->email, $h, $d->role, $d->institute, $d->targetExam, $d->targetYear, $d->birthDate, $d->gender]);
-echo json_encode(["success" => true, "user" => ["id" => $id, "role" => $d->role, "name" => $d->name]]);
 ?>`;
 
       const getDashboard = `<?php
 require_once 'config/database.php';
-$id = $_GET['id'];
+$id = $_GET['id'] ?? '';
+if(!$id) die(json_encode(["success" => false]));
+
 $s = $pdo->prepare("SELECT * FROM users WHERE id = ?");
 $s->execute([$id]);
 $u = $s->fetch();
-// Simplified fetch for demo
-echo json_encode(["success" => true, "data" => ["id" => $id, "chapters" => []]]);
+
+$c = $pdo->query("SELECT * FROM chapters")->fetchAll();
+$q = $pdo->query("SELECT * FROM questions")->fetchAll();
+$m = $pdo->query("SELECT * FROM mock_tests")->fetchAll();
+$b = $pdo->query("SELECT * FROM blogs WHERE status='PUBLISHED'")->fetchAll();
+$th = $pdo->prepare("SELECT * FROM test_results WHERE student_id = ? ORDER BY date DESC");
+$th->execute([$id]);
+$ph = $pdo->prepare("SELECT * FROM psychometric WHERE student_id = ? ORDER BY timestamp DESC");
+$ph->execute([$id]);
+
+$data = [
+    "id" => $id,
+    "name" => $u['name'] ?? 'Aspirant',
+    "chapters" => $c,
+    "questions" => $q,
+    "mockTests" => $m,
+    "blogs" => $b,
+    "testHistory" => $th->fetchAll(),
+    "psychometricHistory" => $ph->fetchAll(),
+    "routine" => json_decode($u['routine_json'] ?? '{}'),
+    "smartPlan" => json_decode($u['smartplan_json'] ?? '{}')
+];
+echo json_encode(["success" => true, "data" => $data]);
 ?>`;
 
       const syncProgress = `<?php
 require_once 'config/database.php';
-$d = json_decode(file_get_contents("php://input"));
-foreach($d->chapters as $c) {
-    $pdo->prepare("REPLACE INTO chapters (id, progress, accuracy, status) VALUES (?,?,?,?)")
-        ->execute([$c->id, $c->progress, $c->accuracy, $c->status]);
+$d = json_decode(file_get_contents("php://input"), true);
+$id = $d['student_id'] ?? '';
+if(!$id) die();
+foreach($d['chapters'] as $ch) {
+    $pdo->prepare("UPDATE chapters SET progress=?, accuracy=?, status=?, timeSpent=? WHERE id=?")
+        ->execute([$ch['progress'], $ch['accuracy'], $ch['status'], $ch['timeSpent'], $ch['id']]);
 }
-echo json_encode(["success" => true]);
-?>`;
-
-      const manageSettings = `<?php
-require_once 'config/database.php';
-$d = json_decode(file_get_contents("php://input"));
-$pdo->prepare("UPDATE users SET name=?, targetYear=?, institute=?, targetExam=?, birthDate=?, gender=? WHERE id=?")
-    ->execute([$d->name, $d->targetYear, $d->institute, $d->targetExam, $d->birthDate, $d->gender, $d->id]);
 echo json_encode(["success" => true]);
 ?>`;
 
       const saveAttempt = `<?php
 require_once 'config/database.php';
-$d = json_decode(file_get_contents("php://input"));
-$pdo->prepare("INSERT INTO test_results (student_id, test_id, test_name, score, total_marks, accuracy, date) VALUES (?,?,?,?,?,?,?)")
-    ->execute([$d->student_id, $d->testId, $d->testName, $d->score, $d->totalMarks, $d->accuracy, $d->date]);
+$d = json_decode(file_get_contents("php://input"), true);
+$pdo->prepare("INSERT INTO test_results (student_id, test_id, test_name, score, total_marks, accuracy, date, category) VALUES (?,?,?,?,?,?,?,?)")
+    ->execute([$d['student_id'], $d['testId'], $d['testName'], $d['score'], $d['totalMarks'], $d['accuracy'], $d['date'], $d['category']]);
+echo json_encode(["success" => true]);
+?>`;
+
+      const savePsychometric = `<?php
+require_once 'config/database.php';
+$d = json_decode(file_get_contents("php://input"), true);
+$pdo->prepare("INSERT INTO psychometric (student_id, stress, focus, motivation, examFear, summary) VALUES (?,?,?,?,?,?)")
+    ->execute([$d['student_id'], $d['stress'], $d['focus'], $d['motivation'], $d['examFear'], $d['studentSummary'] ?? '']);
+echo json_encode(["success" => true]);
+?>`;
+
+      const saveTimetable = `<?php
+require_once 'config/database.php';
+$d = json_decode(file_get_contents("php://input"), true);
+$pdo->prepare("UPDATE users SET routine_json=?, smartplan_json=? WHERE id=?")
+    ->execute([json_encode($d['routine']), json_encode($d['smartPlan']), $d['student_id']]);
 echo json_encode(["success" => true]);
 ?>`;
 
       const manageResource = `<?php
 require_once 'config/database.php';
-$d = json_decode(file_get_contents("php://input"));
-$t = $_GET['table'] ?? '';
-if(!$t) die();
-$c = implode(',', array_keys((array)$d));
-$v = implode(',', array_fill(0, count((array)$d), '?'));
-$pdo->prepare("REPLACE INTO $t ($c) VALUES ($v)")->execute(array_values((array)$d));
+$table = $_GET['table'] ?? '';
+$d = json_decode(file_get_contents("php://input"), true);
+if(!$table || !$d) die(json_encode(["success" => false]));
+$cols = implode(',', array_keys($d));
+$vals = implode(',', array_fill(0, count($d), '?'));
+$pdo->prepare("REPLACE INTO $table ($cols) VALUES ($vals)")->execute(array_values($d));
 echo json_encode(["success" => true]);
 ?>`;
 
       zip.folder("config")?.file("database.php", dbConfig);
       zip.folder("sql")?.file("master_v20.sql", sqlSchema);
-      zip.file("auth_login.php", authLogin);
-      zip.file("auth_register.php", authRegister);
       zip.file("get_dashboard.php", getDashboard);
       zip.file("sync_progress.php", syncProgress);
-      zip.file("manage_settings.php", manageSettings);
       zip.file("save_attempt.php", saveAttempt);
+      zip.file("save_psychometric.php", savePsychometric);
+      zip.file("save_timetable.php", saveTimetable);
       zip.file("manage_resource.php", manageResource);
       zip.file("check_connection.php", "<?php require_once 'config/database.php'; echo json_encode(['success'=>true]); ?>");
       
       const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, "solaris_v20_backend_complete.zip");
-    } catch (e) { alert("ZIP failed."); }
+      saveAs(content, "solaris_v20_complete_backend.zip");
+    } catch (e) { alert("ZIP generation failed."); }
     setIsDownloading(false);
   };
 
