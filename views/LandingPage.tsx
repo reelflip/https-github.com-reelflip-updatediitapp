@@ -11,11 +11,11 @@ interface LandingPageProps {
 
 const LandingPage: React.FC<LandingPageProps> = ({ onLogin, studentData, setStudentData }) => {
   return (
-    <div className="bg-slate-50 text-slate-900 min-h-screen font-sans selection:bg-blue-600/10">
+    <div className="bg-slate-50 text-slate-900 min-h-screen font-sans selection:bg-indigo-100">
       {/* 
-          Dedicated About/Marketing Content 
-          Note: Contact section has been moved to its own module to prevent duplication 
-          and improve core page performance.
+          Public Marketing Layer
+          Focused on providing factual information about the platform's 
+          data-driven approach to JEE preparation.
       */}
       <AboutModule />
     </div>

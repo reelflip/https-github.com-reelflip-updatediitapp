@@ -31,6 +31,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, handle
     { id: 'aitutor', label: 'AI Tutor', icon: Bot },
     { id: 'tests', label: 'Tests & Exams', icon: FileText },
     { id: 'psychometric', label: 'Mindset Test', icon: Brain },
+    { id: 'blog', label: 'Strategy Feed', icon: PenTool }, // Added blog access for students
     { id: 'focus', label: 'Focus Timer', icon: Timer },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'timetable', label: 'Schedule', icon: Calendar },
