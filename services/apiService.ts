@@ -14,15 +14,30 @@ const DEMO_ACCOUNTS: Record<string, UserAccount> = {
 };
 
 const safeJson = async (response: Response) => {
+  const text = await response.text();
+  
   if (!response.ok) {
-    const errorText = await response.text().catch(() => "Unknown network error");
     return { 
       success: false, 
-      error: response.status === 404 ? "Uplink Node Not Found (404)." : `Server Fault (${response.status})`
+      error: response.status === 404 
+        ? "Uplink Node Not Found (404). Ensure the /api/ folder and PHP files are correctly placed on your server." 
+        : `Server Fault (${response.status}): ${text.substring(0, 50)}...`
     };
   }
-  const text = await response.text();
-  try { return JSON.parse(text); } catch (e) { return { success: false, error: "Malformed API Response." }; }
+
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    console.error("Failed to parse API response:", text);
+    // If it's HTML, the server likely threw a PHP error or a 404 page
+    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html') || text.trim().startsWith('<br')) {
+      return { 
+        success: false, 
+        error: "Server Error: The backend returned HTML instead of JSON. This usually means a PHP crash or a missing file. Check your server logs." 
+      };
+    }
+    return { success: false, error: "Malformed API Response. The server sent invalid data. Check console for raw output." };
+  }
 };
 
 export const api = {
@@ -35,12 +50,23 @@ export const api = {
 
   async login(credentials: { email: string; password?: string; role?: UserRole }) {
     const email = credentials.email.toLowerCase();
+    
+    // Always allow demo accounts to bypass everything for stability
     if (DEMO_ACCOUNTS[email]) {
       return { success: true, user: DEMO_ACCOUNTS[email] };
     }
 
     if (this.getMode() === 'MOCK') {
-      return { success: true, user: { id: 'USER-' + btoa(email).substring(0, 8), name: email.split('@')[0], email: credentials.email, role: credentials.role || UserRole.STUDENT, createdAt: new Date().toISOString() } };
+      return { 
+        success: true, 
+        user: { 
+          id: 'USER-' + btoa(email).substring(0, 8), 
+          name: email.split('@')[0], 
+          email: credentials.email, 
+          role: credentials.role || UserRole.STUDENT, 
+          createdAt: new Date().toISOString() 
+        } 
+      };
     }
 
     try {
@@ -51,14 +77,15 @@ export const api = {
       });
       return await safeJson(res);
     } catch(e) { 
-      return { success: false, error: "Host unreachable." }; 
+      return { success: false, error: "Network Error: Could not reach authentication node. Ensure your domain is correct." }; 
     }
   },
 
   async register(data: any) {
     if (this.getMode() === 'MOCK') {
       const id = 'USER-' + Math.random().toString(36).substr(2, 9);
-      return { success: true, user: { ...data, id } };
+      const newUser = { ...data, id, createdAt: new Date().toISOString() };
+      return { success: true, user: newUser };
     }
     try {
       const res = await fetch(`${API_CONFIG.BASE_URL}auth_register.php`, {
@@ -67,14 +94,15 @@ export const api = {
         body: JSON.stringify(data)
       });
       return await safeJson(res);
-    } catch(e) { return { success: false, error: "Registration Node Offline." }; }
+    } catch(e) { 
+      return { success: false, error: "Registration Node Offline. Ensure PHP backend is uploaded to /api/ and database is configured." }; 
+    }
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
     const localKey = `jeepro_data_${studentId}`;
     const localData = localStorage.getItem(localKey);
     
-    // Always prefer local storage for snappy UI, but sync from server if LIVE
     if (this.getMode() === 'LIVE') {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}get_dashboard.php?id=${studentId}`);
@@ -83,7 +111,9 @@ export const api = {
             localStorage.setItem(localKey, JSON.stringify(result.data));
             return result.data;
         }
-      } catch(e) { console.error("Data Sync Failure:", e); }
+      } catch(e) { 
+        console.warn("Live data fetch failed, falling back to cache.");
+      }
     }
 
     if (localData) {
@@ -136,7 +166,6 @@ export const api = {
 
   async saveEntity(type: string, data: any) {
     if (this.getMode() === 'LIVE') {
-      // Mapping frontend calls to correct PHP modules
       let endpoint = `manage_${type.toLowerCase()}.php`;
       if (type === 'Result') endpoint = 'save_attempt.php';
       if (type === 'Psychometric') endpoint = 'save_psychometric.php';
@@ -148,7 +177,7 @@ export const api = {
           body: JSON.stringify(data)
         });
         return await safeJson(res);
-      } catch(e) { return { success: false, error: "Request Failed" }; }
+      } catch(e) { return { success: false, error: "Uplink Failed" }; }
     }
     return { success: true };
   },
@@ -174,7 +203,7 @@ export const api = {
           body: JSON.stringify({ id: studentId, ...profileData })
         });
         return await safeJson(res);
-      } catch(e) { return { success: false, error: "Profile Update Failed" }; }
+      } catch(e) { return { success: false, error: "Profile Sync Failed" }; }
     }
     return { success: true };
   },

@@ -11,7 +11,7 @@ import {
   Target, Code2, Save, Users, PenTool,
   Check, HelpCircle, Video,
   Award, Type, Lightbulb, Activity, Filter,
-  Search, Clock, ChevronRight, Layout, List, FileText, Calendar, Globe, Settings, Cpu, Database, Cloud, Download, Eye, AlertTriangle, Star, Signal, SignalHigh, SignalLow, Image, Activity as DiagnosticIcon, FileWarning, ClipboardCheck, Server, RefreshCw, CheckCircle, ShieldAlert, Thermometer, FlaskConical, Map, UserCheck, HeartHandshake
+  Search, Clock, ChevronRight, Layout, List, FileText, Calendar, Globe, Settings, Cpu, Database, Cloud, Download, Eye, AlertTriangle, Star, Signal, SignalHigh, SignalLow, Image, Activity as DiagnosticIcon, FileWarning, ClipboardCheck, Server, RefreshCw, CheckCircle, ShieldAlert, Thermometer, FlaskConical, Map, UserCheck, HeartHandshake, Trash
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -466,6 +466,13 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     }
   };
 
+  const resetSystem = () => {
+    if (confirm("This will clear all local cache, resets mode to SANDBOX, and logs you out. Use this to fix registration or connection loops. Continue?")) {
+        localStorage.clear();
+        window.location.reload();
+    }
+  }
+
   useEffect(() => {
     if (mode === 'LIVE') testConnection();
   }, [mode]);
@@ -757,29 +764,52 @@ try {
 ?>`;
 
       const authReg = `<?php
+/**
+ * Production Enrollment Protocol - v20.5
+ */
 require_once 'config/database.php';
+
 $d = json_decode(file_get_contents("php://input"));
-if (!$d->email || !$d->password) {
-    die(json_encode(["success" => false, "error" => "Incomplete Data"]));
+
+if (!$d || !$d->email || !$d->password || !$d->name) {
+    die(json_encode(["success" => false, "error" => "Incomplete Payload: Name, Email and Password mandatory."]));
 }
 
 $id = "S-" . bin2hex(random_bytes(4));
 $hashed = password_hash($d->password, PASSWORD_BCRYPT);
 
 try {
-    $s = $pdo->prepare("INSERT INTO users (id, name, email, password, role, institute, targetExam, targetYear) VALUES (?,?,?,?,?,?,?,?)");
-    $s->execute([$id, $d->name, $d->email, $hashed, $d->role ?? 'STUDENT', $d->institute ?? null, $d->targetExam ?? null, $d->targetYear ?? null]);
+    $s = $pdo->prepare("INSERT INTO users (id, name, email, password, role, institute, targetExam, targetYear, birthDate, gender) VALUES (?,?,?,?,?,?,?,?,?,?)");
+    $s->execute([
+        $id, 
+        $d->name, 
+        $d->email, 
+        $hashed, 
+        $d->role ?? 'STUDENT', 
+        $d->institute ?? null, 
+        $d->targetExam ?? null, 
+        $d->targetYear ?? null,
+        $d->birthDate ?? null,
+        $d->gender ?? 'Other'
+    ]);
+
     echo json_encode([
         "success" => true, 
         "user" => [
             "id" => $id, 
             "name" => $d->name, 
             "email" => $d->email, 
-            "role" => $d->role ?? 'STUDENT'
+            "role" => $d->role ?? 'STUDENT',
+            "institute" => $d->institute ?? null,
+            "targetExam" => $d->targetExam ?? null,
+            "targetYear" => $d->targetYear ?? null,
+            "birthDate" => $d->birthDate ?? null,
+            "gender" => $d->gender ?? 'Other'
         ]
     ]);
 } catch (Exception $e) {
-    echo json_encode(["success" => false, "error" => "Email already registered."]);
+    http_response_code(400);
+    echo json_encode(["success" => false, "error" => "Uplink Conflict: This identity address is already registered."]);
 }
 ?>`;
 
@@ -794,7 +824,7 @@ if ($u && password_verify($d->password, $u['password'])) {
     unset($u['password']);
     echo json_encode(["success" => true, "user" => $u]);
 } else {
-    echo json_encode(["success" => false, "error" => "Invalid credentials"]);
+    echo json_encode(["success" => false, "error" => "Authentication failed: Identity credentials mismatch."]);
 }
 ?>`;
 
@@ -829,6 +859,7 @@ echo json_encode([
         "id" => $id,
         "name" => $ud['name'],
         "email" => $ud['email'],
+        "role" => $ud['role'],
         "chapters" => $chapters,
         "routine" => json_decode($ud['routine_json']),
         "smartPlan" => json_decode($ud['smartplan_json']),
@@ -836,7 +867,9 @@ echo json_encode([
         "psychometricHistory" => $psych->fetchAll(),
         "institute" => $ud['institute'],
         "targetExam" => $ud['targetExam'],
-        "targetYear" => $ud['targetYear']
+        "targetYear" => $ud['targetYear'],
+        "birthDate" => $ud['birthDate'],
+        "gender" => $ud['gender']
     ]
 ]);
 ?>`;
@@ -1034,9 +1067,12 @@ RewriteRule ^(.*)$ index.php [QSA,L]`;
                     <div className="space-y-8">
                         <div className="bg-slate-900 p-12 rounded-[4rem] text-white shadow-2xl space-y-8 relative overflow-hidden group">
                             <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:rotate-12 transition-transform duration-[4s]"><Database className="w-48 h-48" /></div>
-                            <div>
-                                <h3 className="text-2xl font-black italic tracking-tighter uppercase">Uplink Status</h3>
-                                <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Data persistence layer config</p>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h3 className="text-2xl font-black italic tracking-tighter uppercase">Uplink Status</h3>
+                                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Data persistence layer config</p>
+                                </div>
+                                <button onClick={resetSystem} className="p-3 bg-rose-500/20 text-rose-400 rounded-xl hover:bg-rose-500 hover:text-white transition-all shadow-sm flex items-center gap-2 text-[8px] font-black uppercase tracking-widest"><Trash className="w-4 h-4" /> Reset</button>
                             </div>
                             <div className="flex items-center justify-between p-6 bg-white/5 rounded-3xl border border-white/10">
                                 <div className="flex items-center gap-4">

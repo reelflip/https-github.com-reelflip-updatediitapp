@@ -5,7 +5,7 @@ import { api } from '../services/apiService';
 import { 
   Mail, Lock, Loader2, User, KeyRound, CheckCircle2, Eye, EyeOff, ShieldCheck, 
   Target, Bookmark, Award, Building, Calendar, Users, Briefcase, Info, Heart, Cpu,
-  Layers, Sparkles, MonitorCheck, Zap, ChevronRight
+  Layers, Sparkles, MonitorCheck, Zap, ChevronRight, AlertCircle
 } from 'lucide-react';
 
 interface LoginModuleProps {
@@ -109,7 +109,7 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
         setIsProcessing(false);
       }
     } catch (err) {
-      setAuthError("Handshake with server failed.");
+      setAuthError("Handshake with server failed. Check your network or system mode.");
       setIsProcessing(false);
     }
   };
@@ -204,8 +204,15 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
               )}
 
               {authError && (
-                <div className="bg-rose-50 border border-rose-100 text-rose-600 px-5 py-3 rounded-xl text-xs font-bold flex items-center gap-3">
-                  <ShieldCheck className="w-4 h-4 shrink-0" /> {authError}
+                <div className="bg-rose-50 border border-rose-100 text-rose-600 px-5 py-3 rounded-xl text-xs font-bold flex flex-col gap-2">
+                  <div className="flex items-center gap-3">
+                    <AlertCircle className="w-4 h-4 shrink-0" /> {authError}
+                  </div>
+                  {authError.includes("Server Configuration") && (
+                    <div className="text-[9px] font-black uppercase text-rose-400 pl-7">
+                      Hint: Check Admin Panel -> System Hub -> Mode. Switch to 'Sandbox' if database is not set up.
+                    </div>
+                  )}
                 </div>
               )}
 
