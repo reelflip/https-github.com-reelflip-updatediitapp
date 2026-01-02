@@ -270,12 +270,18 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     try {
       const zip = new JSZip();
       
-      // SQL Schema
+      // SQL Schema + Seed Data
       const sqlSchema = `-- IITGEEPREP Solaris v21.0 Database Schema
 CREATE TABLE IF NOT EXISTS chapters (id VARCHAR(255) PRIMARY KEY, name VARCHAR(255), subject VARCHAR(100), unit VARCHAR(255), notes TEXT, videoUrl VARCHAR(512), status VARCHAR(50), progress INT, accuracy INT);
 CREATE TABLE IF NOT EXISTS questions (id VARCHAR(255) PRIMARY KEY, text TEXT, subject VARCHAR(100), topicId VARCHAR(255), difficulty VARCHAR(50), options JSON, correctAnswer INT);
 CREATE TABLE IF NOT EXISTS mock_tests (id VARCHAR(255) PRIMARY KEY, name VARCHAR(255), duration INT, totalMarks INT, category VARCHAR(100), questionIds JSON);
 CREATE TABLE IF NOT EXISTS users (id VARCHAR(255) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255) UNIQUE, role VARCHAR(50), password_hash VARCHAR(255));
+
+-- Initial System Content Template
+REPLACE INTO chapters (id, name, subject, unit) VALUES 
+('p-units', 'Units and Measurements', 'Physics', 'Mechanics'),
+('m-sets', 'Sets and Functions', 'Mathematics', 'Algebra'),
+('c-basic', 'Basic Concepts', 'Chemistry', 'Physical');
 `;
       zip.file("sql/master_schema_v21.sql", sqlSchema);
 

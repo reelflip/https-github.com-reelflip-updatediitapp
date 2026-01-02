@@ -58,7 +58,7 @@ const App: React.FC = () => {
           
           if (savedData && savedData !== 'undefined') {
             const parsedData = JSON.parse(savedData);
-            if (parsedData && parsedData.chapters) {
+            if (parsedData && parsedData.chapters && parsedData.chapters.length > 0) {
               setStudentData(parsedData);
             } else {
               loadUserData(parsedUser);
@@ -77,13 +77,21 @@ const App: React.FC = () => {
 
   const loadUserData = async (currentUser: UserAccount) => {
     try {
-      if (currentUser.role === UserRole.STUDENT) {
-        const data = await api.getStudentData(currentUser.id);
-        setStudentData(data);
-        localStorage.setItem('jeepro_student_data', JSON.stringify(data));
+      // Logic Fix: Load data for EVERY role, not just Student.
+      // Admins need to see the library to edit it.
+      const data = await api.getStudentData(currentUser.id);
+      
+      // Safety: If for some reason 'data' is empty, force Baseline
+      if (!data.chapters || data.chapters.length === 0) {
+          setStudentData(INITIAL_STUDENT_DATA);
+          localStorage.setItem('jeepro_student_data', JSON.stringify(INITIAL_STUDENT_DATA));
+      } else {
+          setStudentData(data);
+          localStorage.setItem('jeepro_student_data', JSON.stringify(data));
       }
     } catch (err) {
-      console.error("Failed to load student context", err);
+      console.error("Failed to load ecosystem context", err);
+      setStudentData(INITIAL_STUDENT_DATA);
     }
   };
 
@@ -91,6 +99,8 @@ const App: React.FC = () => {
     setUser(authenticatedUser);
     setRole(authenticatedUser.role);
     localStorage.setItem('jeepro_user', JSON.stringify(authenticatedUser));
+    
+    // Immediate data sync on login
     loadUserData(authenticatedUser);
     
     const targetTab = authenticatedUser.role === UserRole.ADMIN ? 'admin-overview' : 
@@ -106,10 +116,13 @@ const App: React.FC = () => {
   };
 
   const syncStudentData = async (newData: StudentData) => {
-    setStudentData(newData);
-    localStorage.setItem('jeepro_student_data', JSON.stringify(newData));
-    if (user && user.role === UserRole.STUDENT) {
-      await api.updateStudentData(user.id, newData);
+    // Only sync if the new data actually contains chapters.
+    if (newData && newData.chapters && newData.chapters.length > 0) {
+        setStudentData(newData);
+        localStorage.setItem('jeepro_student_data', JSON.stringify(newData));
+        if (user) {
+          await api.updateStudentData(user.id, newData);
+        }
     }
   };
 

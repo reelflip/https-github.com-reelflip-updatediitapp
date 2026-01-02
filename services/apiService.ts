@@ -28,15 +28,13 @@ const safeJson = async (response: Response) => {
   try {
     return JSON.parse(text);
   } catch (e) {
-    console.error("Failed to parse API response:", text);
-    // If it's HTML, the server likely threw a PHP error or a 404 page
     if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html') || text.trim().startsWith('<br')) {
       return { 
         success: false, 
-        error: "Server Error: The backend returned HTML instead of JSON. This usually means a PHP crash or a missing file. Check your server logs." 
+        error: "Server Error: The backend returned HTML instead of JSON. This usually means a PHP crash or a missing file." 
       };
     }
-    return { success: false, error: "Malformed API Response. The server sent invalid data. Check console for raw output." };
+    return { success: false, error: "Malformed API Response. Check console for raw output." };
   }
 };
 
@@ -50,8 +48,6 @@ export const api = {
 
   async login(credentials: { email: string; password?: string; role?: UserRole }) {
     const email = credentials.email.toLowerCase();
-    
-    // Always allow demo accounts to bypass everything for stability
     if (DEMO_ACCOUNTS[email]) {
       return { success: true, user: DEMO_ACCOUNTS[email] };
     }
@@ -77,7 +73,7 @@ export const api = {
       });
       return await safeJson(res);
     } catch(e) { 
-      return { success: false, error: "Network Error: Could not reach authentication node. Ensure your domain is correct." }; 
+      return { success: false, error: "Network Error: Could not reach authentication node." }; 
     }
   },
 
@@ -95,43 +91,69 @@ export const api = {
       });
       return await safeJson(res);
     } catch(e) { 
-      return { success: false, error: "Registration Node Offline. Ensure PHP backend is uploaded to /api/ and database is configured." }; 
+      return { success: false, error: "Registration Node Offline." }; 
     }
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
     const localKey = `jeepro_data_${studentId}`;
-    const localData = localStorage.getItem(localKey);
-    
+    let baseData: StudentData = (studentId === '163110' || studentId.startsWith('ADMIN')) ? INITIAL_STUDENT_DATA : {
+        ...INITIAL_STUDENT_DATA,
+        id: studentId,
+        name: 'New Aspirant',
+        chapters: INITIAL_STUDENT_DATA.chapters.map(c => ({ ...c, progress: 0, accuracy: 0, status: 'NOT_STARTED' })),
+        testHistory: [],
+        psychometricHistory: [],
+        pendingInvitations: [],
+        timeSummary: { notes: 0, videos: 0, practice: 0, tests: 0 }
+    };
+
     if (this.getMode() === 'LIVE') {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}get_dashboard.php?id=${studentId}`);
         const result = await safeJson(res);
-        if (result && result.success) {
-            localStorage.setItem(localKey, JSON.stringify(result.data));
-            return result.data;
+        if (result && result.success && result.data) {
+            const serverData = result.data;
+            
+            // Critical Fix: Merge server progress with local syllabus template
+            // We use 'map' to ensure the final list is ALWAYS exactly the template's length
+            const mergedChapters = INITIAL_STUDENT_DATA.chapters.map(templateCh => {
+                const serverCh = serverData.chapters?.find((c: any) => c.id === templateCh.id);
+                return serverCh ? { ...templateCh, ...serverCh } : templateCh;
+            });
+
+            // Ensure we don't wipe out global questions or tests if server returns empty arrays
+            const mergedTests = (serverData.mockTests && serverData.mockTests.length > 0) ? serverData.mockTests : INITIAL_STUDENT_DATA.mockTests;
+            const mergedQuestions = (serverData.questions && serverData.questions.length > 0) ? serverData.questions : INITIAL_STUDENT_DATA.questions;
+
+            const finalData = {
+                ...baseData,
+                ...serverData,
+                chapters: mergedChapters,
+                mockTests: mergedTests,
+                questions: mergedQuestions
+            };
+
+            localStorage.setItem(localKey, JSON.stringify(finalData));
+            return finalData;
         }
       } catch(e) { 
         console.warn("Live data fetch failed, falling back to cache.");
       }
     }
 
-    if (localData) {
-        try { return JSON.parse(localData); } catch(e) {}
+    const cached = localStorage.getItem(localKey);
+    if (cached) {
+        try { 
+            const parsed = JSON.parse(cached);
+            // Safety check: if cached chapters are empty, use baseline
+            if (parsed && parsed.chapters && parsed.chapters.length > 0) {
+                return parsed; 
+            }
+        } catch(e) {}
     }
 
-    if (studentId === '163110') return INITIAL_STUDENT_DATA;
-
-    return {
-        ...INITIAL_STUDENT_DATA,
-        id: studentId,
-        name: studentId.startsWith('USER') ? 'New Aspirant' : studentId,
-        chapters: INITIAL_STUDENT_DATA.chapters.map(c => ({ ...c, progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' })),
-        testHistory: [],
-        psychometricHistory: [],
-        pendingInvitations: [],
-        timeSummary: { notes: 0, videos: 0, practice: 0, tests: 0 }
-    };
+    return baseData;
   },
 
   async updateStudentData(studentId: string, updatedData: StudentData) {
@@ -149,11 +171,7 @@ export const api = {
               progress: c.progress,
               accuracy: c.accuracy,
               status: c.status,
-              timeSpent: c.timeSpent,
-              timeSpentNotes: c.timeSpentNotes,
-              timeSpentVideos: c.timeSpentVideos,
-              timeSpentPractice: c.timeSpentPractice,
-              timeSpentTests: c.timeSpentTests
+              timeSpent: c.timeSpent
             })),
             connectedParent: updatedData.connectedParent,
             pendingInvitations: updatedData.pendingInvitations
