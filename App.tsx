@@ -54,7 +54,7 @@ const App: React.FC = () => {
           if (parsedUser && parsedUser.id) {
             setUser(parsedUser);
             setRole(parsedUser.role);
-            // Always fetch fresh data on session load to ensure latest progress
+            // Crucial: Always fetch fresh data on initialization to avoid reset bug
             await loadUserData(parsedUser);
           }
         }
@@ -70,6 +70,9 @@ const App: React.FC = () => {
     try {
       const data = await api.getStudentData(currentUser.id);
       setStudentData(data);
+      // Persist the specific user data to its local key
+      localStorage.setItem(`jeepro_data_${currentUser.id}`, JSON.stringify(data));
+      // Also update the active buffer
       localStorage.setItem('jeepro_student_data', JSON.stringify(data));
     } catch (err) {
       console.error("Failed to load ecosystem context", err);
@@ -77,10 +80,14 @@ const App: React.FC = () => {
   };
 
   const onLoginSuccess = (authenticatedUser: UserAccount) => {
+    // Wipe active buffer to clear previous user residue
     localStorage.removeItem('jeepro_student_data');
+    
     setUser(authenticatedUser);
     setRole(authenticatedUser.role);
     localStorage.setItem('jeepro_user', JSON.stringify(authenticatedUser));
+    
+    // Perform initial data fetch
     loadUserData(authenticatedUser);
     
     const targetTab = authenticatedUser.role === UserRole.ADMIN ? 'admin-overview' : 

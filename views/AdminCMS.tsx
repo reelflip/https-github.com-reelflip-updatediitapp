@@ -270,32 +270,67 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     try {
       const zip = new JSZip();
       
-      // SQL Schema + Seed Data
-      const sqlSchema = `-- IITGEEPREP Solaris v21.0 Database Schema
-CREATE TABLE IF NOT EXISTS chapters (id VARCHAR(255) PRIMARY KEY, name VARCHAR(255), subject VARCHAR(100), unit VARCHAR(255), notes TEXT, videoUrl VARCHAR(512), status VARCHAR(50), progress INT, accuracy INT);
-CREATE TABLE IF NOT EXISTS questions (id VARCHAR(255) PRIMARY KEY, text TEXT, subject VARCHAR(100), topicId VARCHAR(255), difficulty VARCHAR(50), options JSON, correctAnswer INT);
-CREATE TABLE IF NOT EXISTS mock_tests (id VARCHAR(255) PRIMARY KEY, name VARCHAR(255), duration INT, totalMarks INT, category VARCHAR(100), questionIds JSON);
-CREATE TABLE IF NOT EXISTS users (id VARCHAR(255) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255) UNIQUE, role VARCHAR(50), password_hash VARCHAR(255));
-
--- Initial System Content Template
-REPLACE INTO chapters (id, name, subject, unit) VALUES 
-('p-units', 'Units and Measurements', 'Physics', 'Mechanics'),
-('m-sets', 'Sets and Functions', 'Mathematics', 'Algebra'),
-('c-basic', 'Basic Concepts', 'Chemistry', 'Physical');
+      // 1. SQL Schema - Expanded with Flashcards and Hacks
+      const sqlSchema = `-- IITGEEPREP Solaris v21.0 Production Schema
+CREATE TABLE IF NOT EXISTS users (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255) UNIQUE, role VARCHAR(50), institute VARCHAR(255), targetExam VARCHAR(255), targetYear INT, password_hash VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS chapters (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), subject VARCHAR(50), unit VARCHAR(255), notes TEXT, videoUrl VARCHAR(512));
+CREATE TABLE IF NOT EXISTS student_progress (student_id VARCHAR(100), chapter_id VARCHAR(100), progress INT DEFAULT 0, accuracy INT DEFAULT 0, status VARCHAR(50), time_spent INT DEFAULT 0, PRIMARY KEY (student_id, chapter_id));
+CREATE TABLE IF NOT EXISTS questions (id VARCHAR(100) PRIMARY KEY, topicId VARCHAR(100), text TEXT, options JSON, correctAnswer INT, difficulty VARCHAR(20), subject VARCHAR(50));
+CREATE TABLE IF NOT EXISTS flashcards (id VARCHAR(100) PRIMARY KEY, question TEXT, answer TEXT, subject VARCHAR(50), difficulty VARCHAR(20), type VARCHAR(50));
+CREATE TABLE IF NOT EXISTS memory_hacks (id VARCHAR(100) PRIMARY KEY, title VARCHAR(255), description TEXT, hack TEXT, category VARCHAR(100), subject VARCHAR(50));
+CREATE TABLE IF NOT EXISTS test_results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(100), test_name VARCHAR(255), score INT, total_marks INT, accuracy INT, taken_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS psychometric (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(100), stress INT, focus INT, motivation INT, timestamp DATE);
 `;
-      zip.file("sql/master_schema_v21.sql", sqlSchema);
+      zip.file("sql/full_schema_v21.sql", sqlSchema);
 
-      // PHP Controllers
-      zip.file("index.php", "<?php\nheader('Content-Type: application/json');\necho json_encode(['status' => 'online', 'version' => '21.0.0']);");
-      zip.file("config/database.php", "<?php\n$host = 'localhost';\n$db = 'iitjeeprep_v21';\n$user = 'root';\n$pass = '';\n$pdo = new PDO(\"mysql:host=$host;dbname=$db\", $user, $pass);");
-      zip.file("auth_login.php", "<?php\n// Authenticate user node\n$data = json_decode(file_get_contents('php://input'), true);\necho json_encode(['success' => true, 'user' => ['id' => 'SYS-1', 'name' => 'Admin']]);");
-      zip.file("sync_progress.php", "<?php\n// Save student telemetry\n$data = json_decode(file_get_contents('php://input'), true);\necho json_encode(['success' => true]);");
+      // 2. Auth Login
+      zip.file("auth_login.php", `<?php
+header('Content-Type: application/json');
+include 'config/database.php';
+$data = json_decode(file_get_contents('php://input'), true);
+$email = $data['email'];
+$stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+$stmt->execute([$email]);
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
+if ($user) {
+    echo json_encode(['success' => true, 'user' => $user]);
+} else {
+    echo json_encode(['success' => false, 'error' => 'User not found']);
+}
+?>`);
+
+      // 3. Get Dashboard Data
+      zip.file("get_dashboard.php", `<?php
+header('Content-Type: application/json');
+include 'config/database.php';
+$id = $_GET['id'];
+$stmt = $pdo->prepare("SELECT chapter_id as id, progress, accuracy, status, time_spent as timeSpent FROM student_progress WHERE student_id = ?");
+$stmt->execute([$id]);
+$chapters = $stmt->fetchAll(PDO::FETCH_ASSOC);
+echo json_encode(['success' => true, 'data' => ['chapters' => $chapters]]);
+?>`);
+
+      // 4. Sync Progress
+      zip.file("sync_progress.php", `<?php
+header('Content-Type: application/json');
+include 'config/database.php';
+$data = json_decode(file_get_contents('php://input'), true);
+$sid = $data['student_id'];
+foreach($data['chapters'] as $ch) {
+    $stmt = $pdo->prepare("INSERT INTO student_progress (student_id, chapter_id, progress, accuracy, status, time_spent) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE progress=?, accuracy=?, status=?, time_spent=?");
+    $stmt->execute([$sid, $ch['id'], $ch['progress'], $ch['accuracy'], $ch['status'], $ch['timeSpent'], $ch['progress'], $ch['accuracy'], $ch['status'], $ch['timeSpent']]);
+}
+echo json_encode(['success' => true]);
+?>`);
+
+      // 5. Config
+      zip.file("config/database.php", "<?php\n$host = 'localhost';\n$db = 'iitjeeprep_v21';\n$user = 'root';\n$pass = '';\n$pdo = new PDO(\"mysql:host=$host;dbname=$db\", $user, $pass); ?>");
 
       const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, "iitjeeprep_production_v21.zip");
+      saveAs(content, "iitjeeprep_live_v21.zip");
     } catch (error) {
       console.error("ZIP Generation Failed", error);
-      alert("System could not generate production bundle. Verify FS accessibility.");
+      alert("System could not generate production bundle.");
     } finally {
       setIsDownloading(false);
     }
@@ -308,7 +343,6 @@ REPLACE INTO chapters (id, name, subject, unit) VALUES
            <h2 className="text-5xl font-black text-slate-900 tracking-tighter uppercase italic">Admin Dashboard</h2>
            <p className="text-slate-400 font-bold uppercase text-[11px] tracking-widest">Master Control Node</p>
         </div>
-        {/* Toggle removed from global header per user request */}
       </div>
 
       <div className="space-y-12 animate-in fade-in duration-700">
@@ -318,7 +352,7 @@ REPLACE INTO chapters (id, name, subject, unit) VALUES
               { label: 'Chapters', val: data.chapters.length, icon: BookOpen, color: 'indigo' },
               { label: 'MCQs', val: data.questions.length, icon: Code2, color: 'emerald' },
               { label: 'Exams', val: data.mockTests.length, icon: Target, color: 'rose' },
-              { label: 'Cards/Hacks', val: data.flashcards.length + data.memoryHacks.length, icon: Zap, color: 'amber' },
+              { label: 'Cards/Hacks', val: (data.flashcards?.length || 0) + (data.memoryHacks?.length || 0), icon: Zap, color: 'amber' },
             ].map((stat, i) => (
               <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
                 <div className={`w-12 h-12 bg-${stat.color}-50 text-${stat.color}-600 rounded-2xl flex items-center justify-center mb-6`}><stat.icon className="w-6 h-6" /></div>
@@ -332,8 +366,8 @@ REPLACE INTO chapters (id, name, subject, unit) VALUES
         {activeTab === 'admin-syllabus' && <EntityList title="Syllabus Architect" type="Chapter" data={data.chapters} icon={BookOpen} color="indigo" btnLabel="Add Chapter" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Chapter'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-questions' && <EntityList title="MCQ Bank" type="Question" data={data.questions} icon={Code2} color="emerald" btnLabel="New MCQ" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Question'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-tests' && <EntityList title="Mock Exam Library" type="MockTest" data={data.mockTests} icon={Target} color="rose" btnLabel="Deploy Exam" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MockTest'); setEditingItem(null); setIsCreating(true); }} />}
-        {activeTab === 'admin-flashcards' && <EntityList title="Card Manager" type="Flashcard" data={data.flashcards} icon={Layers} color="indigo" btnLabel="New Card" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Flashcard'); setEditingItem(null); setIsCreating(true); }} />}
-        {activeTab === 'admin-hacks' && <EntityList title="Hack Manager" type="MemoryHack" data={data.memoryHacks} icon={Lightbulb} color="amber" btnLabel="Deploy Hack" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MemoryHack'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-flashcards' && <EntityList title="Card Manager" type="Flashcard" data={data.flashcards || []} icon={Layers} color="indigo" btnLabel="New Card" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Flashcard'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-hacks' && <EntityList title="Hack Manager" type="MemoryHack" data={data.memoryHacks || []} icon={Lightbulb} color="amber" btnLabel="Deploy Hack" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MemoryHack'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-blogs' && <EntityList title="Strategy Feed" type="Blog" data={data.blogs} icon={PenTool} color="indigo" btnLabel="Draft Post" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Blog'); setEditingItem(null); setIsCreating(true); }} />}
 
         {activeTab === 'admin-system' && (

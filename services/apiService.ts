@@ -7,11 +7,14 @@ const API_CONFIG = {
   MODE_KEY: 'jeepro_datasource_mode_v10_final'
 };
 
-// --- HELPER: Stable ID Generator ---
+// --- HELPER: Stable ID Generator for Mock Mode ---
 const generateStableId = (email: string) => 'USER-' + btoa(email.toLowerCase()).substring(0, 10);
 
 // --- TEMPLATE GENERATORS ---
 
+/**
+ * Creates a strictly clean, 0% progress version of the syllabus.
+ */
 const getCleanChapters = (): Chapter[] => {
   return INITIAL_STUDENT_DATA.chapters.map(ch => ({
     ...ch,
@@ -32,6 +35,8 @@ const getCleanStudentData = (id: string, name: string): StudentData => ({
   id,
   name,
   chapters: getCleanChapters(),
+  flashcards: [], // Safety: explicit empty array
+  memoryHacks: [], // Safety: explicit empty array
   testHistory: [],
   psychometricHistory: [],
   backlogs: [],
@@ -94,9 +99,10 @@ export const api = {
 
   async register(data: any) {
     if (this.getMode() === 'MOCK') {
-      // Fix: Use deterministic ID based on email so it matches login
       const id = generateStableId(data.email);
       const newUser = { ...data, id, createdAt: new Date().toISOString() };
+      // Pre-initialize empty data for this new ID
+      localStorage.setItem(`jeepro_data_${id}`, JSON.stringify(getCleanStudentData(id, data.name)));
       return { success: true, user: newUser };
     }
     try {
@@ -112,16 +118,21 @@ export const api = {
   async getStudentData(studentId: string): Promise<StudentData> {
     const localKey = `jeepro_data_${studentId}`;
     
-    // 1. Check persistent storage first (Correct approach for relogin)
+    // Check specific user cache first
     const cached = localStorage.getItem(localKey);
     if (cached) {
         try { 
             const parsed = JSON.parse(cached);
-            if (parsed && parsed.chapters && parsed.chapters.length > 0) return parsed; 
+            if (parsed && parsed.chapters && parsed.chapters.length > 0) {
+                // Ensure flashcards and hacks are present
+                if (!parsed.flashcards) parsed.flashcards = [];
+                if (!parsed.memoryHacks) parsed.memoryHacks = [];
+                return parsed; 
+            }
         } catch(e) {}
     }
 
-    // 2. Default Fallback if no data exists
+    // Default Fallback
     let baseData: StudentData = studentId === '163110' 
       ? INITIAL_STUDENT_DATA 
       : getCleanStudentData(studentId, 'New Aspirant');
@@ -141,8 +152,8 @@ export const api = {
                 ...baseData,
                 ...serverData,
                 chapters: mergedChapters,
-                mockTests: (serverData.mockTests?.length > 0) ? serverData.mockTests : baseData.mockTests,
-                questions: (serverData.questions?.length > 0) ? serverData.questions : baseData.questions
+                flashcards: serverData.flashcards || baseData.flashcards || [],
+                memoryHacks: serverData.memoryHacks || baseData.memoryHacks || []
             };
             localStorage.setItem(localKey, JSON.stringify(finalData));
             return finalData;
@@ -154,7 +165,6 @@ export const api = {
   },
 
   async updateStudentData(studentId: string, updatedData: StudentData) {
-    // Explicitly update the specific user's key
     localStorage.setItem(`jeepro_data_${studentId}`, JSON.stringify(updatedData));
 
     if (this.getMode() === 'LIVE') {
@@ -170,7 +180,9 @@ export const api = {
               accuracy: c.accuracy,
               status: c.status,
               timeSpent: c.timeSpent
-            }))
+            })),
+            backlogs: updatedData.backlogs,
+            psychometric: updatedData.psychometricHistory[updatedData.psychometricHistory.length -1]
           })
         });
       } catch(e) {}
@@ -181,7 +193,7 @@ export const api = {
   async saveEntity(type: string, data: any) {
     if (this.getMode() === 'LIVE') {
       try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}manage_${type.toLowerCase()}.php?action=save`, {
+        const res = await fetch(`${API_CONFIG.BASE_URL}manage_entity.php?type=${type}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)

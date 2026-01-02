@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { StudentData, Flashcard } from '../types';
-import { Zap, RotateCcw, ChevronRight, Check, X, Info } from 'lucide-react';
+import { Zap, RotateCcw, ChevronRight, Check, X, Info, Layers } from 'lucide-react';
 
 interface FlashcardsModuleProps {
   data: StudentData;
@@ -12,7 +12,7 @@ const FlashcardsModule: React.FC<FlashcardsModuleProps> = ({ data }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [sessionCompleted, setSessionCompleted] = useState(false);
 
-  const cards = data.flashcards;
+  const cards = data.flashcards || [];
 
   const handleNext = () => {
     setIsFlipped(false);
@@ -23,94 +23,106 @@ const FlashcardsModule: React.FC<FlashcardsModuleProps> = ({ data }) => {
     }
   };
 
+  // Guard for empty state
+  if (cards.length === 0) {
+    return (
+      <div className="h-[60vh] flex flex-col items-center justify-center text-center p-12 bg-white rounded-[3rem] border-4 border-dashed border-slate-100 max-w-2xl mx-auto animate-in fade-in">
+        <div className="bg-slate-50 text-slate-300 p-8 rounded-[2rem] mb-8 shadow-inner">
+          <Layers className="w-16 h-16" />
+        </div>
+        <h2 className="text-3xl font-black text-slate-900 italic tracking-tight uppercase">Archive Empty.</h2>
+        <p className="text-slate-400 mt-4 font-medium italic max-w-xs leading-relaxed">Your personal memory card database is currently offline. Add cards from the Syllabus or Admin Node.</p>
+      </div>
+    );
+  }
+
   const currentCard = cards[currentIdx];
 
   if (sessionCompleted) {
     return (
-      <div className="h-[60vh] flex flex-col items-center justify-center text-center p-8 bg-white rounded-2xl border border-slate-200 shadow-sm max-w-2xl mx-auto">
-        <div className="bg-emerald-100 text-emerald-600 p-4 rounded-full mb-6">
+      <div className="h-[60vh] flex flex-col items-center justify-center text-center p-8 bg-white rounded-[4rem] border border-slate-200 shadow-xl max-w-2xl mx-auto animate-in zoom-in-95">
+        <div className="bg-emerald-50 text-emerald-500 p-6 rounded-3xl mb-8 shadow-inner">
           <Zap className="w-12 h-12" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">Revision Session Complete!</h2>
-        <p className="text-slate-500 mb-8">You've successfully reviewed all due cards. Your mastery level has been updated.</p>
+        <h2 className="text-3xl font-black text-slate-900 italic tracking-tight uppercase">Recall Session Complete.</h2>
+        <p className="text-slate-500 mt-4 mb-10 font-medium italic">Your active recall metrics have been synchronized with the core engine.</p>
         <button 
           onClick={() => { setSessionCompleted(false); setCurrentIdx(0); }}
-          className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all flex items-center gap-2"
+          className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center gap-3 shadow-2xl"
         >
-          <RotateCcw className="w-5 h-5" />
-          Review Again
+          <RotateCcw className="w-5 h-5" /> Re-Initialize Protocol
         </button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8 pb-12">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Spaced Revision Engine</h2>
-          <p className="text-sm text-slate-500">Mastery through active recall & timed intervals.</p>
+    <div className="max-w-3xl mx-auto space-y-10 pb-20 animate-in fade-in duration-500">
+      <div className="flex items-center justify-between px-2">
+        <div className="space-y-1">
+          <h2 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">Memory Cards.</h2>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Spaced Repetition Engine v10.0</p>
         </div>
-        <div className="text-sm font-bold text-indigo-600 bg-indigo-50 px-4 py-1.5 rounded-full border border-indigo-100">
-          Card {currentIdx + 1} of {cards.length}
+        <div className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-5 py-2.5 rounded-full border border-indigo-100 shadow-sm">
+          CARTRIDGE {currentIdx + 1} / {cards.length}
         </div>
       </div>
 
-      {/* Flashcard Component */}
       <div className="perspective-1000">
         <div 
           onClick={() => setIsFlipped(!isFlipped)}
-          className={`relative w-full h-80 transition-all duration-500 cursor-pointer preserve-3d shadow-xl rounded-3xl ${isFlipped ? 'rotate-y-180' : ''}`}
+          className={`relative w-full h-[400px] transition-all duration-700 cursor-pointer preserve-3d shadow-2xl rounded-[3.5rem] ${isFlipped ? 'rotate-y-180' : ''}`}
         >
           {/* Front */}
-          <div className="absolute inset-0 bg-white p-12 backface-hidden rounded-3xl flex flex-col items-center justify-center border border-slate-200">
-             <div className="absolute top-6 left-8 flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
+          <div className="absolute inset-0 bg-white p-12 backface-hidden rounded-[3.5rem] flex flex-col items-center justify-center border-2 border-slate-100 shadow-inner">
+             <div className="absolute top-10 left-10 flex items-center gap-3 text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">
                 <Info className="w-4 h-4" />
-                {currentCard.type} • {currentCard.difficulty}
+                {currentCard.subject} • {currentCard.difficulty}
              </div>
-             <p className="text-2xl font-medium text-center text-slate-800 leading-relaxed">
-               {currentCard.question}
-             </p>
-             <div className="absolute bottom-8 text-xs text-indigo-500 font-bold animate-pulse">
-                Click to reveal answer
+             <div className="text-center space-y-6">
+                <div className="text-[8px] font-black text-indigo-400 uppercase tracking-[0.5em] mb-4">Prompt</div>
+                <p className="text-3xl font-black text-slate-800 italic tracking-tight leading-snug">
+                  {currentCard.question}
+                </p>
+             </div>
+             <div className="absolute bottom-10 text-[9px] text-indigo-500 font-black uppercase tracking-widest animate-pulse border-b border-indigo-100 pb-1">
+                Touch to flip artifact
              </div>
           </div>
 
           {/* Back */}
-          <div className="absolute inset-0 bg-indigo-600 p-12 backface-hidden rotate-y-180 rounded-3xl flex flex-col items-center justify-center text-white border border-indigo-500">
-             <p className="text-2xl font-bold text-center">
-               {currentCard.answer}
-             </p>
-             <div className="absolute bottom-8 text-xs text-indigo-200 uppercase tracking-widest font-bold">
-                Mastery Result
+          <div className="absolute inset-0 bg-slate-900 p-12 backface-hidden rotate-y-180 rounded-[3.5rem] flex flex-col items-center justify-center text-white border-4 border-indigo-600 shadow-2xl relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-10 opacity-5"><Zap className="w-40 h-40" /></div>
+             <div className="text-center space-y-6 relative z-10">
+                <div className="text-[8px] font-black text-indigo-400 uppercase tracking-[0.5em] mb-4">Resolution</div>
+                <p className="text-4xl font-black italic tracking-tighter text-indigo-100 leading-none">
+                  {currentCard.answer}
+                </p>
+             </div>
+             <div className="absolute bottom-10 text-[9px] text-slate-500 font-black uppercase tracking-[0.5em]">
+                Verified Concept Node
              </div>
           </div>
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="flex justify-center gap-4">
-        <button 
-          onClick={handleNext}
-          className="flex-1 max-w-[140px] flex flex-col items-center gap-2 p-4 bg-white border border-slate-200 rounded-2xl hover:bg-red-50 hover:border-red-200 transition-all group"
-        >
-          <X className="w-8 h-8 text-slate-300 group-hover:text-red-500" />
-          <span className="text-xs font-bold text-slate-500">Still Struggling</span>
-        </button>
-        <button 
-          onClick={handleNext}
-          className="flex-1 max-w-[140px] flex flex-col items-center gap-2 p-4 bg-white border border-slate-200 rounded-2xl hover:bg-amber-50 hover:border-amber-200 transition-all group"
-        >
-          <div className="w-8 h-8 flex items-center justify-center text-slate-300 font-bold text-xl group-hover:text-amber-500">~</div>
-          <span className="text-xs font-bold text-slate-500">Partial Recall</span>
-        </button>
-        <button 
-          onClick={handleNext}
-          className="flex-1 max-w-[140px] flex flex-col items-center gap-2 p-4 bg-white border border-slate-200 rounded-2xl hover:bg-emerald-50 hover:border-emerald-200 transition-all group"
-        >
-          <Check className="w-8 h-8 text-slate-300 group-hover:text-emerald-500" />
-          <span className="text-xs font-bold text-slate-500">Mastered It</span>
-        </button>
+      <div className="flex justify-center gap-6">
+        {[
+          { label: 'Struggle', icon: X, color: 'rose', bg: 'bg-rose-50', text: 'text-rose-500', border: 'border-rose-100' },
+          { label: 'Partial', icon: Info, color: 'amber', bg: 'bg-amber-50', text: 'text-amber-500', border: 'border-amber-100' },
+          { label: 'Mastered', icon: Check, color: 'emerald', bg: 'bg-emerald-50', text: 'text-emerald-500', border: 'border-emerald-100' }
+        ].map((btn) => (
+          <button 
+            key={btn.label}
+            onClick={(e) => { e.stopPropagation(); handleNext(); }}
+            className={`flex-1 max-w-[160px] flex flex-col items-center gap-3 p-6 bg-white border-2 border-slate-100 rounded-[2.5rem] hover:shadow-xl transition-all group ${btn.label === 'Mastered' ? 'hover:border-emerald-400' : btn.label === 'Struggle' ? 'hover:border-rose-400' : 'hover:border-amber-400'}`}
+          >
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${btn.bg} ${btn.text} group-hover:scale-110`}>
+              <btn.icon className="w-8 h-8" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-800">{btn.label}</span>
+          </button>
+        ))}
       </div>
 
       <style>{`
