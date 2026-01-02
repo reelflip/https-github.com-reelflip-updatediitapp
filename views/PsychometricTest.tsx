@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { StudentData, PsychometricScore } from '../types';
+import { api } from '../services/apiService';
 import { 
   Brain, ChevronRight, ChevronLeft, Sparkles, Zap, Target, Clock, ShieldAlert,
   Loader2, HeartHandshake, Moon, Activity, UserCheck, Users, Layout, Trophy,
@@ -97,7 +98,12 @@ const PsychometricTest: React.FC<PsychometricTestProps> = ({ data, setData }) =>
       parentAdvice: fatigueIndex > 6 ? "High risk of burnout. Mandatory rest suggested." : "Stable performance. Reinforce consistency."
     };
 
-    setData({ ...data, psychometricHistory: [...(data.psychometricHistory || []), newEntry] });
+    const newData = { ...data, psychometricHistory: [...(data.psychometricHistory || []), newEntry] };
+    setData(newData);
+    
+    // Explicit API Save for Persistence
+    await api.saveEntity('Psychometric', { student_id: data.id, ...newEntry });
+
     setIsFinishing(false);
     setStep(questions.length);
   };
@@ -161,7 +167,7 @@ const PsychometricTest: React.FC<PsychometricTestProps> = ({ data, setData }) =>
       <div className="bg-white p-12 lg:p-20 rounded-[4rem] border border-slate-200 shadow-2xl space-y-12 relative overflow-hidden group text-left">
         <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity"><Brain className="w-96 h-96" /></div>
         <div className="flex flex-col items-center text-center space-y-10 relative z-10">
-          <div className={`w-28 h-28 bg-${currentQ.color}-50 text-${currentQ.color}-600 rounded-[3rem] flex items-center justify-center shadow-inner border border-${currentQ.color}-100`}>
+          <div className={`w-28 h-28 bg-indigo-50 text-indigo-600 rounded-[3rem] flex items-center justify-center shadow-inner border border-indigo-100`}>
             <currentQ.icon className="w-14 h-14" />
           </div>
           <div className="space-y-4">

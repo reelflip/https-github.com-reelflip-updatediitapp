@@ -1,5 +1,5 @@
 
-import { StudentData, UserRole, UserAccount, RoutineConfig, TestResult, Chapter } from '../types';
+import { StudentData, UserRole, UserAccount, RoutineConfig, TestResult, Chapter, PsychometricScore } from '../types';
 import { INITIAL_STUDENT_DATA } from '../mockData';
 
 const API_CONFIG = {
@@ -73,16 +73,21 @@ export const api = {
   async getStudentData(studentId: string): Promise<StudentData> {
     const localKey = `jeepro_data_${studentId}`;
     const localData = localStorage.getItem(localKey);
-    if (localData) {
-        try { return JSON.parse(localData); } catch(e) {}
-    }
-
+    
+    // Always prefer local storage for snappy UI, but sync from server if LIVE
     if (this.getMode() === 'LIVE') {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}get_dashboard.php?id=${studentId}`);
         const result = await safeJson(res);
-        if (result && result.success) return result.data;
+        if (result && result.success) {
+            localStorage.setItem(localKey, JSON.stringify(result.data));
+            return result.data;
+        }
       } catch(e) { console.error("Data Sync Failure:", e); }
+    }
+
+    if (localData) {
+        try { return JSON.parse(localData); } catch(e) {}
     }
 
     if (studentId === '163110') return INITIAL_STUDENT_DATA;
@@ -131,7 +136,11 @@ export const api = {
 
   async saveEntity(type: string, data: any) {
     if (this.getMode() === 'LIVE') {
-      const endpoint = `manage_${type.toLowerCase()}.php`;
+      // Mapping frontend calls to correct PHP modules
+      let endpoint = `manage_${type.toLowerCase()}.php`;
+      if (type === 'Result') endpoint = 'save_attempt.php';
+      if (type === 'Psychometric') endpoint = 'save_psychometric.php';
+
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}${endpoint}?action=save`, {
           method: 'POST',
