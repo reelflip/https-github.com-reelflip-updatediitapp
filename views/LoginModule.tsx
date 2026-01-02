@@ -208,7 +208,7 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
                   <div className="flex items-center gap-3">
                     <AlertCircle className="w-4 h-4 shrink-0" /> {authError}
                   </div>
-                  {authError.includes("Server Configuration") && (
+                  {(authError.includes("Server Configuration") || authError.includes("returned HTML")) && (
                     <div className="text-[9px] font-black uppercase text-rose-400 pl-7">
                       Hint: Check Admin Panel → System Hub → Mode. Switch to 'Sandbox' if database is not set up.
                     </div>

@@ -360,6 +360,64 @@ try {
 }
 ?>`;
 
+      const authLogin = `<?php
+require_once 'config/database.php';
+$d = json_decode(file_get_contents("php://input"), true);
+if(!$d || !isset($d['email'])) die(json_encode(["success" => false, "error" => "Malformed Request"]));
+
+$s = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+$s->execute([$d['email']]);
+$u = $s->fetch();
+
+if ($u && password_verify($d['password'] ?? '', $u['password'])) {
+    echo json_encode([
+        "success" => true, 
+        "user" => [
+            "id" => $u['id'],
+            "name" => $u['name'],
+            "email" => $u['email'],
+            "role" => $u['role'],
+            "institute" => $u['institute'],
+            "targetExam" => $u['targetExam'],
+            "targetYear" => $u['targetYear']
+        ]
+    ]);
+} else {
+    echo json_encode(["success" => false, "error" => "Invalid credentials established."]);
+}
+?>`;
+
+      const authRegister = `<?php
+require_once 'config/database.php';
+$d = json_decode(file_get_contents("php://input"), true);
+if(!$d) die(json_encode(["success" => false, "error" => "Empty payload"]));
+
+$id = 'U-' . substr(md5(uniqid()), 0, 8);
+$hashed = password_hash($d['password'], PASSWORD_DEFAULT);
+
+$s = $pdo->prepare("INSERT INTO users (id, name, email, password, role, institute, targetExam, targetYear, birthDate, gender) VALUES (?,?,?,?,?,?,?,?,?,?)");
+
+try {
+    $s->execute([
+        $id, $d['name'], $d['email'], $hashed, $d['role'], 
+        $d['institute'] ?? '', $d['targetExam'] ?? '', $d['targetYear'] ?? '', 
+        $d['birthDate'] ?? null, $d['gender'] ?? ''
+    ]);
+    echo json_encode([
+        "success" => true, 
+        "user" => [
+            "id" => $id,
+            "name" => $d['name'],
+            "email" => $d['email'],
+            "role" => $d['role']
+        ]
+    ]);
+} catch (Exception $e) {
+    http_response_code(400);
+    echo json_encode(["success" => false, "error" => "Node identity conflict: Email already registered or DB failure."]);
+}
+?>`;
+
       const getDashboard = `<?php
 require_once 'config/database.php';
 $id = $_GET['id'] ?? '';
@@ -442,6 +500,8 @@ echo json_encode(["success" => true]);
 
       zip.folder("config")?.file("database.php", dbConfig);
       zip.folder("sql")?.file("master_v20.sql", sqlSchema);
+      zip.file("auth_login.php", authLogin);
+      zip.file("auth_register.php", authRegister);
       zip.file("get_dashboard.php", getDashboard);
       zip.file("sync_progress.php", syncProgress);
       zip.file("save_attempt.php", saveAttempt);
@@ -524,6 +584,7 @@ echo json_encode(["success" => true]);
                         <div className="absolute top-0 right-0 p-8 opacity-5"><Database className="w-48 h-48" /></div>
                         <div className="flex justify-between items-start">
                             <div><h3 className="text-2xl font-black italic tracking-tighter uppercase leading-none">Live Uplink</h3><p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-2">Persistence Management</p></div>
+                            <button onClick={testConnection} className="p-3 bg-indigo-500/20 text-indigo-400 rounded-xl hover:bg-indigo-500 hover:text-white transition-all shadow-sm flex items-center gap-2 text-[8px] font-black uppercase tracking-widest"><RefreshCw className={`w-4 h-4 ${connStatus === 'checking' ? 'animate-spin' : ''}`} /> Verify Link</button>
                             <button onClick={resetSystem} className="p-3 bg-rose-500/20 text-rose-400 rounded-xl hover:bg-rose-500 hover:text-white transition-all shadow-sm flex items-center gap-2 text-[8px] font-black uppercase tracking-widest"><Trash className="w-4 h-4" /> Reset</button>
                         </div>
                         <div className="flex items-center justify-between p-6 bg-white/5 rounded-3xl border border-white/10">
