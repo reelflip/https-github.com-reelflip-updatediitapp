@@ -58,7 +58,8 @@ const App: React.FC = () => {
           
           if (savedData && savedData !== 'undefined') {
             const parsedData = JSON.parse(savedData);
-            if (parsedData && parsedData.chapters && parsedData.chapters.length > 0) {
+            // Check if ID matches current user to prevent cross-account display
+            if (parsedData && parsedData.id === parsedUser.id && parsedData.chapters && parsedData.chapters.length > 0) {
               setStudentData(parsedData);
             } else {
               loadUserData(parsedUser);
@@ -77,25 +78,18 @@ const App: React.FC = () => {
 
   const loadUserData = async (currentUser: UserAccount) => {
     try {
-      // Logic Fix: Load data for EVERY role, not just Student.
-      // Admins need to see the library to edit it.
       const data = await api.getStudentData(currentUser.id);
-      
-      // Safety: If for some reason 'data' is empty, force Baseline
-      if (!data.chapters || data.chapters.length === 0) {
-          setStudentData(INITIAL_STUDENT_DATA);
-          localStorage.setItem('jeepro_student_data', JSON.stringify(INITIAL_STUDENT_DATA));
-      } else {
-          setStudentData(data);
-          localStorage.setItem('jeepro_student_data', JSON.stringify(data));
-      }
+      setStudentData(data);
+      localStorage.setItem('jeepro_student_data', JSON.stringify(data));
     } catch (err) {
       console.error("Failed to load ecosystem context", err);
-      setStudentData(INITIAL_STUDENT_DATA);
     }
   };
 
   const onLoginSuccess = (authenticatedUser: UserAccount) => {
+    // Clear global buffer immediately to prevent old user data from flashing
+    localStorage.removeItem('jeepro_student_data');
+    
     setUser(authenticatedUser);
     setRole(authenticatedUser.role);
     localStorage.setItem('jeepro_user', JSON.stringify(authenticatedUser));
@@ -116,7 +110,6 @@ const App: React.FC = () => {
   };
 
   const syncStudentData = async (newData: StudentData) => {
-    // Only sync if the new data actually contains chapters.
     if (newData && newData.chapters && newData.chapters.length > 0) {
         setStudentData(newData);
         localStorage.setItem('jeepro_student_data', JSON.stringify(newData));

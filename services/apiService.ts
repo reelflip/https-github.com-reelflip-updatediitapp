@@ -7,6 +7,41 @@ const API_CONFIG = {
   MODE_KEY: 'jeepro_datasource_mode_v10_final'
 };
 
+// --- TEMPLATE GENERATORS ---
+
+/**
+ * Creates a strictly clean, 0% progress version of the syllabus.
+ * Prevents new users from inheriting the '40% demo' progress.
+ */
+const getCleanChapters = (): Chapter[] => {
+  return INITIAL_STUDENT_DATA.chapters.map(ch => ({
+    ...ch,
+    progress: 0,
+    accuracy: 0,
+    status: 'NOT_STARTED',
+    timeSpent: 0,
+    timeSpentNotes: 0,
+    timeSpentVideos: 0,
+    timeSpentPractice: 0,
+    timeSpentTests: 0,
+    lastStudied: undefined
+  }));
+};
+
+const getCleanStudentData = (id: string, name: string): StudentData => ({
+  ...INITIAL_STUDENT_DATA,
+  id,
+  name,
+  chapters: getCleanChapters(),
+  testHistory: [],
+  psychometricHistory: [],
+  backlogs: [],
+  pendingInvitations: [],
+  timeSummary: { notes: 0, videos: 0, practice: 0, tests: 0 },
+  smartPlan: undefined,
+  routine: undefined
+});
+
 const DEMO_ACCOUNTS: Record<string, UserAccount> = {
   'ishu@gmail.com': { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2025-01-01' },
   'parent@demo.in': { id: 'P-4402', name: 'Mr. Ramesh Sharma', email: 'parent@demo.in', role: UserRole.PARENT, createdAt: '2025-01-01' },
@@ -97,16 +132,12 @@ export const api = {
 
   async getStudentData(studentId: string): Promise<StudentData> {
     const localKey = `jeepro_data_${studentId}`;
-    let baseData: StudentData = (studentId === '163110' || studentId.startsWith('ADMIN')) ? INITIAL_STUDENT_DATA : {
-        ...INITIAL_STUDENT_DATA,
-        id: studentId,
-        name: 'New Aspirant',
-        chapters: INITIAL_STUDENT_DATA.chapters.map(c => ({ ...c, progress: 0, accuracy: 0, status: 'NOT_STARTED' })),
-        testHistory: [],
-        psychometricHistory: [],
-        pendingInvitations: [],
-        timeSummary: { notes: 0, videos: 0, practice: 0, tests: 0 }
-    };
+    
+    // FIX: Only ID '163110' gets the pre-filled demo data. 
+    // Everyone else gets a CLEAN slate.
+    let baseData: StudentData = studentId === '163110' 
+      ? INITIAL_STUDENT_DATA 
+      : getCleanStudentData(studentId, 'New Aspirant');
 
     if (this.getMode() === 'LIVE') {
       try {
@@ -115,23 +146,19 @@ export const api = {
         if (result && result.success && result.data) {
             const serverData = result.data;
             
-            // Critical Fix: Merge server progress with local syllabus template
-            // We use 'map' to ensure the final list is ALWAYS exactly the template's length
-            const mergedChapters = INITIAL_STUDENT_DATA.chapters.map(templateCh => {
+            // Critical Fix: Merge server progress with CLEAN template, not Demo template.
+            const cleanChapters = getCleanChapters();
+            const mergedChapters = cleanChapters.map(templateCh => {
                 const serverCh = serverData.chapters?.find((c: any) => c.id === templateCh.id);
                 return serverCh ? { ...templateCh, ...serverCh } : templateCh;
             });
-
-            // Ensure we don't wipe out global questions or tests if server returns empty arrays
-            const mergedTests = (serverData.mockTests && serverData.mockTests.length > 0) ? serverData.mockTests : INITIAL_STUDENT_DATA.mockTests;
-            const mergedQuestions = (serverData.questions && serverData.questions.length > 0) ? serverData.questions : INITIAL_STUDENT_DATA.questions;
 
             const finalData = {
                 ...baseData,
                 ...serverData,
                 chapters: mergedChapters,
-                mockTests: mergedTests,
-                questions: mergedQuestions
+                mockTests: (serverData.mockTests?.length > 0) ? serverData.mockTests : baseData.mockTests,
+                questions: (serverData.questions?.length > 0) ? serverData.questions : baseData.questions
             };
 
             localStorage.setItem(localKey, JSON.stringify(finalData));
@@ -146,7 +173,6 @@ export const api = {
     if (cached) {
         try { 
             const parsed = JSON.parse(cached);
-            // Safety check: if cached chapters are empty, use baseline
             if (parsed && parsed.chapters && parsed.chapters.length > 0) {
                 return parsed; 
             }
