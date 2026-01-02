@@ -53,12 +53,13 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
     if (!activeChapter) return;
     const updatedChapters = data.chapters.map(c => {
       if (c.id === activeChapter.id) {
+        // IMPORTANT: Preserve existing progress/accuracy from the chapter object
         return {
           ...c,
           timeSpent: c.timeSpent + (sessionDataRef.current.notes + sessionDataRef.current.video + sessionDataRef.current.practice),
-          timeSpentNotes: c.timeSpentNotes + sessionDataRef.current.notes,
-          timeSpentVideos: c.timeSpentVideos + sessionDataRef.current.video,
-          timeSpentPractice: c.timeSpentPractice + sessionDataRef.current.practice
+          timeSpentNotes: (c.timeSpentNotes || 0) + sessionDataRef.current.notes,
+          timeSpentVideos: (c.timeSpentVideos || 0) + sessionDataRef.current.video,
+          timeSpentPractice: (c.timeSpentPractice || 0) + sessionDataRef.current.practice
         };
       }
       return c;
@@ -85,12 +86,8 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
   const getEmbedUrl = (url: string) => {
     if (!url) return null;
     try {
-      if (url.includes('youtube.com/watch?v=')) {
-        return url.replace('watch?v=', 'embed/');
-      }
-      if (url.includes('youtu.be/')) {
-        return url.replace('youtu.be/', 'youtube.com/embed/');
-      }
+      if (url.includes('youtube.com/watch?v=')) return url.replace('watch?v=', 'embed/');
+      if (url.includes('youtu.be/')) return url.replace('youtu.be/', 'youtube.com/embed/');
       return url;
     } catch(e) { return url; }
   };
@@ -102,7 +99,6 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
   if (activeChapter) {
     const chapterQuestions = data.questions.filter(q => q.topicId === activeChapter.id);
     const conf = calculateConfidence(activeChapter);
-    const chapterResults = data.testHistory.filter(res => res.category === 'PRACTICE' && res.chapterIds.includes(activeChapter.id));
     const videoEmbed = getEmbedUrl(activeChapter.videoUrl || '');
     
     return (
@@ -122,7 +118,7 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
                 <h2 className="text-4xl font-black text-slate-900 tracking-tighter italic">{activeChapter.name}</h2>
                 <div className="flex items-center gap-3">
                    <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{activeChapter.subject} • {activeChapter.unit}</div>
-                   <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-slate-100 text-slate-500`}>{activeChapter.status.replace('_', ' ')}</div>
+                   <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-slate-100 text-slate-500`}>{activeChapter.status?.replace('_', ' ')}</div>
                 </div>
               </div>
               <div className="flex gap-4">
@@ -201,7 +197,7 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
                              <div key={q.id} className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 hover:border-indigo-200 transition-all flex flex-col md:flex-row justify-between items-center gap-6">
                                <div className="space-y-3">
                                   <div className="flex items-center gap-3">
-                                     <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Problem {idx+1}</span>
+                                     <span className="text-[10px] font-black text-indigo-50 uppercase tracking-widest">Problem {idx+1}</span>
                                      <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${q.difficulty === 'HARD' ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-500'}`}>{q.difficulty}</div>
                                   </div>
                                   <div className="font-black text-slate-800 italic leading-tight">{q.text}</div>
@@ -240,32 +236,23 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
                             <BookOpen className="w-4 h-4 text-slate-500" />
                             <span className="text-[10px] font-black uppercase text-slate-400">Theory Log</span>
                          </div>
-                         <span className="text-xs font-black">{formatTime(activeChapter.timeSpentNotes + (activeContentTab === 'notes' ? sessionDisplay : 0))}</span>
+                         <span className="text-xs font-black">{formatTime((activeChapter.timeSpentNotes || 0) + (activeContentTab === 'notes' ? sessionDisplay : 0))}</span>
                       </div>
                       <div className="flex justify-between items-center">
                          <div className="flex items-center gap-3">
                             <Play className="w-4 h-4 text-slate-500" />
                             <span className="text-[10px] font-black uppercase text-slate-400">Video Log</span>
                          </div>
-                         <span className="text-xs font-black">{formatTime(activeChapter.timeSpentVideos + (activeContentTab === 'video' ? sessionDisplay : 0))}</span>
+                         <span className="text-xs font-black">{formatTime((activeChapter.timeSpentVideos || 0) + (activeContentTab === 'video' ? sessionDisplay : 0))}</span>
                       </div>
                       <div className="flex justify-between items-center">
                          <div className="flex items-center gap-3">
                             <Target className="w-4 h-4 text-slate-500" />
                             <span className="text-[10px] font-black uppercase text-slate-400">Drill Log</span>
                          </div>
-                         <span className="text-xs font-black">{formatTime(activeChapter.timeSpentPractice + (activeContentTab === 'practice' ? sessionDisplay : 0))}</span>
+                         <span className="text-xs font-black">{formatTime((activeChapter.timeSpentPractice || 0) + (activeContentTab === 'practice' ? sessionDisplay : 0))}</span>
                       </div>
                    </div>
-                </div>
-
-                <div className="bg-indigo-50 p-8 rounded-[3rem] border border-indigo-100 space-y-6">
-                   <div className="w-12 h-12 bg-white text-indigo-600 rounded-2xl flex items-center justify-center shadow-md"><Brain className="w-6 h-6" /></div>
-                   <div className="space-y-2">
-                      <h4 className="font-black italic text-slate-900">Adaptive Hint</h4>
-                      <p className="text-xs text-indigo-700 font-medium leading-relaxed italic">"You've spent significant time on Theory for this chapter. Switching to <b>Drills</b> now will boost your retention stability significantly."</p>
-                   </div>
-                   <button onClick={() => setActiveContentTab('practice')} className="text-[10px] font-black uppercase tracking-widest text-indigo-600 flex items-center gap-2 hover:gap-4 transition-all">Launch Drills <ChevronRight className="w-4 h-4" /></button>
                 </div>
              </div>
            </div>
@@ -281,6 +268,7 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
                <button onClick={() => {
                  const updated = data.chapters.map(c => c.id === editingStatusId ? {...c, progress: tempProgress, status: tempProgress === 100 ? 'COMPLETED' : 'LEARNING' as ChapterStatus} : c);
                  setData({...data, chapters: updated});
+                 setActiveChapter(updated.find(c => c.id === editingStatusId) || null);
                  setEditingStatusId(null);
                }} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest">Apply Metrics</button>
             </div>

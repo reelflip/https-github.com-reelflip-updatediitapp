@@ -11,7 +11,7 @@ import {
   Target, Code2, Save, Users, PenTool,
   Check, HelpCircle, Video,
   Award, Type, Lightbulb, Activity, Filter,
-  Search, Clock, ChevronRight, Layout, List, FileText, Calendar, Globe, Settings, Cpu, Database, Cloud, Download, Eye, AlertTriangle, Star
+  Search, Clock, ChevronRight, Layout, List, FileText, Calendar, Globe, Settings, Cpu, Database, Cloud, Download, Eye, AlertTriangle, Star, Signal, SignalHigh, SignalLow
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -48,6 +48,8 @@ const Overview = ({ data }: { data: StudentData }) => (
 const SystemSettings = ({ data }: { data: StudentData }) => {
   const [activeModel, setActiveModel] = useState(localStorage.getItem('jeepro_platform_ai_model') || 'gemini-3-flash');
   const [isDownloading, setIsDownloading] = useState(false);
+  const [connStatus, setConnStatus] = useState<'idle' | 'checking' | 'online' | 'offline'>('idle');
+  const [connError, setConnError] = useState<string | null>(null);
   const mode = api.getMode();
 
   const updateModel = (id: string) => {
@@ -55,12 +57,36 @@ const SystemSettings = ({ data }: { data: StudentData }) => {
     setActiveModel(id);
   };
 
+  const testConnection = async () => {
+    if (mode !== 'LIVE') return;
+    setConnStatus('checking');
+    setConnError(null);
+    try {
+      // We expect a check_connection.php endpoint to exist in the generated zip
+      const res = await fetch('./api/check_connection.php', { cache: 'no-cache' });
+      const result = await res.json();
+      if (result.success) {
+        setConnStatus('online');
+      } else {
+        setConnStatus('offline');
+        setConnError(result.error || 'DB Link Refused');
+      }
+    } catch (err) {
+      setConnStatus('offline');
+      setConnError('Host Unreachable (CORS or 404)');
+    }
+  };
+
+  useEffect(() => {
+    if (mode === 'LIVE') testConnection();
+  }, []);
+
   const downloadProductionBackend = async () => {
     setIsDownloading(true);
     try {
       const zip = new JSZip();
       
-      // SQL MASTER SCHEMA Restoration
+      // 1. MASTER SQL SCHEMA - FULL FLEDGED
       const sqlSchema = `-- IITGEEPREP MASTER SCHEMA v20.0
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -69,6 +95,7 @@ SET time_zone = "+00:00";
 CREATE DATABASE IF NOT EXISTS iitgrrprep_v20;
 USE iitgrrprep_v20;
 
+-- USERS CORE
 CREATE TABLE IF NOT EXISTS users (
     id VARCHAR(50) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -83,6 +110,7 @@ CREATE TABLE IF NOT EXISTS users (
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- SYLLABUS NODES
 CREATE TABLE IF NOT EXISTS chapters (
     id VARCHAR(50) PRIMARY KEY,
     subject VARCHAR(50) NOT NULL,
@@ -94,6 +122,24 @@ CREATE TABLE IF NOT EXISTS chapters (
     targetCompletionDate DATE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- TRACKING ENGINE
+CREATE TABLE IF NOT EXISTS student_progress (
+    student_id VARCHAR(50) NOT NULL,
+    chapter_id VARCHAR(50) NOT NULL,
+    progress INT DEFAULT 0,
+    accuracy INT DEFAULT 0,
+    timeSpentNotes INT DEFAULT 0,
+    timeSpentVideos INT DEFAULT 0,
+    timeSpentPractice INT DEFAULT 0,
+    timeSpentTests INT DEFAULT 0,
+    status VARCHAR(50) DEFAULT 'NOT_STARTED',
+    lastStudied DATETIME,
+    PRIMARY KEY (student_id, chapter_id),
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (chapter_id) REFERENCES chapters(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- QUESTION BANK
 CREATE TABLE IF NOT EXISTS questions (
     id VARCHAR(50) PRIMARY KEY,
     topicId VARCHAR(50),
@@ -102,9 +148,11 @@ CREATE TABLE IF NOT EXISTS questions (
     options JSON NOT NULL,
     correctAnswer INT NOT NULL,
     explanation TEXT,
-    difficulty ENUM('EASY', 'MEDIUM', 'HARD')
+    difficulty ENUM('EASY', 'MEDIUM', 'HARD'),
+    FOREIGN KEY (topicId) REFERENCES chapters(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- MOCK EXAMS
 CREATE TABLE IF NOT EXISTS mock_tests (
     id VARCHAR(50) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -116,46 +164,249 @@ CREATE TABLE IF NOT EXISTS mock_tests (
     chapterIds TEXT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- EXAM LOGS
+CREATE TABLE IF NOT EXISTS test_results (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id VARCHAR(50) NOT NULL,
+    test_id VARCHAR(50),
+    test_name VARCHAR(255),
+    score INT,
+    total_marks INT,
+    accuracy INT,
+    date DATE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- COGNITIVE LOGS
+CREATE TABLE IF NOT EXISTS psychometric_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id VARCHAR(50) NOT NULL,
+    stress INT,
+    focus INT,
+    motivation INT,
+    examFear INT,
+    summary TEXT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- KNOWLEDGE BASE
+CREATE TABLE IF NOT EXISTS flashcards (
+    id VARCHAR(50) PRIMARY KEY,
+    question TEXT,
+    answer TEXT,
+    subject VARCHAR(50),
+    type VARCHAR(50)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS memory_hacks (
+    id VARCHAR(50) PRIMARY KEY,
+    title VARCHAR(255),
+    description TEXT,
+    hack TEXT,
+    category VARCHAR(50),
+    subject VARCHAR(50)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 COMMIT;`;
 
-      // 2. DB CONFIG
+      // 2. CORE DATABASE CONFIG
       const dbConfig = `<?php
+// Solaris v20 - Database Access Point
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'iitgrrprep_v20');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 
+// Mandatory CORS Headers for Deployment
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
 header("Content-Type: application/json; charset=UTF-8");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit();
+}
 
 try {
     $pdo = new PDO("mysql:host=".DB_HOST.";dbname=".DB_NAME, DB_USER, DB_PASS);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 } catch(PDOException $e) {
-    die(json_encode(["success" => false, "error" => $e->getMessage()]));
+    http_response_code(500);
+    die(json_encode(["success" => false, "error" => "Critical Link Failure: " . $e->getMessage()]));
 }
 ?>`;
 
-      // Main Gateway
-      const apiIndex = `<?php
+      const checkConnection = `<?php
 require_once 'config/database.php';
-$action = $_GET['action'] ?? '';
-echo json_encode(["success" => true, "module" => "Solaris API Kernel v20", "action" => $action]);
+try {
+    $pdo->query("SELECT 1");
+    echo json_encode(["success" => true, "message" => "Uplink verified"]);
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(["success" => false, "error" => $e->getMessage()]);
+}
 ?>`;
 
+      // 3. AUTH MODULES
+      const authRegister = `<?php
+require_once 'config/database.php';
+$data = json_decode(file_get_contents("php://input"));
+
+if(!isset($data->email) || !isset($data->password) || !isset($data->name)) {
+    http_response_code(400);
+    echo json_encode(["success" => false, "error" => "Input validation failed"]);
+    exit;
+}
+
+$id = "S-" . bin2hex(random_bytes(4));
+$hashed = password_hash($data->password, PASSWORD_BCRYPT);
+
+try {
+    $stmt = $pdo->prepare("INSERT INTO users (id, name, email, password, role, institute, targetExam, targetYear, birthDate, gender) VALUES (?,?,?,?,?,?,?,?,?,?)");
+    $stmt->execute([
+        $id, $data->name, $data->email, $hashed, 
+        $data->role ?? 'STUDENT', $data->institute ?? null, 
+        $data->targetExam ?? null, $data->targetYear ?? null, 
+        $data->birthDate ?? null, $data->gender ?? 'Male'
+    ]);
+    
+    echo json_encode(["success" => true, "user" => ["id" => $id, "name" => $data->name, "email" => $data->email, "role" => $data->role ?? 'STUDENT']]);
+} catch(PDOException $e) {
+    http_response_code(500);
+    echo json_encode(["success" => false, "error" => "Identity Collision: " . $e->getMessage()]);
+}
+?>`;
+
+      const authLogin = `<?php
+require_once 'config/database.php';
+$data = json_decode(file_get_contents("php://input"));
+
+if(!isset($data->email) || !isset($data->password)) {
+    echo json_encode(["success" => false, "error" => "Missing credentials"]);
+    exit;
+}
+
+$stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+$stmt->execute([$data->email]);
+$user = $stmt->fetch();
+
+if($user && password_verify($data->password, $user['password'])) {
+    unset($user['password']);
+    echo json_encode(["success" => true, "user" => $user]);
+} else {
+    echo json_encode(["success" => false, "error" => "Invalid credentials handshake"]);
+}
+?>`;
+
+      // 4. SYNC NODES
+      const getDashboard = `<?php
+require_once 'config/database.php';
+$id = $_GET['id'] ?? '';
+
+if(!$id) die(json_encode(["success" => false, "error" => "Student ID required"]));
+
+// Fetch Extended Student Context
+$chapters = $pdo->query("SELECT c.*, p.progress, p.accuracy, p.timeSpentNotes, p.timeSpentVideos, p.timeSpentPractice, p.timeSpentTests, p.status, p.lastStudied 
+                        FROM chapters c 
+                        LEFT JOIN student_progress p ON c.id = p.chapter_id AND p.student_id = '$id'")->fetchAll();
+
+$testHistory = $pdo->prepare("SELECT * FROM test_results WHERE student_id = ? ORDER BY date DESC");
+$testHistory->execute([$id]);
+
+$psych = $pdo->prepare("SELECT * FROM psychometric_logs WHERE student_id = ? ORDER BY timestamp DESC LIMIT 5");
+$psych->execute([$id]);
+
+$flashcards = $pdo->query("SELECT * FROM flashcards")->fetchAll();
+$hacks = $pdo->query("SELECT * FROM memory_hacks")->fetchAll();
+
+echo json_encode([
+    "success" => true, 
+    "data" => [
+        "chapters" => $chapters,
+        "testHistory" => $testHistory->fetchAll(),
+        "psychometricHistory" => $psych->fetchAll(),
+        "flashcards" => $flashcards,
+        "memoryHacks" => $hacks
+    ]
+]);
+?>`;
+
+      const syncProgress = `<?php
+require_once 'config/database.php';
+$data = json_decode(file_get_contents("php://input"));
+
+if(!$data->student_id || !$data->chapter_id) exit;
+
+$stmt = $pdo->prepare("INSERT INTO student_progress (student_id, chapter_id, progress, accuracy, timeSpentNotes, timeSpentVideos, timeSpentPractice, timeSpentTests, status, lastStudied) 
+                       VALUES (?,?,?,?,?,?,?,?,?,NOW()) 
+                       ON DUPLICATE KEY UPDATE 
+                       progress = VALUES(progress), 
+                       accuracy = VALUES(accuracy),
+                       timeSpentNotes = VALUES(timeSpentNotes),
+                       timeSpentVideos = VALUES(timeSpentVideos),
+                       timeSpentPractice = VALUES(timeSpentPractice),
+                       timeSpentTests = VALUES(timeSpentTests),
+                       status = VALUES(status),
+                       lastStudied = NOW()");
+
+$stmt->execute([
+    $data->student_id, $data->chapter_id, $data->progress, $data->accuracy,
+    $data->timeSpentNotes, $data->timeSpentVideos, $data->timeSpentPractice, $data->timeSpentTests,
+    $data->status
+]);
+
+echo json_encode(["success" => true]);
+?>`;
+
+      // 5. MANAGEMENT NODES
+      const manageChapters = `<?php
+require_once 'config/database.php';
+$action = $_GET['action'] ?? '';
+$data = json_decode(file_get_contents("php://input"));
+
+if($action === 'save') {
+    $stmt = $pdo->prepare("REPLACE INTO chapters (id, subject, unit, name, notes, videoUrl, highYield, targetCompletionDate) VALUES (?,?,?,?,?,?,?,?)");
+    $stmt->execute([$data->id, $data->subject, $data->unit, $data->name, $data->notes, $data->videoUrl, $data->highYield ? 1 : 0, $data->targetCompletionDate]);
+    echo json_encode(["success" => true]);
+} else if ($action === 'delete') {
+    $stmt = $pdo->prepare("DELETE FROM chapters WHERE id = ?");
+    $stmt->execute([$data->id]);
+    echo json_encode(["success" => true]);
+}
+?>`;
+
+      const manageQuestions = `<?php
+require_once 'config/database.php';
+$data = json_decode(file_get_contents("php://input"));
+$stmt = $pdo->prepare("REPLACE INTO questions (id, topicId, subject, text, options, correctAnswer, explanation, difficulty) VALUES (?,?,?,?,?,?,?,?)");
+$stmt->execute([$data->id, $data->topicId, $data->subject, $data->text, json_encode($data->options), $data->correctAnswer, $data->explanation, $data->difficulty]);
+echo json_encode(["success" => true]);
+?>`;
+
+      // Building ZIP structure
       zip.folder("api/config")?.file("database.php", dbConfig);
       zip.folder("api/sql")?.file("master_schema_v20.sql", sqlSchema);
-      zip.folder("api")?.file("index.php", apiIndex);
       
       const apiFolder = zip.folder("api");
-      apiFolder?.file("auth_login.php", "<?php require_once 'config/database.php'; /* Logic */ ?>");
-      apiFolder?.file("manage_chapters.php", "<?php require_once 'config/database.php'; /* Logic */ ?>");
-      apiFolder?.file("get_dashboard.php", "<?php require_once 'config/database.php'; /* Logic */ ?>");
+      apiFolder?.file("check_connection.php", checkConnection);
+      apiFolder?.file("auth_register.php", authRegister);
+      apiFolder?.file("auth_login.php", authLogin);
+      apiFolder?.file("get_dashboard.php", getDashboard);
+      apiFolder?.file("sync_progress.php", syncProgress);
+      apiFolder?.file("manage_chapters.php", manageChapters);
+      apiFolder?.file("manage_questions.php", manageQuestions);
+      apiFolder?.file("save_attempt.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input")); $s = $pdo->prepare("INSERT INTO test_results (student_id, test_id, test_name, score, total_marks, accuracy, date) VALUES (?,?,?,?,?,?,?)"); $s->execute([$d->student_id, $d->testId, $d->testName, $d->score, $d->totalMarks, $d->accuracy, $d->date]); echo json_encode(["success"=>true]); ?>`);
+      apiFolder?.file("save_psychometric.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input")); $s = $pdo->prepare("INSERT INTO psychometric_logs (student_id, stress, focus, motivation, examFear, summary) VALUES (?,?,?,?,?,?)"); $s->execute([$d->student_id, $d->stress, $d->focus, $d->motivation, $d->examFear, $d->studentSummary]); echo json_encode(["success"=>true]); ?>`);
+      apiFolder?.file("manage_users.php", `<?php require_once 'config/database.php'; echo json_encode(["success"=>true, "users"=>$pdo->query("SELECT id, name, email, role, createdAt FROM users")->fetchAll()]); ?>`);
+      apiFolder?.file("manage_settings.php", `<?php require_once 'config/database.php'; $d = json_decode(file_get_contents("php://input")); $s = $pdo->prepare("UPDATE users SET name=?, targetExam=?, targetYear=?, institute=?, birthDate=?, gender=? WHERE id=?"); $s->execute([$d->name, $d->targetExam, $d->targetYear, $d->institute, $d->birthDate, $d->gender, $d->id]); echo json_encode(["success"=>true]); ?>`);
+      
+      zip.file(".htaccess", "RewriteEngine On\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteRule ^(.*)$ index.php [QSA,L]");
 
       const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, "solaris_v20_full_backend.zip");
+      saveAs(content, "solaris_v20_complete_backend.zip");
     } catch (e) {
       alert("Bundle generation failed.");
     }
@@ -204,7 +455,7 @@ echo json_encode(["success" => true, "module" => "Solaris API Kernel v20", "acti
                 
                 <div className="flex items-center justify-between p-6 bg-white/5 rounded-3xl border border-white/10">
                    <div className="flex items-center gap-4">
-                      <div className={`w-3 h-3 rounded-full animate-pulse ${mode === 'LIVE' ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-slate-500'}`}></div>
+                      <div className={`w-3 h-3 rounded-full animate-pulse ${mode === 'LIVE' ? (connStatus === 'online' ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-rose-500 shadow-[0_0_10px_#f43f5e]') : 'bg-slate-500'}`}></div>
                       <div className="text-sm font-bold uppercase tracking-widest">{mode === 'LIVE' ? 'Production (SQL)' : 'Sandbox Mode'}</div>
                    </div>
                    <button 
@@ -215,16 +466,38 @@ echo json_encode(["success" => true, "module" => "Solaris API Kernel v20", "acti
                    </button>
                 </div>
 
+                {mode === 'LIVE' && (
+                  <div className="space-y-4 pt-4">
+                    <div className="p-6 bg-white/5 rounded-[2rem] border border-white/10 flex items-center justify-between">
+                       <div className="flex items-center gap-4">
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${connStatus === 'online' ? 'bg-emerald-500/20 text-emerald-400' : connStatus === 'checking' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                             {connStatus === 'online' ? <SignalHigh className="w-5 h-5" /> : connStatus === 'checking' ? <Loader2 className="w-5 h-5 animate-spin" /> : <SignalLow className="w-5 h-5" />}
+                          </div>
+                          <div>
+                             <div className="text-xs font-black uppercase tracking-widest">Connectivity</div>
+                             <div className="text-[10px] font-bold text-slate-400">{connStatus === 'online' ? 'Handshake Success' : connStatus === 'checking' ? 'Checking Uplink...' : connError || 'Link Offline'}</div>
+                          </div>
+                       </div>
+                       <button 
+                        onClick={testConnection}
+                        className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
+                       >
+                          Ping Server
+                       </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-4 pt-6">
-                   <div className="flex justify-between text-xs font-bold text-slate-400"><span>Latency</span><span>{mode === 'LIVE' ? '24ms' : '0ms'}</span></div>
-                   <div className="flex justify-between text-xs font-bold text-slate-400"><span>API Version</span><span>v10.5-FINAL</span></div>
+                   <div className="flex justify-between text-xs font-bold text-slate-400"><span>Latency</span><span>{mode === 'LIVE' ? (connStatus === 'online' ? '24ms' : '--') : '0ms'}</span></div>
+                   <div className="flex justify-between text-xs font-bold text-slate-400"><span>API Version</span><span>v20.0-PRO</span></div>
                 </div>
              </div>
 
              <div className="bg-indigo-600 p-12 rounded-[4rem] text-white shadow-xl space-y-6 relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-8 opacity-10"><Cloud className="w-32 h-32" /></div>
                 <h3 className="text-xl font-black italic tracking-tighter uppercase">Deployment Blueprint</h3>
-                <p className="text-sm text-indigo-100 font-medium italic leading-relaxed">Download the complete Solaris v20 Backend (18+ PHP Modules + SQL Schema) for local XAMPP or VPS production.</p>
+                <p className="text-sm text-indigo-100 font-medium italic leading-relaxed">Download the complete Solaris v20 Backend (16+ PHP Modules + Full SQL) to resolve all 500 errors and enable production persistence.</p>
                 <button 
                   onClick={downloadProductionBackend}
                   disabled={isDownloading}

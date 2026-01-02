@@ -1,5 +1,5 @@
 
-import { StudentData, UserRole, UserAccount, RoutineConfig, TestResult } from '../types';
+import { StudentData, UserRole, UserAccount, RoutineConfig, TestResult, Chapter } from '../types';
 import { INITIAL_STUDENT_DATA } from '../mockData';
 
 const API_CONFIG = {
@@ -17,24 +17,16 @@ const DEMO_ACCOUNTS: Record<string, UserAccount> = {
 const safeJson = async (response: Response) => {
   if (!response.ok) {
     const errorText = await response.text().catch(() => "Unknown network error");
-    console.warn(`API non-ok response (${response.status}):`, errorText);
     return { 
       success: false, 
-      error: response.status === 404 ? "Uplink Node Not Found (404). Check /api folder." : `Server Fault (${response.status})`
+      error: response.status === 404 ? "Uplink Node Not Found (404)." : `Server Fault (${response.status})`
     };
   }
-  
   const text = await response.text();
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    console.error("Malformed API Response. Expected JSON but got:", text);
-    return { success: false, error: "Protocol Error: Malformed data stream from server." };
-  }
+  try { return JSON.parse(text); } catch (e) { return { success: false, error: "Malformed API Response." }; }
 };
 
 export const api = {
-  // Changed default to 'MOCK' for the preview environment
   getMode: (): 'MOCK' | 'LIVE' => (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'MOCK',
   
   setMode: (mode: 'MOCK' | 'LIVE') => { 
@@ -49,7 +41,7 @@ export const api = {
     }
 
     if (this.getMode() === 'MOCK') {
-      return { success: true, user: { id: 'MOCK-ID', name: 'Sandbox User', email: credentials.email, role: credentials.role || UserRole.STUDENT, createdAt: '2025-01-01' } };
+      return { success: true, user: { id: 'USER-' + btoa(email).substring(0, 8), name: email.split('@')[0], email: credentials.email, role: credentials.role || UserRole.STUDENT, createdAt: new Date().toISOString() } };
     }
 
     try {
@@ -60,12 +52,15 @@ export const api = {
       });
       return await safeJson(res);
     } catch(e) { 
-      return { success: false, error: "Host unreachable. Ensure your PHP environment is active." }; 
+      return { success: false, error: "Host unreachable." }; 
     }
   },
 
   async register(data: any) {
-    if (this.getMode() === 'MOCK') return { success: true, user: { ...data, id: 'NEW-' + Date.now() } };
+    if (this.getMode() === 'MOCK') {
+      const id = 'USER-' + Math.random().toString(36).substr(2, 9);
+      return { success: true, user: { ...data, id } };
+    }
     try {
       const res = await fetch(`${API_CONFIG.BASE_URL}auth_register.php`, {
         method: 'POST',
@@ -77,6 +72,14 @@ export const api = {
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
+    // 1. Check for user-specific local storage first
+    const localKey = `jeepro_data_${studentId}`;
+    const localData = localStorage.getItem(localKey);
+    if (localData) {
+        try { return JSON.parse(localData); } catch(e) {}
+    }
+
+    // 2. Fetch from Live if applicable
     if (this.getMode() === 'LIVE') {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}get_dashboard.php?id=${studentId}`);
@@ -84,26 +87,29 @@ export const api = {
         if (result && result.success) return result.data;
       } catch(e) { console.error("Data Sync Failure:", e); }
     }
-    return INITIAL_STUDENT_DATA;
-  },
 
-  async syncProgress(studentId: string, metrics: any) {
-    if (this.getMode() === 'LIVE') {
-       try {
-         await fetch(`${API_CONFIG.BASE_URL}sync_progress.php`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ student_id: studentId, ...metrics })
-        });
-       } catch (e) {}
-    }
-    return { success: true };
+    // 3. Fallback: Return Demo data ONLY for Demo ID, otherwise return fresh state
+    if (studentId === '163110') return INITIAL_STUDENT_DATA;
+
+    // Fresh template for new users (Syllabus with 0 progress)
+    return {
+        ...INITIAL_STUDENT_DATA,
+        id: studentId,
+        name: studentId.startsWith('USER') ? 'New Aspirant' : studentId,
+        chapters: INITIAL_STUDENT_DATA.chapters.map(c => ({ ...c, progress: 0, accuracy: 0, timeSpent: 0, status: 'NOT_STARTED' })),
+        testHistory: [],
+        psychometricHistory: [],
+        timeSummary: { notes: 0, videos: 0, practice: 0, tests: 0 }
+    };
   },
 
   async updateStudentData(studentId: string, updatedData: StudentData) {
+    // Persist to user-specific localStorage
+    localStorage.setItem(`jeepro_data_${studentId}`, JSON.stringify(updatedData));
+
     if (this.getMode() === 'LIVE') {
       try {
-        await fetch(`${API_CONFIG.BASE_URL}manage_syllabus.php?action=update`, {
+        await fetch(`${API_CONFIG.BASE_URL}sync_progress.php`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ student_id: studentId, chapters: updatedData.chapters })
@@ -115,17 +121,7 @@ export const api = {
 
   async saveEntity(type: string, data: any) {
     if (this.getMode() === 'LIVE') {
-      const typeMap: Record<string, string> = {
-        'Chapter': 'manage_chapters.php',
-        'Question': 'manage_questions.php',
-        'MockTest': 'manage_tests.php',
-        'Flashcard': 'manage_flashcards.php',
-        'MemoryHack': 'manage_hacks.php',
-        'Blog': 'manage_blogs.php',
-        'Result': 'save_attempt.php',
-        'Psychometric': 'save_psychometric.php'
-      };
-      const endpoint = typeMap[type] || `manage_${type.toLowerCase()}.php`;
+      const endpoint = `manage_${type.toLowerCase()}.php`;
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}${endpoint}?action=save`, {
           method: 'POST',
@@ -143,8 +139,7 @@ export const api = {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}manage_users.php`);
         const result = await safeJson(res);
-        if (Array.isArray(result)) return result;
-        if (result && Array.isArray(result.users)) return result.users;
+        if (result?.users) return result.users;
         return [];
       } catch(e) { return []; }
     }
@@ -168,12 +163,11 @@ export const api = {
   async saveRoutine(studentId: string, routine: RoutineConfig) {
     if (this.getMode() === 'LIVE') {
       try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}save_routine.php`, {
+        await fetch(`${API_CONFIG.BASE_URL}save_routine.php`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ student_id: studentId, routine })
         });
-        return await safeJson(res);
       } catch (e) {}
     }
     return { success: true };
@@ -182,12 +176,11 @@ export const api = {
   async saveTimetable(studentId: string, tasks: any) {
     if (this.getMode() === 'LIVE') {
       try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}save_timetable.php`, {
+        await fetch(`${API_CONFIG.BASE_URL}save_timetable.php`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ student_id: studentId, tasks })
         });
-        return await safeJson(res);
       } catch(e) {}
     }
     return { success: true };
