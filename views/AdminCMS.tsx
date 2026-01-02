@@ -102,7 +102,7 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                   <h3 className="text-2xl font-black italic tracking-tighter text-slate-900 uppercase">
                      {item ? 'Modify' : 'Deploy'} <span className="text-indigo-600">{type}.</span>
                   </h3>
-                  <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mt-1">Resource Architect v20.5 Pro</p>
+                  <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mt-1">Resource Architect v21.0 Pro</p>
                </div>
             </div>
             <div className="flex gap-4">
@@ -309,11 +309,11 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     try {
       const zip = new JSZip();
       
-      const sqlSchema = `-- IITGEEPREP MASTER SCHEMA v20.5 (Comprehensive)
+      const sqlSchema = `-- IITGEEPREP MASTER SCHEMA v21.0 (Comprehensive)
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
-CREATE DATABASE IF NOT EXISTS iitgrrprep_v20;
-USE iitgrrprep_v20;
+CREATE DATABASE IF NOT EXISTS iitgrrprep_v21;
+USE iitgrrprep_v21;
 
 -- USER MANAGEMENT
 CREATE TABLE users (id VARCHAR(50) PRIMARY KEY, name VARCHAR(100), email VARCHAR(100) UNIQUE, password VARCHAR(255), role ENUM('STUDENT','PARENT','ADMIN'), institute VARCHAR(255), targetExam VARCHAR(100), targetYear VARCHAR(4), birthDate DATE, gender VARCHAR(20), routine_json JSON, smartplan_json JSON, connected_id VARCHAR(50), createdAt DATETIME DEFAULT CURRENT_TIMESTAMP);
@@ -339,7 +339,7 @@ COMMIT;`;
 
       const dbConfig = `<?php
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'iitgrrprep_v20');
+define('DB_NAME', 'iitgrrprep_v21');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 
@@ -499,7 +499,7 @@ echo json_encode(["success" => true]);
 ?>`;
 
       zip.folder("config")?.file("database.php", dbConfig);
-      zip.folder("sql")?.file("master_v20.sql", sqlSchema);
+      zip.folder("sql")?.file("master_v21.sql", sqlSchema);
       zip.file("auth_login.php", authLogin);
       zip.file("auth_register.php", authRegister);
       zip.file("get_dashboard.php", getDashboard);
@@ -511,7 +511,7 @@ echo json_encode(["success" => true]);
       zip.file("check_connection.php", "<?php require_once 'config/database.php'; echo json_encode(['success'=>true]); ?>");
       
       const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, "solaris_v20_complete_backend.zip");
+      saveAs(content, "solaris_v21_complete_backend.zip");
     } catch (e) { alert("ZIP generation failed."); }
     setIsDownloading(false);
   };
@@ -521,7 +521,7 @@ echo json_encode(["success" => true]);
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-10 bg-white p-12 rounded-[3.5rem] border border-slate-200 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 p-12 opacity-5"><ShieldCheck className="w-64 h-64" /></div>
         <div className="space-y-4 relative z-10">
-          <div className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.5em] flex items-center gap-3"><ShieldCheck className="w-5 h-5" /> Unified Admin Node v20.5</div>
+          <div className="text-[10px] font-black uppercase text-indigo-600 tracking-[0.5em] flex items-center gap-3"><ShieldCheck className="w-5 h-5" /> Unified Admin Node v21.0</div>
           <h2 className="text-7xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">SENTINEL <span className="text-indigo-600">CORE.</span></h2>
         </div>
         <div className="flex items-center gap-4 bg-slate-50 px-8 py-4 rounded-[2rem] border border-slate-100 shadow-inner relative z-10">
