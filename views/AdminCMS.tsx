@@ -168,7 +168,7 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
 
                  {type === 'Chapter' && (
                     <div className="space-y-12">
-                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
                           <InputGroup label="Chapter Identity">
                              <input name="name" value={formData.name} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black italic shadow-inner" placeholder="Ex: Electromagnetism" />
                           </InputGroup>
@@ -178,6 +178,12 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                                 <option value="Chemistry">Chemistry</option>
                                 <option value="Mathematics">Mathematics</option>
                              </select>
+                          </InputGroup>
+                          <InputGroup label="Lecture Stream URL">
+                             <div className="relative">
+                                <Video className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500" />
+                                <input name="videoUrl" value={formData.videoUrl || ''} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl pl-12 pr-6 py-6 text-sm font-black italic shadow-inner" placeholder="YouTube or Media Link" />
+                             </div>
                           </InputGroup>
                           <div className="flex items-end pb-2">
                              <label className="flex items-center gap-4 cursor-pointer">

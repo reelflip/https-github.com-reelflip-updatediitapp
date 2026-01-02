@@ -8,18 +8,15 @@ export default defineConfig({
   base: './',
   build: {
     outDir: 'dist',
-    minify: false, // Ensure compiled JS remains indented and readable as requested
-    sourcemap: false,
+    minify: true,
+    cssCodeSplit: false, // Ensure CSS is also bundled into one file
     rollupOptions: {
       output: {
-        // Preserves folder structure for generated entry files
-        entryFileNames: '[name].js',
-        // Preserves folder structure for chunks/lazy-loaded modules
-        chunkFileNames: (chunkInfo: any) => {
-          // Use the original module name to ensure 1:1 mapping in chunks
-          const name = chunkInfo.name;
-          return `${name}.js`;
-        },
+        // Force everything into a single file by inlining dynamic imports
+        inlineDynamicImports: true,
+        // Set fixed names for the single output bundle
+        entryFileNames: 'assets/bundle.js',
+        chunkFileNames: 'assets/bundle.js',
         assetFileNames: 'assets/[name].[ext]',
       },
     },
