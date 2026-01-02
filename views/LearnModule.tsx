@@ -286,43 +286,66 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
           {Object.keys(groupedChapters).length === 0 ? (
             <div className="p-20 text-center text-slate-300 font-black uppercase text-[10px] tracking-widest italic">No matching units found</div>
           ) : (
-            (Object.entries(groupedChapters) as [string, Chapter[]][]).map(([unit, chapters]) => (
-              <div key={unit}>
-                <button onClick={() => setExpandedUnits(prev => prev.includes(unit) ? prev.filter(u => u !== unit) : [...prev, unit])} className="w-full px-6 md:px-12 py-6 md:py-10 flex items-center justify-between hover:bg-slate-50 transition-colors group">
-                  <div className="flex items-center gap-4 md:gap-6 text-left">
-                    <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-50 rounded-xl md:rounded-2xl flex items-center justify-center text-slate-300 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all shadow-inner shrink-0"><Layers className="w-5 h-5 md:w-6 md:h-6" /></div>
-                    <h3 className="font-black text-lg md:text-2xl text-slate-800 italic tracking-tight leading-tight line-clamp-1">{unit}</h3>
-                  </div>
-                  <ChevronDown className={`transition-transform duration-500 shrink-0 ${expandedUnits.includes(unit) ? 'rotate-180' : ''}`} />
-                </button>
-                {expandedUnits.includes(unit) && (
-                  <div className="bg-slate-50/50 px-4 md:px-12 pb-6 md:pb-10 space-y-2 md:space-y-3 animate-in slide-in-from-top-4">
-                    {chapters.map(c => (
-                      <div key={c.id} onClick={() => setActiveChapter(c)} className="p-4 md:p-6 bg-white border border-slate-200 rounded-2xl md:rounded-[2rem] hover:border-indigo-400 hover:shadow-xl cursor-pointer flex justify-between items-center transition-all group/item">
-                         <div className="flex items-center gap-4 md:gap-6 min-w-0">
-                            <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center font-black shrink-0 ${c.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-600' : 'bg-indigo-50 text-indigo-600'}`}>
-                               {c.status === 'COMPLETED' ? <CheckCircle className="w-4 h-4 md:w-5 md:h-5" /> : <Clock className="w-4 h-4 md:w-5 md:h-5" />}
-                            </div>
-                            <div className="min-w-0">
-                               <div className="font-bold md:font-black text-slate-800 group-hover/item:text-indigo-600 transition-colors italic tracking-tight text-sm md:text-base truncate">{c.name}</div>
-                               <div className="flex gap-2 md:gap-3 mt-0.5">
-                                  <div className="text-[8px] md:text-[10px] font-black uppercase text-slate-400 tracking-widest whitespace-nowrap">ACC: {c.accuracy}%</div>
-                                  {c.videoUrl && <div className="text-[8px] md:text-[9px] font-black uppercase text-emerald-500 flex items-center gap-1"><Video className="w-2.5 h-2.5 md:w-3 md:h-3" /> Ready</div>}
-                               </div>
-                            </div>
-                         </div>
-                         <div className="flex items-center gap-4 md:gap-8 shrink-0">
-                            <div className="text-right">
-                               <div className="text-lg md:text-2xl font-black text-slate-900 tracking-tighter">{c.progress}%</div>
-                            </div>
-                            <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-slate-200 group-hover/item:text-indigo-600 transition-all" />
-                         </div>
+            (Object.entries(groupedChapters) as [string, Chapter[]][]).map(([unit, chapters]) => {
+              const unitTotalProgress = chapters.reduce((acc, c) => acc + c.progress, 0);
+              const unitAvgProgress = Math.round(unitTotalProgress / chapters.length);
+
+              return (
+                <div key={unit}>
+                  <button onClick={() => setExpandedUnits(prev => prev.includes(unit) ? prev.filter(u => u !== unit) : [...prev, unit])} className="w-full px-6 md:px-12 py-6 md:py-10 flex items-center justify-between hover:bg-slate-50 transition-colors group">
+                    <div className="flex items-center gap-4 md:gap-6 text-left flex-1 min-w-0">
+                      <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-50 rounded-xl md:rounded-2xl flex items-center justify-center text-slate-300 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all shadow-inner shrink-0">
+                        <Layers className="w-5 h-5 md:w-6 md:h-6" />
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-black text-lg md:text-2xl text-slate-800 italic tracking-tight leading-tight line-clamp-1 uppercase">{unit}</h3>
+                        <div className="flex items-center gap-3 mt-1">
+                          <div className="w-24 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div className="h-full bg-emerald-500" style={{ width: `${unitAvgProgress}%` }}></div>
+                          </div>
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{unitAvgProgress}% UNIT COMPLETION</span>
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronDown className={`transition-transform duration-500 shrink-0 ml-4 ${expandedUnits.includes(unit) ? 'rotate-180' : ''}`} />
+                  </button>
+                  {expandedUnits.includes(unit) && (
+                    <div className="bg-slate-50/50 px-4 md:px-12 pb-6 md:pb-10 space-y-2 md:space-y-3 animate-in slide-in-from-top-4">
+                      {chapters.map(c => (
+                        <div key={c.id} onClick={() => setActiveChapter(c)} className="p-4 md:p-6 bg-white border border-slate-200 rounded-2xl md:rounded-[2rem] hover:border-indigo-400 hover:shadow-xl cursor-pointer flex justify-between items-center transition-all group/item">
+                           <div className="flex items-center gap-4 md:gap-6 min-w-0 flex-1">
+                              <div className="relative shrink-0">
+                                <svg className="w-10 h-10 md:w-12 md:h-12 -rotate-90">
+                                  <circle cx="50%" cy="50%" r="40%" fill="transparent" stroke="#f1f5f9" strokeWidth="3" />
+                                  <circle cx="50%" cy="50%" r="40%" fill="transparent" stroke={c.progress === 100 ? '#10b981' : '#6366f1'} strokeWidth="3" strokeDasharray="100 100" strokeDashoffset={100 - c.progress} pathLength="100" strokeLinecap="round" className="transition-all duration-1000" />
+                                </svg>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <span className="text-[8px] md:text-[9px] font-black text-slate-900">{c.progress}%</span>
+                                </div>
+                              </div>
+                              <div className="min-w-0">
+                                 <div className="font-bold md:font-black text-slate-800 group-hover/item:text-indigo-600 transition-colors italic tracking-tight text-sm md:text-base truncate">{c.name}</div>
+                                 <div className="flex gap-2 md:gap-3 mt-0.5">
+                                    <div className="text-[8px] md:text-[10px] font-black uppercase text-slate-400 tracking-widest whitespace-nowrap">Accuracy: {c.accuracy}%</div>
+                                    {c.status === 'COMPLETED' && <div className="text-[8px] font-black uppercase text-emerald-500 flex items-center gap-1"><CheckCircle className="w-2.5 h-2.5" /> Mastery High</div>}
+                                 </div>
+                              </div>
+                           </div>
+                           <div className="flex items-center gap-4 md:gap-8 shrink-0">
+                              <div className="hidden sm:block text-right">
+                                 <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${c.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                                    {c.status.replace('_', ' ')}
+                                 </div>
+                              </div>
+                              <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-slate-200 group-hover/item:text-indigo-600 transition-all" />
+                           </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
           )}
         </div>
       </div>

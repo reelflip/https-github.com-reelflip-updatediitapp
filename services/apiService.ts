@@ -7,12 +7,11 @@ const API_CONFIG = {
   MODE_KEY: 'jeepro_datasource_mode_v10_final'
 };
 
+// --- HELPER: Stable ID Generator ---
+const generateStableId = (email: string) => 'USER-' + btoa(email.toLowerCase()).substring(0, 10);
+
 // --- TEMPLATE GENERATORS ---
 
-/**
- * Creates a strictly clean, 0% progress version of the syllabus.
- * Prevents new users from inheriting the '40% demo' progress.
- */
 const getCleanChapters = (): Chapter[] => {
   return INITIAL_STUDENT_DATA.chapters.map(ch => ({
     ...ch,
@@ -50,26 +49,11 @@ const DEMO_ACCOUNTS: Record<string, UserAccount> = {
 
 const safeJson = async (response: Response) => {
   const text = await response.text();
-  
-  if (!response.ok) {
-    return { 
-      success: false, 
-      error: response.status === 404 
-        ? "Uplink Node Not Found (404). Ensure the /api/ folder and PHP files are correctly placed on your server." 
-        : `Server Fault (${response.status}): ${text.substring(0, 50)}...`
-    };
-  }
-
+  if (!response.ok) return { success: false, error: `Server Fault (${response.status})` };
   try {
     return JSON.parse(text);
   } catch (e) {
-    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html') || text.trim().startsWith('<br')) {
-      return { 
-        success: false, 
-        error: "Server Error: The backend returned HTML instead of JSON. This usually means a PHP crash or a missing file." 
-      };
-    }
-    return { success: false, error: "Malformed API Response. Check console for raw output." };
+    return { success: false, error: "Malformed API Response" };
   }
 };
 
@@ -83,15 +67,13 @@ export const api = {
 
   async login(credentials: { email: string; password?: string; role?: UserRole }) {
     const email = credentials.email.toLowerCase();
-    if (DEMO_ACCOUNTS[email]) {
-      return { success: true, user: DEMO_ACCOUNTS[email] };
-    }
+    if (DEMO_ACCOUNTS[email]) return { success: true, user: DEMO_ACCOUNTS[email] };
 
     if (this.getMode() === 'MOCK') {
       return { 
         success: true, 
         user: { 
-          id: 'USER-' + btoa(email).substring(0, 8), 
+          id: generateStableId(email), 
           name: email.split('@')[0], 
           email: credentials.email, 
           role: credentials.role || UserRole.STUDENT, 
@@ -107,14 +89,13 @@ export const api = {
         body: JSON.stringify(credentials)
       });
       return await safeJson(res);
-    } catch(e) { 
-      return { success: false, error: "Network Error: Could not reach authentication node." }; 
-    }
+    } catch(e) { return { success: false, error: "Authentication node offline." }; }
   },
 
   async register(data: any) {
     if (this.getMode() === 'MOCK') {
-      const id = 'USER-' + Math.random().toString(36).substr(2, 9);
+      // Fix: Use deterministic ID based on email so it matches login
+      const id = generateStableId(data.email);
       const newUser = { ...data, id, createdAt: new Date().toISOString() };
       return { success: true, user: newUser };
     }
@@ -125,16 +106,22 @@ export const api = {
         body: JSON.stringify(data)
       });
       return await safeJson(res);
-    } catch(e) { 
-      return { success: false, error: "Registration Node Offline." }; 
-    }
+    } catch(e) { return { success: false, error: "Registration Node Offline." }; }
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
     const localKey = `jeepro_data_${studentId}`;
     
-    // FIX: Only ID '163110' gets the pre-filled demo data. 
-    // Everyone else gets a CLEAN slate.
+    // 1. Check persistent storage first (Correct approach for relogin)
+    const cached = localStorage.getItem(localKey);
+    if (cached) {
+        try { 
+            const parsed = JSON.parse(cached);
+            if (parsed && parsed.chapters && parsed.chapters.length > 0) return parsed; 
+        } catch(e) {}
+    }
+
+    // 2. Default Fallback if no data exists
     let baseData: StudentData = studentId === '163110' 
       ? INITIAL_STUDENT_DATA 
       : getCleanStudentData(studentId, 'New Aspirant');
@@ -145,14 +132,11 @@ export const api = {
         const result = await safeJson(res);
         if (result && result.success && result.data) {
             const serverData = result.data;
-            
-            // Critical Fix: Merge server progress with CLEAN template, not Demo template.
             const cleanChapters = getCleanChapters();
             const mergedChapters = cleanChapters.map(templateCh => {
                 const serverCh = serverData.chapters?.find((c: any) => c.id === templateCh.id);
                 return serverCh ? { ...templateCh, ...serverCh } : templateCh;
             });
-
             const finalData = {
                 ...baseData,
                 ...serverData,
@@ -160,29 +144,17 @@ export const api = {
                 mockTests: (serverData.mockTests?.length > 0) ? serverData.mockTests : baseData.mockTests,
                 questions: (serverData.questions?.length > 0) ? serverData.questions : baseData.questions
             };
-
             localStorage.setItem(localKey, JSON.stringify(finalData));
             return finalData;
         }
-      } catch(e) { 
-        console.warn("Live data fetch failed, falling back to cache.");
-      }
-    }
-
-    const cached = localStorage.getItem(localKey);
-    if (cached) {
-        try { 
-            const parsed = JSON.parse(cached);
-            if (parsed && parsed.chapters && parsed.chapters.length > 0) {
-                return parsed; 
-            }
-        } catch(e) {}
+      } catch(e) {}
     }
 
     return baseData;
   },
 
   async updateStudentData(studentId: string, updatedData: StudentData) {
+    // Explicitly update the specific user's key
     localStorage.setItem(`jeepro_data_${studentId}`, JSON.stringify(updatedData));
 
     if (this.getMode() === 'LIVE') {
@@ -198,9 +170,7 @@ export const api = {
               accuracy: c.accuracy,
               status: c.status,
               timeSpent: c.timeSpent
-            })),
-            connectedParent: updatedData.connectedParent,
-            pendingInvitations: updatedData.pendingInvitations
+            }))
           })
         });
       } catch(e) {}
@@ -210,12 +180,8 @@ export const api = {
 
   async saveEntity(type: string, data: any) {
     if (this.getMode() === 'LIVE') {
-      let endpoint = `manage_${type.toLowerCase()}.php`;
-      if (type === 'Result') endpoint = 'save_attempt.php';
-      if (type === 'Psychometric') endpoint = 'save_psychometric.php';
-
       try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}${endpoint}?action=save`, {
+        const res = await fetch(`${API_CONFIG.BASE_URL}manage_${type.toLowerCase()}.php?action=save`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)

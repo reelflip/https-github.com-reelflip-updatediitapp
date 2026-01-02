@@ -46,34 +46,24 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>('about');
 
   useEffect(() => {
-    try {
-      const savedUser = localStorage.getItem('jeepro_user');
-      const savedData = localStorage.getItem('jeepro_student_data');
-      
-      if (savedUser && savedUser !== 'undefined') {
-        const parsedUser = JSON.parse(savedUser);
-        if (parsedUser && parsedUser.id) {
-          setUser(parsedUser);
-          setRole(parsedUser.role);
-          
-          if (savedData && savedData !== 'undefined') {
-            const parsedData = JSON.parse(savedData);
-            // Check if ID matches current user to prevent cross-account display
-            if (parsedData && parsedData.id === parsedUser.id && parsedData.chapters && parsedData.chapters.length > 0) {
-              setStudentData(parsedData);
-            } else {
-              loadUserData(parsedUser);
-            }
-          } else {
-            loadUserData(parsedUser);
+    const initializeApp = async () => {
+      try {
+        const savedUser = localStorage.getItem('jeepro_user');
+        if (savedUser && savedUser !== 'undefined') {
+          const parsedUser = JSON.parse(savedUser);
+          if (parsedUser && parsedUser.id) {
+            setUser(parsedUser);
+            setRole(parsedUser.role);
+            // Always fetch fresh data on session load to ensure latest progress
+            await loadUserData(parsedUser);
           }
         }
+      } catch (e) {
+        console.error("Storage Recovery Failed:", e);
+        localStorage.removeItem('jeepro_user');
       }
-    } catch (e) {
-      console.error("Storage Recovery Failed:", e);
-      localStorage.removeItem('jeepro_user');
-      localStorage.removeItem('jeepro_student_data');
-    }
+    };
+    initializeApp();
   }, []);
 
   const loadUserData = async (currentUser: UserAccount) => {
@@ -87,14 +77,10 @@ const App: React.FC = () => {
   };
 
   const onLoginSuccess = (authenticatedUser: UserAccount) => {
-    // Clear global buffer immediately to prevent old user data from flashing
     localStorage.removeItem('jeepro_student_data');
-    
     setUser(authenticatedUser);
     setRole(authenticatedUser.role);
     localStorage.setItem('jeepro_user', JSON.stringify(authenticatedUser));
-    
-    // Immediate data sync on login
     loadUserData(authenticatedUser);
     
     const targetTab = authenticatedUser.role === UserRole.ADMIN ? 'admin-overview' : 
