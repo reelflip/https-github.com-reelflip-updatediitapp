@@ -7,15 +7,9 @@ const API_CONFIG = {
   MODE_KEY: 'jeepro_datasource_mode_v10_final'
 };
 
-// --- HELPER: Stable ID Generator for Mock Mode ---
 const generateStableId = (email: string) => 'USER-' + btoa(email.toLowerCase()).substring(0, 10);
 
-// --- TEMPLATE GENERATORS ---
-
-/**
- * Creates a strictly clean, 0% progress version of the syllabus.
- */
-const getCleanChapters = (): Chapter[] => {
+const getZeroStateChapters = (): Chapter[] => {
   return INITIAL_STUDENT_DATA.chapters.map(ch => ({
     ...ch,
     progress: 0,
@@ -30,27 +24,22 @@ const getCleanChapters = (): Chapter[] => {
   }));
 };
 
-const getCleanStudentData = (id: string, name: string): StudentData => ({
+const getZeroStateStudentData = (id: string, name: string): StudentData => ({
   ...INITIAL_STUDENT_DATA,
   id,
   name,
-  chapters: getCleanChapters(),
+  chapters: getZeroStateChapters(),
   flashcards: INITIAL_STUDENT_DATA.flashcards || [],
   memoryHacks: INITIAL_STUDENT_DATA.memoryHacks || [],
-  testHistory: [],
+  testHistory: [], 
   psychometricHistory: [],
   backlogs: [],
   pendingInvitations: [],
+  messages: [],
   timeSummary: { notes: 0, videos: 0, practice: 0, tests: 0 },
   smartPlan: undefined,
   routine: undefined
 });
-
-const DEMO_ACCOUNTS: Record<string, UserAccount> = {
-  'ishu@gmail.com': { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2025-01-01' },
-  'parent@demo.in': { id: 'P-4402', name: 'Mr. Ramesh Sharma', email: 'parent@demo.in', role: UserRole.PARENT, createdAt: '2025-01-01' },
-  'admin@demo.in': { id: 'ADMIN-001', name: 'System Admin', email: 'admin@demo.in', role: UserRole.ADMIN, createdAt: '2025-01-01' }
-};
 
 const safeJson = async (response: Response) => {
   const text = await response.text();
@@ -63,7 +52,8 @@ const safeJson = async (response: Response) => {
 };
 
 export const api = {
-  getMode: (): 'MOCK' | 'LIVE' => (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'MOCK',
+  // Changed default from 'MOCK' to 'LIVE' to satisfy "sandbox disabled by default" requirement
+  getMode: (): 'MOCK' | 'LIVE' => (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'LIVE',
   
   setMode: (mode: 'MOCK' | 'LIVE') => { 
     localStorage.setItem(API_CONFIG.MODE_KEY, mode); 
@@ -72,109 +62,93 @@ export const api = {
 
   async login(credentials: { email: string; password?: string; role?: UserRole }) {
     const email = credentials.email.toLowerCase();
-    if (DEMO_ACCOUNTS[email]) return { success: true, user: DEMO_ACCOUNTS[email] };
-
-    if (this.getMode() === 'MOCK') {
-      return { 
-        success: true, 
-        user: { 
-          id: generateStableId(email), 
-          name: email.split('@')[0], 
-          email: credentials.email, 
-          role: credentials.role || UserRole.STUDENT, 
-          createdAt: new Date().toISOString() 
-        } 
-      };
+    const demoEmails = ['admin@demo.in', 'parent@demo.in', 'ishu@gmail.com'];
+    const isDemo = demoEmails.includes(email);
+    
+    // Always use mock logic for demo accounts to ensure they "always work"
+    // even if the PHP backend isn't reachable or configured yet.
+    if (this.getMode() === 'LIVE' && !isDemo) {
+        try {
+          const res = await fetch(`${API_CONFIG.BASE_URL}auth_login.php`, {
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(credentials)
+          });
+          return await safeJson(res);
+        } catch(e) { return { success: false, error: "Authentication node offline." }; }
     }
 
-    try {
-      const res = await fetch(`${API_CONFIG.BASE_URL}auth_login.php`, {
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials)
-      });
-      return await safeJson(res);
-    } catch(e) { return { success: false, error: "Authentication node offline." }; }
+    // Mock Role Attribution (Always available for demo accounts)
+    let determinedRole = UserRole.STUDENT;
+    if (email === 'admin@demo.in') determinedRole = UserRole.ADMIN;
+    else if (email === 'parent@demo.in') determinedRole = UserRole.PARENT;
+
+    return { 
+      success: true, 
+      user: { 
+        id: generateStableId(email), 
+        name: email.split('@')[0], 
+        email: email, 
+        role: determinedRole, 
+        createdAt: new Date().toISOString() 
+      } 
+    };
   },
 
   async register(data: any) {
-    if (this.getMode() === 'MOCK') {
-      const id = generateStableId(data.email);
-      const newUser = { ...data, id, createdAt: new Date().toISOString() };
-      localStorage.setItem(`jeepro_data_${id}`, JSON.stringify(getCleanStudentData(id, data.name)));
-      return { success: true, user: newUser };
+    if (this.getMode() === 'LIVE') {
+      try {
+        const res = await fetch(`${API_CONFIG.BASE_URL}auth_register.php`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        return await safeJson(res);
+      } catch(e) { return { success: false, error: "Registration Node Offline." }; }
     }
-    try {
-      const res = await fetch(`${API_CONFIG.BASE_URL}auth_register.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      return await safeJson(res);
-    } catch(e) { return { success: false, error: "Registration Node Offline." }; }
+    const id = generateStableId(data.email);
+    const newUser = { ...data, id, createdAt: new Date().toISOString() };
+    localStorage.setItem(`jeepro_data_${id}`, JSON.stringify(getZeroStateStudentData(id, data.name)));
+    return { success: true, user: newUser };
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
-    const localKey = `jeepro_data_${studentId}`;
     const mode = this.getMode();
 
-    // 1. In LIVE mode, ALWAYS try fetching from server first to get new messages/syncs
     if (mode === 'LIVE') {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}get_dashboard.php?id=${studentId}`);
         const result = await safeJson(res);
         if (result && result.success && result.data) {
             const serverData = result.data;
-            const templateChapters = getCleanChapters();
+            const templateChapters = getZeroStateChapters();
+            
             const mergedChapters = templateChapters.map(templateCh => {
-                const serverCh = serverData.chapters?.find((c: any) => c.id === templateCh.id);
+                const serverCh = serverData.individual_progress?.find((c: any) => c.id === templateCh.id);
                 return serverCh ? { ...templateCh, ...serverCh } : templateCh;
             });
             
-            // Map messages read status from SQL 0/1 to Boolean
             const mappedMessages = (serverData.messages || []).map((m: any) => ({
               ...m,
               isRead: m.is_read === 1 || m.is_read === "1" || !!m.is_read
             }));
 
-            const finalData: StudentData = {
-                ...getCleanStudentData(studentId, 'Aspirant'),
+            return {
+                ...getZeroStateStudentData(studentId, serverData.name || 'Aspirant'),
                 ...serverData,
                 chapters: mergedChapters,
                 messages: mappedMessages,
-                flashcards: (serverData.flashcards && serverData.flashcards.length > 0) ? serverData.flashcards : INITIAL_STUDENT_DATA.flashcards,
-                memoryHacks: (serverData.memoryHacks && serverData.memoryHacks.length > 0) ? serverData.memoryHacks : INITIAL_STUDENT_DATA.memoryHacks,
-                mockTests: (serverData.mockTests && serverData.mockTests.length > 0) ? serverData.mockTests : INITIAL_STUDENT_DATA.mockTests,
-                questions: (serverData.questions && serverData.questions.length > 0) ? serverData.questions : INITIAL_STUDENT_DATA.questions,
                 testHistory: serverData.testHistory || []
             };
-            localStorage.setItem(localKey, JSON.stringify(finalData));
-            return finalData;
         }
-      } catch(e) {
-        console.warn("Live fetch failed, falling back to local state.");
-      }
+      } catch(e) { console.error("Live sync failed."); }
     }
-
-    // 2. Fallback to cache if offline or in MOCK mode
-    const cached = localStorage.getItem(localKey);
-    if (cached) {
-        try { 
-            const parsed = JSON.parse(cached);
-            if (parsed && parsed.chapters && parsed.chapters.length > 0) {
-                return parsed; 
-            }
-        } catch(e) {}
-    }
-
-    return studentId === '163110' 
-      ? INITIAL_STUDENT_DATA 
-      : getCleanStudentData(studentId, 'New Aspirant');
+    const cached = localStorage.getItem(`jeepro_data_${studentId}`);
+    return cached ? JSON.parse(cached) : getZeroStateStudentData(studentId, 'New Aspirant');
   },
 
   async updateStudentData(studentId: string, updatedData: StudentData) {
     localStorage.setItem(`jeepro_data_${studentId}`, JSON.stringify(updatedData));
-
     if (this.getMode() === 'LIVE') {
       try {
         await fetch(`${API_CONFIG.BASE_URL}sync_progress.php`, {
@@ -183,15 +157,9 @@ export const api = {
           body: JSON.stringify({ 
             student_id: studentId, 
             chapters: updatedData.chapters.map(c => ({
-              id: c.id,
-              progress: c.progress,
-              accuracy: c.accuracy,
-              status: c.status,
-              timeSpent: c.timeSpent
+              id: c.id, progress: c.progress, accuracy: c.accuracy, status: c.status, timeSpent: c.timeSpent
             })),
-            backlogs: updatedData.backlogs,
-            testHistory: updatedData.testHistory,
-            psychometric: updatedData.psychometricHistory[updatedData.psychometricHistory.length -1]
+            testHistory: updatedData.testHistory
           })
         });
       } catch(e) {}
@@ -218,12 +186,7 @@ export const api = {
        try {
          const res = await fetch(`${API_CONFIG.BASE_URL}manage_messages.php?action=list`);
          const result = await safeJson(res);
-         if (result && result.messages) {
-            return result.messages.map((m: any) => ({
-              ...m,
-              isRead: m.is_read === 1 || m.is_read === "1" || !!m.is_read
-            }));
-         }
+         if (result?.messages) return result.messages.map((m: any) => ({ ...m, isRead: m.is_read == 1 }));
        } catch(e) {}
     }
     return [];
@@ -231,9 +194,7 @@ export const api = {
 
   async markMessageRead(id: string) {
     if (this.getMode() === 'LIVE') {
-      try {
-        await fetch(`${API_CONFIG.BASE_URL}manage_messages.php?action=read&id=${id}`);
-      } catch(e) {}
+      await fetch(`${API_CONFIG.BASE_URL}manage_messages.php?action=read&id=${id}`);
     }
     return { success: true };
   },
@@ -244,49 +205,51 @@ export const api = {
         const res = await fetch(`${API_CONFIG.BASE_URL}manage_users.php`);
         const result = await safeJson(res);
         if (result?.users) return result.users;
-        return [];
-      } catch(e) { return []; }
+      } catch(e) {}
     }
-    return Object.values(DEMO_ACCOUNTS);
-  },
-
-  async updateUserProfile(studentId: string, profileData: any) {
-    if (this.getMode() === 'LIVE') {
-      try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}manage_settings.php?action=profile`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: studentId, ...profileData })
-        });
-        return await safeJson(res);
-      } catch(e) { return { success: false, error: "Profile Sync Failed" }; }
-    }
-    return { success: true };
+    return [];
   },
 
   async saveRoutine(studentId: string, routine: RoutineConfig) {
     if (this.getMode() === 'LIVE') {
-      try {
-        await fetch(`${API_CONFIG.BASE_URL}save_routine.php`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ student_id: studentId, routine })
-        });
-      } catch (e) {}
+      await fetch(`${API_CONFIG.BASE_URL}manage_routine.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: studentId, routine })
+      });
     }
     return { success: true };
   },
 
-  async saveTimetable(studentId: string, smartPlan: any) {
+  async saveTimetable(studentId: string, timetable: any) {
     if (this.getMode() === 'LIVE') {
-      try {
-        await fetch(`${API_CONFIG.BASE_URL}save_timetable.php`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ student_id: studentId, smartPlan })
-        });
-      } catch(e) {}
+      await fetch(`${API_CONFIG.BASE_URL}manage_timetable.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: studentId, ...timetable })
+      });
     }
     return { success: true };
+  },
+
+  async updateUserProfile(userId: string, profile: any) {
+    if (this.getMode() === 'LIVE') {
+      const res = await fetch(`${API_CONFIG.BASE_URL}manage_users.php?action=update&id=${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile)
+      });
+      return await safeJson(res);
+    }
+    return { success: true };
+  },
+
+  async resetProgress(studentId: string) {
+    if (this.getMode() === 'LIVE') {
+        await fetch(`${API_CONFIG.BASE_URL}sync_progress.php?action=reset&student_id=${studentId}`, { method: 'POST' });
+    }
+    const cleanData = getZeroStateStudentData(studentId, 'Aspirant');
+    localStorage.setItem(`jeepro_data_${studentId}`, JSON.stringify(cleanData));
+    return cleanData;
   }
 };

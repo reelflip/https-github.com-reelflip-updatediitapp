@@ -53,7 +53,6 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, handle
     { id: 'admin-flashcards', label: 'Card Manager', icon: Layers },
     { id: 'admin-hacks', label: 'Hack Manager', icon: Lightbulb },
     { id: 'admin-blogs', label: 'Blog Manager', icon: PenTool },
-    { id: 'admin-diagnostic', label: 'Diagnostic Suite', icon: Activity },
     { id: 'admin-system', label: 'System Settings', icon: Settings },
   ];
 
@@ -70,26 +69,31 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, handle
     <div className="w-64 bg-[#0a1128] text-slate-300 flex flex-col hidden lg:flex border-r border-slate-800 shrink-0">
       <div className="p-6 mb-2">
         <h1 className="text-xl font-bold text-white flex items-center gap-2">
-          <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center">
+          <div className={`w-8 h-8 rounded flex items-center justify-center ${role === UserRole.ADMIN ? 'bg-rose-600' : 'bg-indigo-600'}`}>
             {role === UserRole.ADMIN ? <ShieldCheck className="w-5 h-5" /> : <Brain className="w-5 h-5" />}
           </div>
           <div>
-            <div className="leading-tight text-sm font-black tracking-tighter">
-              {role === UserRole.ADMIN ? 'ADMIN CENTER' : role === UserRole.PARENT ? 'FAMILY PORTAL' : 'IITGRRPREP'}
+            <div className="leading-tight text-sm font-black tracking-tighter uppercase">
+              {role === UserRole.ADMIN ? 'Admin Center' : role === UserRole.PARENT ? 'Family Portal' : 'IitjeePrep'}
             </div>
             <div className="text-[7px] font-black tracking-[0.4em] text-indigo-400 uppercase">Solaris v21.0</div>
           </div>
         </h1>
+        {role === UserRole.ADMIN && (
+          <div className="mt-4 px-3 py-1 bg-rose-500/10 border border-rose-500/20 rounded-full text-center">
+            <span className="text-[8px] font-black text-rose-400 uppercase tracking-widest">Uplink: Root Auth</span>
+          </div>
+        )}
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 space-y-1">
+      <nav className="flex-1 overflow-y-auto px-3 space-y-1 custom-scrollbar">
         {currentLinks.map((link) => (
           <button
             key={link.id}
             onClick={() => setActiveTab(link.id)}
             className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl text-xs font-bold transition-all ${
               activeTab === link.id 
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50 border border-indigo-500/50' 
+              ? (role === UserRole.ADMIN ? 'bg-rose-600 text-white shadow-lg shadow-rose-900/50 border border-rose-500/50' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-900/50 border border-indigo-500/50')
               : 'hover:bg-slate-800/50 hover:text-slate-100'
             }`}
           >
@@ -102,7 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, handle
       <div className="p-4 mt-auto">
         <button 
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-6 py-4 bg-slate-900 text-rose-400 hover:bg-rose-50 hover:text-white rounded-2xl transition-all font-black text-xs uppercase tracking-widest border border-slate-800 shadow-2xl"
+          className="w-full flex items-center gap-3 px-6 py-4 bg-slate-900 text-rose-400 hover:bg-rose-500 hover:text-white rounded-2xl transition-all font-black text-xs uppercase tracking-widest border border-slate-800 shadow-2xl"
         >
           <LogOut className="w-4 h-4" /> Sign Out
         </button>

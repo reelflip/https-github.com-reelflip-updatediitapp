@@ -14,12 +14,6 @@ interface LoginModuleProps {
   onNavigate?: (tab: string) => void;
 }
 
-declare global {
-  interface Window {
-    HIDE_DEMO_SIGNIN?: boolean;
-  }
-}
-
 const INSTITUTES = [
   "Allen Career Institute", "FIITJEE", "Resonance", "Aakash Institute",
   "Physics Wallah (PW)", "Narayana Educational Institutions", "Sri Chaitanya",
@@ -117,6 +111,7 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
   const loginAsDemo = async (email: string) => {
     setIsProcessing(true);
     setAuthError(null);
+    // loginAsDemo now prioritized in apiService.ts to always work
     const result = await api.login({ email, password: 'password' }); 
     if (result.success && result.user) {
       setIsVerified(true);
@@ -284,18 +279,16 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
                 </div>
               </div>
 
-              {!window.HIDE_DEMO_SIGNIN && (
-                <div className="pt-8 border-t border-slate-100 space-y-4">
-                   <div className="text-center text-[9px] font-black uppercase text-slate-300 tracking-[0.3em]">Access Simulation Points</div>
-                   <div className="flex gap-2">
-                      {[{ role: UserRole.STUDENT, email: 'ishu@gmail.com', label: 'Student' }, { role: UserRole.PARENT, email: 'parent@demo.in', label: 'Parent' }, { role: UserRole.ADMIN, email: 'admin@demo.in', label: 'Admin' }].map(demo => (
-                        <button key={demo.label} onClick={() => loginAsDemo(demo.email)} className="flex-1 py-3 bg-slate-50 rounded-xl text-[9px] font-black uppercase tracking-widest text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
-                           {demo.label}
-                        </button>
-                      ))}
-                   </div>
-                </div>
-              )}
+              <div className="pt-8 border-t border-slate-100 space-y-4">
+                 <div className="text-center text-[9px] font-black uppercase text-slate-300 tracking-[0.3em]">Access Simulation Points</div>
+                 <div className="flex gap-2">
+                    {[{ role: UserRole.STUDENT, email: 'ishu@gmail.com', label: 'Student' }, { role: UserRole.PARENT, email: 'parent@demo.in', label: 'Parent' }, { role: UserRole.ADMIN, email: 'admin@demo.in', label: 'Admin' }].map(demo => (
+                      <button key={demo.label} onClick={() => loginAsDemo(demo.email)} className="flex-1 py-3 bg-slate-50 rounded-xl text-[9px] font-black uppercase tracking-widest text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
+                         {demo.label}
+                      </button>
+                    ))}
+                 </div>
+              </div>
            </div>
         </div>
       </main>

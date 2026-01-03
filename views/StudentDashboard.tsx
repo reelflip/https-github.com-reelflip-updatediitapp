@@ -1,11 +1,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { StudentData } from '../types';
+import { api } from '../services/apiService';
 import { getSmartStudyAdvice } from '../services/intelligenceService';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
-import { Sparkles, Timer, Target, Brain, TrendingUp, Loader2, ChevronRight, Activity, Box, Quote, ChevronLeft } from 'lucide-react';
+import { Sparkles, Timer, Target, Brain, TrendingUp, Loader2, ChevronRight, Activity, Box, Quote, ChevronLeft, CloudSync, Wifi, ShieldCheck } from 'lucide-react';
 
 interface StudentDashboardProps {
   data: StudentData;
@@ -24,6 +25,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
   const [loadingAdvice, setLoadingAdvice] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [progress, setProgress] = useState(0);
+  const mode = api.getMode();
 
   useEffect(() => {
     const fetchAdvice = async () => {
@@ -89,6 +91,19 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
   return (
     <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700 pb-20">
       
+      {/* --- UPLINK STATUS BAR --- */}
+      <div className="flex justify-between items-center bg-white px-8 py-3 rounded-full border border-slate-100 shadow-sm mx-2">
+         <div className="flex items-center gap-3">
+            <div className={`w-2 h-2 rounded-full ${mode === 'LIVE' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`}></div>
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+               {mode === 'LIVE' ? 'LIVE SQL PERSISTENCE ACTIVE' : 'SANDBOX MODE (LOCAL STORAGE)'}
+            </span>
+         </div>
+         <div className="flex items-center gap-2 text-[8px] font-black text-slate-300 uppercase tracking-widest">
+            <ShieldCheck className="w-3 h-3" /> Encrypted Handshake Established
+         </div>
+      </div>
+
       {/* --- MOTIVATIONAL SLIDER --- */}
       <section className="bg-[#0a1128] rounded-[2.5rem] md:rounded-[4rem] p-8 md:p-14 text-white shadow-2xl relative overflow-hidden group">
          <div className="absolute top-0 right-0 p-12 opacity-5 rotate-12 transition-transform duration-[10s] group-hover:scale-110 group-hover:rotate-45">
@@ -278,7 +293,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
                       </div>
 
                       <div className="p-6 md:p-8 bg-[#f8fafc] rounded-2xl md:rounded-[2.5rem] border border-slate-100 shadow-inner">
-                         <div className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-3 md:mb-4">Functional Tip</div>
+                         <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-200 pb-2 mb-4">Functional Tip</div>
                          <p className="text-sm md:text-base font-bold text-[#0a1128] italic leading-relaxed">"{advice.mindsetTip || "Focus on consistency."}"</p>
                       </div>
                    </div>

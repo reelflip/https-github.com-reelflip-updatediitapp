@@ -6,7 +6,7 @@ import {
   UserCircle, Save, School, Briefcase, Calendar, 
   GraduationCap, CheckCircle, Globe, HeartHandshake, 
   ShieldCheck, Trash2, Mail, Building, Target, User, Info, Loader2,
-  Clock, Check, X, Bell
+  Clock, Check, X, Bell, RotateCcw, AlertTriangle
 } from 'lucide-react';
 
 interface ProfileModuleProps {
@@ -21,6 +21,7 @@ const TARGET_YEARS = ["2025", "2026", "2027", "2028"];
 const ProfileModule: React.FC<ProfileModuleProps> = ({ data, setData }) => {
   const [user, setUser] = useState<UserAccount | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isReseting, setIsReseting] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
@@ -65,6 +66,15 @@ const ProfileModule: React.FC<ProfileModuleProps> = ({ data, setData }) => {
       setTimeout(() => setIsSaved(false), 3000);
     }
     setIsSaving(false);
+  };
+
+  const handleHardReset = async () => {
+    if (!confirm("CRITICAL ACTION: This will permanently wipe all syllabus progress and test history. This cannot be undone. Proceed?")) return;
+    setIsReseting(true);
+    const resetData = await api.resetProgress(data.id);
+    setData(resetData);
+    setIsReseting(false);
+    alert("Node Reset Complete. All status returned to 0.");
   };
 
   const acceptInvitation = (inv: ParentInvitation) => {
@@ -151,6 +161,21 @@ const ProfileModule: React.FC<ProfileModuleProps> = ({ data, setData }) => {
                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No Active Links</p>
                 </div>
               )}
+           </div>
+
+           <div className="p-10 bg-rose-50 border border-rose-100 rounded-[3rem] space-y-6">
+              <div className="flex items-center gap-4 text-rose-600">
+                <AlertTriangle className="w-6 h-6" />
+                <h4 className="font-black italic text-lg">Danger Zone</h4>
+              </div>
+              <p className="text-xs text-rose-500 font-medium">Use this to reset your syllabus status to 0 and clear history.</p>
+              <button 
+                onClick={handleHardReset} 
+                disabled={isReseting}
+                className="w-full py-4 bg-white border border-rose-200 text-rose-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-rose-600 hover:text-white transition-all flex items-center justify-center gap-3"
+              >
+                {isReseting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><RotateCcw className="w-4 h-4" /> Reset My Progress</>}
+              </button>
            </div>
         </div>
 
