@@ -52,7 +52,7 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
     if (isSubmitted) return;
 
     let score = 0;
-    let correct = 0;
+    let correctCount = 0;
     
     activeTest.questionIds.forEach(id => {
       const q = data.questions.find(qu => qu.id === id);
@@ -60,38 +60,50 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
         const userAns = answers[id];
         if (userAns === q.correctAnswer) { 
           score += 4; 
-          correct++; 
+          correctCount++; 
         } else if (userAns !== undefined && userAns !== -1) { 
           score -= 1; 
         }
       }
     });
 
+    const accuracy = Math.round((correctCount / (activeTest.questionIds.length || 1)) * 100);
+
     const result: TestResult = {
       testId: activeTest.id,
       testName: activeTest.name,
       score: score,
       totalMarks: activeTest.totalMarks || (activeTest.questionIds.length * 4),
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().replace('T', ' ').substring(0, 19),
       chapterIds: activeTest.chapterIds,
-      accuracy: Math.round((correct / (activeTest.questionIds.length || 1)) * 100),
+      accuracy: accuracy,
       category: activeTest.category || 'ADMIN'
     };
 
+    // INTEL: Update relevant chapter accuracy in global state
+    const updatedChapters = data.chapters.map(ch => {
+        if (activeTest.chapterIds.includes(ch.id)) {
+            // New accuracy is a weighted average of previous accuracy and current test accuracy
+            // For simplicity, we use the better of the two or a blend
+            const newAcc = ch.accuracy === 0 ? accuracy : Math.round((ch.accuracy + accuracy) / 2);
+            return { 
+                ...ch, 
+                accuracy: newAcc,
+                timeSpentTests: (ch.timeSpentTests || 0) + (activeTest.duration * 60),
+                timeSpent: (ch.timeSpent || 0) + (activeTest.duration * 60)
+            };
+        }
+        return ch;
+    });
+
+    const updatedHistory = [result, ...data.testHistory];
+    const newData = { ...data, testHistory: updatedHistory, chapters: updatedChapters };
+    
     setIsSubmitted(true);
     setViewingResult(result);
 
-    // CRITICAL: Construct new history and sync immediately to server
-    const updatedHistory = [result, ...data.testHistory];
-    const newData = { ...data, testHistory: updatedHistory };
-    
-    // 1. Update UI Local State
+    // Synchronize to core state (triggers api.updateStudentData in App.tsx)
     setData(newData);
-
-    // 2. Immediate Server Handshake for SQL persistence
-    if (api.getMode() === 'LIVE') {
-        await api.updateStudentData(data.id, newData);
-    }
   };
 
   const formatTimer = (s: number) => {

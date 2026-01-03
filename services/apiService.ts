@@ -43,12 +43,12 @@ const getZeroStateStudentData = (id: string, name: string): StudentData => ({
 });
 
 const safeJson = async (response: Response) => {
-  const text = await response.text();
-  if (!response.ok) return { success: false, error: `Server Fault (${response.status})` };
   try {
+    const text = await response.text();
+    if (!response.ok) return { success: false, error: `HTTP ${response.status}` };
     return JSON.parse(text);
   } catch (e) {
-    return { success: false, error: "Malformed API Response" };
+    return { success: false, error: "Malformed Response" };
   }
 };
 
@@ -73,7 +73,7 @@ export const api = {
             body: JSON.stringify(credentials)
           });
           return await safeJson(res);
-        } catch(e) { return { success: false, error: "Authentication node offline." }; }
+        } catch(e) { return { success: false, error: "Node connection failed." }; }
     }
 
     const registry = JSON.parse(localStorage.getItem(API_CONFIG.GLOBAL_USERS_KEY) || '[]');
@@ -99,7 +99,7 @@ export const api = {
           body: JSON.stringify(data)
         });
         return await safeJson(res);
-      } catch(e) { return { success: false, error: "Registration Node Offline." }; }
+      } catch(e) { return { success: false, error: "Uplink timed out." }; }
     }
     
     const id = generateStableId(data.email);
@@ -127,7 +127,21 @@ export const api = {
             const templateChapters = getZeroStateChapters();
             const mergedChapters = templateChapters.map(t => {
                 const s = serverData.individual_progress?.find((c: any) => c.id === t.id);
-                return s ? { ...t, ...s } : t;
+                if (s) {
+                  return { 
+                    ...t, 
+                    ...s, 
+                    // Map numeric strings from SQL to numbers
+                    progress: Number(s.progress),
+                    accuracy: Number(s.accuracy),
+                    timeSpent: Number(s.timeSpent),
+                    timeSpentNotes: Number(s.timeSpentNotes || 0),
+                    timeSpentVideos: Number(s.timeSpentVideos || 0),
+                    timeSpentPractice: Number(s.timeSpentPractice || 0),
+                    timeSpentTests: Number(s.timeSpentTests || 0)
+                  };
+                }
+                return t;
             });
             return {
                 ...getZeroStateStudentData(studentId, serverData.name || 'Aspirant'),
@@ -138,7 +152,7 @@ export const api = {
                 pendingInvitations: serverData.pendingInvitations || []
             };
         }
-      } catch(e) {}
+      } catch(e) { console.error("Sync Error", e); }
     }
     const cached = localStorage.getItem(`jeepro_data_${studentId}`);
     return cached ? JSON.parse(cached) : getZeroStateStudentData(studentId, 'Aspirant');
@@ -146,79 +160,46 @@ export const api = {
 
   async searchStudent(query: string): Promise<UserAccount | null> {
     const q = query.toLowerCase();
-    
-    // LIVE SERVER MODE: Real-time Database Search
     if (this.getMode() === 'LIVE') {
         try {
             const res = await fetch(`${API_CONFIG.BASE_URL}manage_users.php?action=search&query=${encodeURIComponent(q)}&role=STUDENT`);
             const result = await safeJson(res);
-            if (result?.success && result.users && result.users.length > 0) {
-                return result.users[0]; // Return the most relevant match
-            }
-        } catch(e) { console.error("Database search failed"); }
+            if (result?.success && result.users?.length > 0) return result.users[0];
+        } catch(e) {}
     }
-    
-    // MOCK MODE FALLBACK
     const registry = JSON.parse(localStorage.getItem(API_CONFIG.GLOBAL_USERS_KEY) || '[]');
-    const student = registry.find((u: UserAccount) => 
-      u.role === UserRole.STUDENT && 
-      (u.id.toLowerCase() === q || u.name.toLowerCase().includes(q) || u.email.toLowerCase() === q)
-    );
-    if (student) return student;
-
-    if (q === '163110' || q === 'aryan') return { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2025-01-01' };
-    
-    return null;
-  },
-
-  async sendInvite(studentId: string, invite: ParentInvitation) {
-    const studentData = await this.getStudentData(studentId);
-    studentData.pendingInvitations = [...(studentData.pendingInvitations || []), invite];
-    await this.updateStudentData(studentId, studentData);
-    return { success: true };
+    return registry.find((u: UserAccount) => u.role === UserRole.STUDENT && (u.id.toLowerCase() === q || u.name.toLowerCase().includes(q))) || null;
   },
 
   async updateStudentData(studentId: string, updatedData: StudentData) {
     localStorage.setItem(`jeepro_data_${studentId}`, JSON.stringify(updatedData));
     if (this.getMode() === 'LIVE') {
       try {
+        const payload = { 
+          student_id: studentId, 
+          chapters: updatedData.chapters.map(c => ({ 
+            id: c.id, 
+            progress: c.progress, 
+            accuracy: c.accuracy, 
+            status: c.status, 
+            timeSpent: c.timeSpent,
+            timeSpentNotes: c.timeSpentNotes,
+            timeSpentVideos: c.timeSpentVideos,
+            timeSpentPractice: c.timeSpentPractice,
+            timeSpentTests: c.timeSpentTests
+          })),
+          testHistory: updatedData.testHistory,
+          connectedParent: updatedData.connectedParent || null,
+          pendingInvitations: updatedData.pendingInvitations || []
+        };
         await fetch(`${API_CONFIG.BASE_URL}sync_progress.php`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            student_id: studentId, 
-            chapters: updatedData.chapters.map(c => ({ id: c.id, progress: c.progress, accuracy: c.accuracy, status: c.status, timeSpent: c.timeSpent })),
-            testHistory: updatedData.testHistory,
-            connectedParent: updatedData.connectedParent || null,
-            pendingInvitations: updatedData.pendingInvitations || []
-          })
+          body: JSON.stringify(payload)
         });
-      } catch(e) {}
+      } catch(e) { console.error("Sync Persistence Failure", e); }
     }
     return { success: true };
-  },
-
-  async getAccounts(): Promise<UserAccount[]> {
-    // LIVE SERVER MODE: Fetch full user list from MySQL
-    if (this.getMode() === 'LIVE') {
-      try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}manage_users.php?action=list`);
-        const result = await safeJson(res);
-        if (result?.success && result.users) return result.users;
-      } catch(e) { console.error("Database fetch failed"); }
-    }
-    
-    // MOCK MODE FALLBACK
-    const registry = JSON.parse(localStorage.getItem(API_CONFIG.GLOBAL_USERS_KEY) || '[]');
-    const demoAccounts = [
-      { id: 'USER-ADMIN', name: 'Admin', email: 'admin@demo.in', role: UserRole.ADMIN, createdAt: '2025-01-01' },
-      { id: 'USER-PARENT', name: 'Parent', email: 'parent@demo.in', role: UserRole.PARENT, createdAt: '2025-01-01' },
-      { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2025-01-01' }
-    ];
-    
-    const combined = [...registry];
-    demoAccounts.forEach(demo => { if (!combined.some(u => u.email.toLowerCase() === demo.email.toLowerCase())) combined.push(demo); });
-    return combined;
   },
 
   async saveEntity(type: string, data: any) {
@@ -246,19 +227,15 @@ export const api = {
     return [];
   },
 
-  async markMessageRead(id: string) {
-    if (this.getMode() === 'LIVE') await fetch(`${API_CONFIG.BASE_URL}manage_messages.php?action=read&id=${id}`);
-    return { success: true };
-  },
-
-  async saveRoutine(studentId: string, routine: RoutineConfig) {
-    if (this.getMode() === 'LIVE') await fetch(`${API_CONFIG.BASE_URL}manage_routine.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: studentId, routine }) });
-    return { success: true };
-  },
-
-  async saveTimetable(studentId: string, timetable: any) {
-    if (this.getMode() === 'LIVE') await fetch(`${API_CONFIG.BASE_URL}manage_timetable.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: studentId, ...timetable }) });
-    return { success: true };
+  async getAccounts(): Promise<UserAccount[]> {
+    if (this.getMode() === 'LIVE') {
+      try {
+        const res = await fetch(`${API_CONFIG.BASE_URL}manage_users.php?action=list`);
+        const result = await safeJson(res);
+        if (result?.success && result.users) return result.users;
+      } catch(e) {}
+    }
+    return JSON.parse(localStorage.getItem(API_CONFIG.GLOBAL_USERS_KEY) || '[]');
   },
 
   async updateUserProfile(userId: string, profile: any) {
@@ -271,6 +248,74 @@ export const api = {
     if (index > -1) {
       registry[index] = { ...registry[index], ...profile };
       localStorage.setItem(API_CONFIG.GLOBAL_USERS_KEY, JSON.stringify(registry));
+    }
+    return { success: true };
+  },
+
+  // Added missing sendInvite method to fix error in views/ParentDashboard.tsx
+  async sendInvite(studentId: string, invitation: ParentInvitation) {
+    const studentData = await this.getStudentData(studentId);
+    if (studentData) {
+      const updatedData = {
+        ...studentData,
+        pendingInvitations: [...(studentData.pendingInvitations || []), invitation]
+      };
+      return await this.updateStudentData(studentId, updatedData);
+    }
+    return { success: false, error: "Student not found" };
+  },
+
+  // Added missing markMessageRead method to fix error in views/AdminCMS.tsx
+  async markMessageRead(messageId: string) {
+    if (this.getMode() === 'LIVE') {
+      try {
+        const res = await fetch(`${API_CONFIG.BASE_URL}manage_messages.php?action=read&id=${messageId}`);
+        return await safeJson(res);
+      } catch(e) { return { success: false, error: "Sync failed" }; }
+    }
+    return { success: true };
+  },
+
+  // Added missing saveRoutine method to fix error in views/TimetableModule.tsx
+  async saveRoutine(studentId: string, routine: RoutineConfig) {
+    if (this.getMode() === 'LIVE') {
+      try {
+        const res = await fetch(`${API_CONFIG.BASE_URL}manage_routine.php`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ student_id: studentId, routine })
+        });
+        return await safeJson(res);
+      } catch(e) { return { success: false, error: "Sync failed" }; }
+    }
+    const studentData = await this.getStudentData(studentId);
+    if (studentData) {
+      studentData.routine = routine;
+      localStorage.setItem(`jeepro_data_${studentId}`, JSON.stringify(studentData));
+    }
+    return { success: true };
+  },
+
+  // Added missing saveTimetable method to fix error in views/TimetableModule.tsx
+  async saveTimetable(studentId: string, timetable: { schedule: any[], roadmap: any[] }) {
+    if (this.getMode() === 'LIVE') {
+      try {
+        const res = await fetch(`${API_CONFIG.BASE_URL}manage_timetable.php`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ student_id: studentId, ...timetable })
+        });
+        return await safeJson(res);
+      } catch(e) { return { success: false, error: "Sync failed" }; }
+    }
+    const studentData = await this.getStudentData(studentId);
+    if (studentData) {
+      studentData.smartPlan = { 
+        ...(studentData.smartPlan || {}), 
+        schedule: timetable.schedule, 
+        roadmap: timetable.roadmap 
+      };
+      localStorage.setItem(`jeepro_data_${studentId}`, JSON.stringify(studentData));
     }
     return { success: true };
   },
