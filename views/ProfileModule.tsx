@@ -3,10 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { StudentData, UserAccount, ParentInvitation } from '../types';
 import { api } from '../services/apiService';
 import { 
-  UserCircle, Save, School, Briefcase, Calendar, 
-  GraduationCap, CheckCircle, Globe, HeartHandshake, 
-  ShieldCheck, Trash2, Mail, Building, Target, User, Info, Loader2,
-  Clock, Check, X, Bell, RotateCcw, AlertTriangle
+  UserCircle, Save, School, GraduationCap, CheckCircle, 
+  Globe, HeartHandshake, ShieldCheck, Trash2, Mail, 
+  Target, User, Loader2, Check, X, Bell, RotateCcw, AlertTriangle
 } from 'lucide-react';
 
 interface ProfileModuleProps {
@@ -77,34 +76,34 @@ const ProfileModule: React.FC<ProfileModuleProps> = ({ data, setData }) => {
     alert("Node Reset Complete. All status returned to 0.");
   };
 
-  const acceptInvitation = (inv: ParentInvitation) => {
-    const newData = {
+  const acceptInvitation = async (inv: ParentInvitation) => {
+    const newData: StudentData = {
       ...data,
       connectedParent: {
         name: inv.parentName,
-        id: inv.id,
+        email: inv.parentEmail,
         linkedSince: new Date().toLocaleDateString()
       },
       pendingInvitations: (data.pendingInvitations || []).filter(i => i.id !== inv.id)
     };
     setData(newData);
-    api.updateStudentData(data.id, newData);
+    await api.updateStudentData(data.id, newData);
   };
 
-  const rejectInvitation = (invId: string) => {
-    const newData = {
+  const rejectInvitation = async (invId: string) => {
+    const newData: StudentData = {
       ...data,
       pendingInvitations: (data.pendingInvitations || []).filter(i => i.id !== invId)
     };
     setData(newData);
-    api.updateStudentData(data.id, newData);
+    await api.updateStudentData(data.id, newData);
   };
 
-  const revokeHandshake = () => {
+  const revokeHandshake = async () => {
     if (confirm("Terminate parent visibility?")) {
-      const newData = { ...data, connectedParent: undefined };
+      const newData: StudentData = { ...data, connectedParent: undefined };
       setData(newData);
-      api.updateStudentData(data.id, newData);
+      await api.updateStudentData(data.id, newData);
     }
   };
 
@@ -141,16 +140,16 @@ const ProfileModule: React.FC<ProfileModuleProps> = ({ data, setData }) => {
                 </div>
               ) : (data.pendingInvitations && data.pendingInvitations.length > 0) ? (
                 <div className="space-y-4">
-                   <div className="text-[10px] font-black uppercase text-amber-400 tracking-widest flex items-center gap-2"><Bell className="w-3 h-3" /> Incoming Handshake Requests</div>
+                   <div className="text-[10px] font-black uppercase text-amber-400 tracking-widest flex items-center gap-2 animate-bounce"><Bell className="w-4 h-4" /> Incoming Access Requests</div>
                    {data.pendingInvitations.map(inv => (
-                     <div key={inv.id} className="p-5 bg-white/5 border border-white/10 rounded-2xl space-y-4">
+                     <div key={inv.id} className="p-5 bg-white/5 border border-white/10 rounded-2xl space-y-4 animate-in slide-in-from-top-2">
                         <div>
                           <div className="text-sm font-black text-white">{inv.parentName}</div>
                           <div className="text-[9px] font-bold text-slate-400 uppercase">{inv.parentEmail}</div>
                         </div>
                         <div className="flex gap-2">
-                           <button onClick={() => acceptInvitation(inv)} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2"><Check className="w-3 h-3" /> Accept</button>
-                           <button onClick={() => rejectInvitation(inv.id)} className="flex-1 py-2 bg-white/10 text-slate-400 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-rose-500/20 hover:text-rose-400"><X className="w-3 h-3" /> Reject</button>
+                           <button onClick={() => acceptInvitation(inv)} className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-emerald-500 transition-all"><Check className="w-3 h-3" /> Approve</button>
+                           <button onClick={() => rejectInvitation(inv.id)} className="flex-1 py-2 bg-white/10 text-slate-400 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-rose-500/20 hover:text-rose-400 transition-all"><X className="w-3 h-3" /> Dismiss</button>
                         </div>
                      </div>
                    ))}
@@ -158,7 +157,7 @@ const ProfileModule: React.FC<ProfileModuleProps> = ({ data, setData }) => {
               ) : (
                 <div className="space-y-4 text-center py-6 border-2 border-dashed border-white/10 rounded-[2rem]">
                    <Globe className="w-10 h-10 text-slate-500 mx-auto opacity-50" />
-                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No Active Links</p>
+                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No Connection Requests</p>
                 </div>
               )}
            </div>
@@ -168,7 +167,7 @@ const ProfileModule: React.FC<ProfileModuleProps> = ({ data, setData }) => {
                 <AlertTriangle className="w-6 h-6" />
                 <h4 className="font-black italic text-lg">Danger Zone</h4>
               </div>
-              <p className="text-xs text-rose-500 font-medium">Use this to reset your syllabus status to 0 and clear history.</p>
+              <p className="text-xs text-rose-500 font-medium">Reset syllabus status to 0 and clear exam history permanently.</p>
               <button 
                 onClick={handleHardReset} 
                 disabled={isReseting}
@@ -182,30 +181,30 @@ const ProfileModule: React.FC<ProfileModuleProps> = ({ data, setData }) => {
         <div className="lg:col-span-8 space-y-8">
           <div className="bg-white p-12 rounded-[4rem] border border-slate-200 shadow-sm space-y-12">
             <section className="space-y-8">
-              <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] flex items-center gap-3"><GraduationCap className="w-5 h-5" /> Personal Information</h4>
+              <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] flex items-center gap-3"><User className="w-5 h-5" /> Identity Node</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-[0.2em]">Legal Name</label>
-                  <div className="relative"><User className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" /><input type="text" value={profile.name} onChange={(e) => setProfile({...profile, name: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] py-6 pl-14 pr-6 text-sm font-black text-slate-800 focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner" /></div>
+                  <div className="relative"><User className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" /><input type="text" value={profile.name} onChange={(e) => setProfile({...profile, name: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] py-6 pl-14 pr-6 text-sm font-black text-slate-800 focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner outline-none" /></div>
                 </div>
                 <div className="space-y-3">
-                  <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-[0.2em]">Email</label>
-                  <div className="relative"><Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" /><input type="text" value={profile.email} disabled className="w-full bg-slate-100 border-none rounded-[2rem] py-6 pl-14 pr-6 text-sm font-black text-slate-400 cursor-not-allowed" /></div>
+                  <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-[0.2em]">Email (Fixed)</label>
+                  <div className="relative"><Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" /><input type="text" value={user?.email || profile.email} disabled className="w-full bg-slate-100 border-none rounded-[2rem] py-6 pl-14 pr-6 text-sm font-black text-slate-400 cursor-not-allowed" /></div>
                 </div>
               </div>
             </section>
             <section className="space-y-8 pt-8 border-t border-slate-100">
-              <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] flex items-center gap-3"><Target className="w-5 h-5" /> Academic Nodes</h4>
+              <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] flex items-center gap-3"><Target className="w-5 h-5" /> Target Coordinates</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-[0.2em]">Institute</label>
-                  <select value={profile.institute} onChange={(e) => setProfile({...profile, institute: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] p-6 text-sm font-black text-slate-800 focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner">
+                  <select value={profile.institute} onChange={(e) => setProfile({...profile, institute: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] p-6 text-sm font-black text-slate-800 focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner outline-none appearance-none">
                     {INSTITUTES.map(inst => <option key={inst} value={inst}>{inst}</option>)}
                   </select>
                 </div>
                 <div className="space-y-3">
                   <label className="text-[10px] font-black uppercase text-slate-400 ml-6 tracking-[0.2em]">Target Exam</label>
-                  <select value={profile.targetExam} onChange={(e) => setProfile({...profile, targetExam: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] p-6 text-sm font-black text-slate-800 focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner">
+                  <select value={profile.targetExam} onChange={(e) => setProfile({...profile, targetExam: e.target.value})} className="w-full bg-slate-50 border-none rounded-[2rem] p-6 text-sm font-black text-slate-800 focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner outline-none appearance-none">
                     {NATIONAL_EXAMS.map(ex => <option key={ex} value={ex}>{ex}</option>)}
                   </select>
                 </div>

@@ -24,7 +24,6 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
   const [advice, setAdvice] = useState<any>(null);
   const [loadingAdvice, setLoadingAdvice] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(0);
-  const [progress, setProgress] = useState(0);
   const mode = api.getMode();
 
   useEffect(() => {
@@ -42,17 +41,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
     fetchAdvice();
   }, [data]);
 
-  // Motivational Slider Logic
+  // Motivational Slider Logic - Simplified to cycle quotes without a visual progress bar
   useEffect(() => {
     const timer = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          setQuoteIndex((current) => (current + 1) % MOTIVATIONAL_QUOTES.length);
-          return 0;
-        }
-        return prev + 0.5;
-      });
-    }, 40);
+      setQuoteIndex((current) => (current + 1) % MOTIVATIONAL_QUOTES.length);
+    }, 10000); // 10 second discrete cycle
     return () => clearInterval(timer);
   }, []);
 
@@ -126,21 +119,18 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
                </div>
                <div className="flex flex-col md:flex-row items-center gap-6">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Source: {MOTIVATIONAL_QUOTES[quoteIndex].author}</span>
-                  <div className="flex-1 w-full max-w-[200px] h-1 bg-white/5 rounded-full overflow-hidden">
-                     <div className="h-full bg-indigo-500 transition-all duration-75" style={{ width: `${progress}%` }}></div>
-                  </div>
                </div>
             </div>
 
             <div className="flex gap-3">
                <button 
-                  onClick={() => { setQuoteIndex((prev) => (prev - 1 + MOTIVATIONAL_QUOTES.length) % MOTIVATIONAL_QUOTES.length); setProgress(0); }}
+                  onClick={() => { setQuoteIndex((prev) => (prev - 1 + MOTIVATIONAL_QUOTES.length) % MOTIVATIONAL_QUOTES.length); }}
                   className="p-4 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all"
                >
                   <ChevronLeft className="w-5 h-5 text-indigo-400" />
                </button>
                <button 
-                  onClick={() => { setQuoteIndex((prev) => (prev + 1) % MOTIVATIONAL_QUOTES.length); setProgress(0); }}
+                  onClick={() => { setQuoteIndex((prev) => (prev + 1) % MOTIVATIONAL_QUOTES.length); }}
                   className="p-4 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all"
                >
                   <ChevronRight className="w-5 h-5 text-indigo-400" />

@@ -1,5 +1,5 @@
 
-import { StudentData, UserRole, UserAccount, RoutineConfig, TestResult, Chapter, PsychometricScore, ContactMessage } from '../types';
+import { StudentData, UserRole, UserAccount, RoutineConfig, TestResult, Chapter, PsychometricScore, ContactMessage, ParentInvitation } from '../types';
 import { INITIAL_STUDENT_DATA } from '../mockData';
 
 const API_CONFIG = {
@@ -141,6 +141,37 @@ export const api = {
     }
     const cached = localStorage.getItem(`jeepro_data_${studentId}`);
     return cached ? JSON.parse(cached) : getZeroStateStudentData(studentId, 'New Aspirant');
+  },
+
+  async searchStudent(query: string): Promise<UserAccount | null> {
+    // In Mock mode, we scan local storage for user data keys
+    const keys = Object.keys(localStorage);
+    for (const key of keys) {
+      if (key.startsWith('jeepro_data_')) {
+        const data = JSON.parse(localStorage.getItem(key) || '{}');
+        if (data.id === query || data.name?.toLowerCase().includes(query.toLowerCase())) {
+          return {
+            id: data.id,
+            name: data.name,
+            email: data.email || 'hidden@aspirant.edu',
+            role: UserRole.STUDENT,
+            createdAt: ''
+          };
+        }
+      }
+    }
+    // Hardcoded demo student if not found in storage
+    if (query === '163110' || query.toLowerCase() === 'aryan') {
+      return { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2025-01-01' };
+    }
+    return null;
+  },
+
+  async sendInvite(studentId: string, invite: ParentInvitation) {
+    const studentData = await this.getStudentData(studentId);
+    studentData.pendingInvitations = [...(studentData.pendingInvitations || []), invite];
+    await this.updateStudentData(studentId, studentData);
+    return { success: true };
   },
 
   async updateStudentData(studentId: string, updatedData: StudentData) {

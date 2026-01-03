@@ -171,7 +171,7 @@ export interface StudentData {
   analyticsId?: string;
   connectedParent?: {
     name: string;
-    id: string;
+    email: string;
     linkedSince: string;
   };
   pendingInvitations?: ParentInvitation[];
