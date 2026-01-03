@@ -35,8 +35,8 @@ const getCleanStudentData = (id: string, name: string): StudentData => ({
   id,
   name,
   chapters: getCleanChapters(),
-  flashcards: [], // Safety: explicit empty array
-  memoryHacks: [], // Safety: explicit empty array
+  flashcards: INITIAL_STUDENT_DATA.flashcards || [],
+  memoryHacks: INITIAL_STUDENT_DATA.memoryHacks || [],
   testHistory: [],
   psychometricHistory: [],
   backlogs: [],
@@ -101,7 +101,6 @@ export const api = {
     if (this.getMode() === 'MOCK') {
       const id = generateStableId(data.email);
       const newUser = { ...data, id, createdAt: new Date().toISOString() };
-      // Pre-initialize empty data for this new ID
       localStorage.setItem(`jeepro_data_${id}`, JSON.stringify(getCleanStudentData(id, data.name)));
       return { success: true, user: newUser };
     }
@@ -118,21 +117,16 @@ export const api = {
   async getStudentData(studentId: string): Promise<StudentData> {
     const localKey = `jeepro_data_${studentId}`;
     
-    // Check specific user cache first
     const cached = localStorage.getItem(localKey);
     if (cached) {
         try { 
             const parsed = JSON.parse(cached);
             if (parsed && parsed.chapters && parsed.chapters.length > 0) {
-                // Ensure flashcards and hacks are present
-                if (!parsed.flashcards) parsed.flashcards = [];
-                if (!parsed.memoryHacks) parsed.memoryHacks = [];
                 return parsed; 
             }
         } catch(e) {}
     }
 
-    // Default Fallback
     let baseData: StudentData = studentId === '163110' 
       ? INITIAL_STUDENT_DATA 
       : getCleanStudentData(studentId, 'New Aspirant');
@@ -143,17 +137,23 @@ export const api = {
         const result = await safeJson(res);
         if (result && result.success && result.data) {
             const serverData = result.data;
-            const cleanChapters = getCleanChapters();
-            const mergedChapters = cleanChapters.map(templateCh => {
+            const templateChapters = getCleanChapters();
+            const mergedChapters = templateChapters.map(templateCh => {
                 const serverCh = serverData.chapters?.find((c: any) => c.id === templateCh.id);
                 return serverCh ? { ...templateCh, ...serverCh } : templateCh;
             });
-            const finalData = {
+            
+            // CRITICAL: Preserve global metadata if server returns empty arrays
+            const finalData: StudentData = {
                 ...baseData,
                 ...serverData,
                 chapters: mergedChapters,
-                flashcards: serverData.flashcards || baseData.flashcards || [],
-                memoryHacks: serverData.memoryHacks || baseData.memoryHacks || []
+                // Only use server lists if they have content, otherwise keep default library
+                flashcards: (serverData.flashcards && serverData.flashcards.length > 0) ? serverData.flashcards : baseData.flashcards,
+                memoryHacks: (serverData.memoryHacks && serverData.memoryHacks.length > 0) ? serverData.memoryHacks : baseData.memoryHacks,
+                mockTests: (serverData.mockTests && serverData.mockTests.length > 0) ? serverData.mockTests : baseData.mockTests,
+                questions: (serverData.questions && serverData.questions.length > 0) ? serverData.questions : baseData.questions,
+                testHistory: serverData.testHistory || []
             };
             localStorage.setItem(localKey, JSON.stringify(finalData));
             return finalData;
@@ -182,6 +182,7 @@ export const api = {
               timeSpent: c.timeSpent
             })),
             backlogs: updatedData.backlogs,
+            testHistory: updatedData.testHistory,
             psychometric: updatedData.psychometricHistory[updatedData.psychometricHistory.length -1]
           })
         });

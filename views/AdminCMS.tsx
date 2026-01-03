@@ -6,7 +6,7 @@ import { MODEL_CONFIGS } from '../services/intelligenceService';
 import JSZip from 'jszip';
 import saveAs from 'file-saver';
 import { 
-  ShieldCheck, BookOpen, Layers, Zap, Loader2, Plus, Trash2, Edit3, X, Target, Code2, Save, Users, PenTool, Check, HelpCircle, Video, Award, Type, Lightbulb, Activity, Filter, Search, Clock, ChevronRight, Layout, List, FileText, Calendar, Globe, Settings, Cpu, Database, Cloud, Download, Eye, AlertTriangle, Star, Signal, SignalHigh, SignalLow, Activity as DiagnosticIcon, ClipboardCheck, RefreshCw, CheckCircle, ShieldAlert, FlaskConical, Map, HeartHandshake, Trash, Mail, Bell, Shield, FileBox, Heart, Bold, Italic, List as ListIcon, Heading1, Heading2, Link as LinkIcon, Maximize2, Minimize2
+  ShieldCheck, BookOpen, Layers, Zap, Loader2, Plus, Trash2, Edit3, X, Target, Code2, Save, Users, PenTool, Check, HelpCircle, Video, Award, Type, Lightbulb, Activity, Filter, Search, Clock, ChevronRight, Layout, List, FileText, Calendar, Globe, Settings, Cpu, Database, Cloud, Download, Eye, AlertTriangle, Star, Signal, SignalHigh, SignalLow, Activity as DiagnosticIcon, ClipboardCheck, RefreshCw, CheckCircle, ShieldAlert, FlaskConical, Map, HeartHandshake, Trash, Mail, Bell, Shield, FileBox, Heart, Bold, Italic, List as ListIcon, Heading1, Heading2, Link as LinkIcon, Maximize2, Minimize2, UserCircle
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -232,6 +232,23 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [creationType, setCreationType] = useState<string>('Question');
+  const [userList, setUserList] = useState<UserAccount[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'admin-users') {
+        loadUsers();
+    }
+  }, [activeTab]);
+
+  const loadUsers = async () => {
+    setIsLoadingUsers(true);
+    try {
+        const users = await api.getAccounts();
+        setUserList(users || []);
+    } catch(e) { console.error("User Load Error", e); }
+    setIsLoadingUsers(false);
+  };
 
   const handleEdit = (type: string, item: any) => { setCreationType(type); setEditingItem(item); setIsCreating(true); };
 
@@ -243,6 +260,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     };
     const key = keyMap[type];
     if (key) setData({ ...data, [key]: (data[key] as any[]).filter((item: any) => item.id !== id) });
+    if (type === 'User') setUserList(prev => prev.filter(u => u.id !== id));
   };
 
   const handleSaveEntity = async (type: string, entity: any) => {
@@ -276,23 +294,28 @@ CREATE TABLE IF NOT EXISTS users (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255)
 CREATE TABLE IF NOT EXISTS chapters (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), subject VARCHAR(50), unit VARCHAR(255), notes TEXT, videoUrl VARCHAR(512));
 CREATE TABLE IF NOT EXISTS student_progress (student_id VARCHAR(100), chapter_id VARCHAR(100), progress INT DEFAULT 0, accuracy INT DEFAULT 0, status VARCHAR(50), time_spent INT DEFAULT 0, PRIMARY KEY (student_id, chapter_id));
 CREATE TABLE IF NOT EXISTS questions (id VARCHAR(100) PRIMARY KEY, topicId VARCHAR(100), text TEXT, options JSON, correctAnswer INT, difficulty VARCHAR(20), subject VARCHAR(50));
+CREATE TABLE IF NOT EXISTS mock_tests (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), duration INT, totalMarks INT, category VARCHAR(50), difficulty VARCHAR(50), questionIds JSON, chapterIds JSON);
 CREATE TABLE IF NOT EXISTS flashcards (id VARCHAR(100) PRIMARY KEY, question TEXT, answer TEXT, subject VARCHAR(50), difficulty VARCHAR(20), type VARCHAR(50));
 CREATE TABLE IF NOT EXISTS memory_hacks (id VARCHAR(100) PRIMARY KEY, title VARCHAR(255), description TEXT, hack TEXT, category VARCHAR(100), subject VARCHAR(50));
-CREATE TABLE IF NOT EXISTS test_results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(100), test_name VARCHAR(255), score INT, total_marks INT, accuracy INT, taken_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS test_results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(100), test_id VARCHAR(100), test_name VARCHAR(255), score INT, total_marks INT, accuracy INT, category VARCHAR(50), taken_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS psychometric (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(100), stress INT, focus INT, motivation INT, examFear INT, timestamp DATE, studentSummary TEXT, parentAdvice TEXT);
 `;
       zip.file("sql/full_schema_v21.sql", sqlSchema);
 
       // 2. SEED DATA SQL
       const seedSql = `-- Core Academic Seed Data
+INSERT INTO mock_tests (id, name, duration, totalMarks, category, difficulty, questionIds, chapterIds) VALUES 
+('jee-main-2024', 'JEE Main 2024 Official', 180, 300, 'ADMIN', 'MAINS', '["q_24_1", "q_24_2"]', '["p-units", "m-sets"]');
+
+INSERT INTO questions (id, topicId, text, options, correctAnswer, difficulty, subject) VALUES 
+('q_24_1', 'p-units', 'A capacitor of 10 μF is charged to 50V. The energy stored is:', '["12.5 mJ", "25 mJ", "0.125 J", "1.25 J"]', 0, 'EASY', 'Physics');
+
 INSERT INTO flashcards (id, question, answer, subject, difficulty, type) VALUES 
 ('fc-1', 'Dimensional formula of Planck''s Constant (h)', 'ML²T⁻¹', 'Physics', 'EASY', 'Formula'),
-('fc-2', 'Ideal Gas Equation', 'PV = nRT', 'Chemistry', 'EASY', 'Formula'),
-('fc-3', 'Huckel''s Rule for Aromaticity', '(4n + 2) pi electrons', 'Chemistry', 'MEDIUM', 'Concept');
+('fc-2', 'Ideal Gas Equation', 'PV = nRT', 'Chemistry', 'EASY', 'Formula');
 
 INSERT INTO memory_hacks (id, title, description, hack, category, subject) VALUES 
-('mh-1', 'Trigonometry Ratios', 'Sine, Cosine, Tangent basic formulas', 'SOH CAH TOA', 'Mnemonics', 'Mathematics'),
-('mh-2', 'Redox Reactions', 'Oxidation vs Reduction definitions', 'OIL RIG', 'Mnemonics', 'Chemistry');
+('mh-1', 'Trigonometry Ratios', 'Sine, Cosine, Tangent basic formulas', 'SOH CAH TOA', 'Mnemonics', 'Mathematics');
 `;
       zip.file("sql/seed_data_v21.sql", seedSql);
 
@@ -312,38 +335,77 @@ if ($user) {
 }
 ?>`);
 
+      zip.file("get_dashboard.php", `<?php
+header('Content-Type: application/json');
+include 'config/database.php';
+$sid = $_GET['id'] ?? '';
+if(!$sid) die(json_encode(['success' => false, 'error' => 'No ID']));
+
+// 1. Fetch Student Progress
+$stmt = $pdo->prepare("SELECT chapter_id as id, progress, accuracy, status, time_spent as timeSpent FROM student_progress WHERE student_id = ?");
+$stmt->execute([$sid]);
+$chapters = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// 2. Fetch Test History
+$stmt = $pdo->prepare("SELECT test_id as testId, test_name as testName, score, total_marks as totalMarks, accuracy, category, taken_at as date FROM test_results WHERE student_id = ? ORDER BY taken_at DESC");
+$stmt->execute([$sid]);
+$history = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// 3. Fetch Global Data (Metadata)
+$mockTests = $pdo->query("SELECT * FROM mock_tests")->fetchAll(PDO::FETCH_ASSOC);
+$questions = $pdo->query("SELECT * FROM questions")->fetchAll(PDO::FETCH_ASSOC);
+
+echo json_encode([
+    'success' => true, 
+    'data' => [
+        'chapters' => $chapters,
+        'testHistory' => $history,
+        'mockTests' => $mockTests,
+        'questions' => $questions
+    ]
+]);
+?>`);
+
+      zip.file("manage_users.php", `<?php
+header('Content-Type: application/json');
+include 'config/database.php';
+
+$action = $_GET['action'] ?? 'list';
+if($action == 'list') {
+    $stmt = $pdo->query("SELECT id, name, email, role, created_at as createdAt FROM users ORDER BY created_at DESC");
+    $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    echo json_encode(['success' => true, 'users' => $users]);
+} else if($action == 'delete') {
+    $id = $_GET['id'] ?? '';
+    $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+    $stmt->execute([$id]);
+    echo json_encode(['success' => true]);
+}
+?>`);
+
       zip.file("sync_progress.php", `<?php
 header('Content-Type: application/json');
 include 'config/database.php';
 $data = json_decode(file_get_contents('php://input'), true);
 $sid = $data['student_id'] ?? '';
 if(!$sid) die(json_encode(['success' => false, 'error' => 'No ID']));
+
+// Sync Chapters
 foreach(($data['chapters'] ?? []) as $ch) {
     $stmt = $pdo->prepare("INSERT INTO student_progress (student_id, chapter_id, progress, accuracy, status, time_spent) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE progress=?, accuracy=?, status=?, time_spent=?");
     $stmt->execute([$sid, $ch['id'], $ch['progress'], $ch['accuracy'], $ch['status'], $ch['timeSpent'], $ch['progress'], $ch['accuracy'], $ch['status'], $ch['timeSpent']]);
 }
-echo json_encode(['success' => true]);
-?>`);
 
-      zip.file("manage_entity.php", `<?php
-header('Content-Type: application/json');
-include 'config/database.php';
-$type = $_GET['type'] ?? '';
-$data = json_decode(file_get_contents('php://input'), true);
-if($type == 'Flashcard') {
-    $stmt = $pdo->prepare("INSERT INTO flashcards (id, question, answer, subject, difficulty, type) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE question=?, answer=?, subject=?, difficulty=?, type=?");
-    $stmt->execute([$data['id'], $data['question'], $data['answer'], $data['subject'], $data['difficulty'], $data['type'], $data['question'], $data['answer'], $data['subject'], $data['difficulty'], $data['type']]);
-} else if($type == 'MemoryHack') {
-    $stmt = $pdo->prepare("INSERT INTO memory_hacks (id, title, description, hack, category, subject) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE title=?, description=?, hack=?, category=?, subject=?");
-    $stmt->execute([$data['id'], $data['title'], $data['description'], $data['hack'], $data['category'], $data['subject'], $data['title'], $data['description'], $data['hack'], $data['category'], $data['subject']]);
-} else if($type == 'Psychometric') {
-    $stmt = $pdo->prepare("INSERT INTO psychometric (student_id, stress, focus, motivation, examFear, timestamp, studentSummary, parentAdvice) VALUES (?,?,?,?,?,?,?,?)");
-    $stmt->execute([$data['student_id'], $data['stress'], $data['focus'], $data['motivation'], $data['examFear'], $data['timestamp'], $data['studentSummary'], $data['parentAdvice']]);
+// Sync Results
+foreach(($data['testHistory'] ?? []) as $res) {
+    $stmt = $pdo->prepare("INSERT IGNORE INTO test_results (student_id, test_id, test_name, score, total_marks, accuracy, category, taken_at) VALUES (?,?,?,?,?,?,?,?)");
+    $stmt->execute([$sid, $res['testId'], $res['testName'], $res['score'], $res['totalMarks'], $res['accuracy'], $res['category'], $res['date']]);
 }
+
 echo json_encode(['success' => true]);
 ?>`);
 
-      zip.file("config/database.php", "<?php\n\$host = 'localhost';\n\$db = 'iitjeeprep_v21';\n\$user = 'root';\n\$pass = '';\n\$pdo = new PDO(\"mysql:host=\$host;dbname=\$db\", \$user, \$pass); ?>");
+      zip.file("config/database.php", "<?php\n\$host = 'localhost';\n\$db = 'iitjeeprep_v21';\n\$user = 'root';\n\$pass = '';\n\$pdo = new PDO(\"mysql:host=\$host;dbname=\$db\", \$user, \$pass, [PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]); ?>");
 
       const content = await zip.generateAsync({ type: "blob" });
       saveAs(content, "iitjeeprep_production_suite_v21.zip");
@@ -380,6 +442,58 @@ echo json_encode(['success' => true]);
               </div>
             ))}
           </div>
+        )}
+
+        {activeTab === 'admin-users' && (
+           <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden mx-4">
+             <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
+               <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-3"><Users className="w-6 h-6 text-indigo-600" /> Identity Management</h3>
+               <button onClick={loadUsers} className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-indigo-600 shadow-sm transition-all"><RefreshCw className={`w-4 h-4 ${isLoadingUsers ? 'animate-spin' : ''}`} /></button>
+             </div>
+             <div className="overflow-x-auto">
+                <table className="w-full text-left min-w-[800px]">
+                   <thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                      <tr>
+                        <th className="p-6">Account Identity</th>
+                        <th className="p-6">Access Role</th>
+                        <th className="p-6">Registered On</th>
+                        <th className="p-6 text-right">Actions</th>
+                      </tr>
+                   </thead>
+                   <tbody className="divide-y divide-slate-50">
+                      {userList.length === 0 ? (
+                        <tr><td colSpan={4} className="p-20 text-center text-slate-300 font-black uppercase text-[10px] tracking-widest italic">No authorized identities detected.</td></tr>
+                      ) : (
+                        userList.map(user => (
+                          <tr key={user.id} className="hover:bg-slate-50/50 transition-colors group">
+                            <td className="p-6">
+                               <div className="flex items-center gap-4">
+                                  <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center font-black text-xs uppercase shadow-inner">{user.name[0]}</div>
+                                  <div>
+                                     <div className="text-sm font-bold text-slate-800">{user.name}</div>
+                                     <div className="text-[10px] font-medium text-slate-400">{user.email}</div>
+                                  </div>
+                               </div>
+                            </td>
+                            <td className="p-6">
+                               <span className={`px-4 py-1.5 rounded-full text-[9px] font-black tracking-widest uppercase border ${user.role === UserRole.ADMIN ? 'bg-rose-50 text-rose-600 border-rose-100' : user.role === UserRole.PARENT ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>
+                                  {user.role}
+                               </span>
+                            </td>
+                            <td className="p-6 text-xs font-bold text-slate-400 uppercase tracking-tight">{user.createdAt || 'Pre-System Epoch'}</td>
+                            <td className="p-6 text-right">
+                               <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button className="p-3 bg-white border border-slate-100 text-slate-400 rounded-xl hover:text-indigo-600 shadow-sm"><Edit3 className="w-4 h-4" /></button>
+                                  <button onClick={() => handleDelete('User', user.id)} className="p-3 bg-white border border-slate-100 text-slate-400 rounded-xl hover:text-rose-600 shadow-sm"><Trash2 className="w-4 h-4" /></button>
+                               </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                   </tbody>
+                </table>
+             </div>
+           </div>
         )}
         
         {activeTab === 'admin-syllabus' && <EntityList title="Syllabus Architect" type="Chapter" data={data.chapters} icon={BookOpen} color="indigo" btnLabel="Add Chapter" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Chapter'); setEditingItem(null); setIsCreating(true); }} />}
