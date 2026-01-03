@@ -2,8 +2,15 @@
 import { StudentData, UserRole, UserAccount, RoutineConfig, TestResult, Chapter, PsychometricScore, ContactMessage, ParentInvitation } from '../types';
 import { INITIAL_STUDENT_DATA } from '../mockData';
 
+declare global {
+  interface Window {
+    SOLARIS_CONFIG?: {
+      dataSourceMode: 'MOCK' | 'LIVE';
+    };
+  }
+}
+
 const API_CONFIG = {
-  // Use root-relative path to prevent 404s on nested routes
   BASE_URL: 'api/', 
   MODE_KEY: 'jeepro_datasource_mode_v10_final',
   GLOBAL_USERS_KEY: 'jeepro_global_users_registry_v22'
@@ -49,23 +56,37 @@ const safeJson = async (response: Response) => {
     if (!response.ok) {
       return { 
         success: false, 
-        error: `System Node Error ${response.status}: The requested resource at '${response.url}' was not found. Please ensure the 'api/' folder is deployed to your server root.` 
+        error: `HTTP ${response.status}: Path '${response.url}' unreachable.` 
       };
     }
-    return JSON.parse(text);
+    const data = JSON.parse(text);
+    if (data.error === "Core Handshake Failed") {
+      return {
+        success: false,
+        error: "Database Connection Error: The PHP backend cannot connect to MySQL. Please edit 'api/config/database.php' with your correct database credentials."
+      };
+    }
+    return data;
   } catch (e) {
     if (text.includes('<!DOCTYPE html>') || text.includes('<html>')) {
       return { 
         success: false, 
-        error: "Critical Protocol Fault: The server returned an HTML error page instead of a JSON response. This usually indicates a 404 Not Found error for the PHP endpoint." 
+        error: "Server Route Fault: The server returned an HTML page (likely a 404 or 500 error) instead of JSON. Ensure the 'api/' folder is in your web root." 
       };
     }
-    return { success: false, error: "Malformed Response: Core node returned non-JSON data." };
+    return { success: false, error: "Protocol Mismatch: Backend returned invalid data stream." };
   }
 };
 
 export const api = {
-  getMode: (): 'MOCK' | 'LIVE' => (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'MOCK',
+  getMode: (): 'MOCK' | 'LIVE' => {
+    // Priority 1: Direct configuration in index.html
+    if (window.SOLARIS_CONFIG && window.SOLARIS_CONFIG.dataSourceMode) {
+      return window.SOLARIS_CONFIG.dataSourceMode;
+    }
+    // Priority 2: Persistent user choice (legacy support)
+    return (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'MOCK';
+  },
   
   setMode: (mode: 'MOCK' | 'LIVE') => { 
     localStorage.setItem(API_CONFIG.MODE_KEY, mode); 
@@ -85,7 +106,7 @@ export const api = {
             body: JSON.stringify(credentials)
           });
           return await safeJson(res);
-        } catch(e) { return { success: false, error: "Node connection failed. Verify PHP API folder is uploaded to the root directory." }; }
+        } catch(e) { return { success: false, error: "Uplink Failure: Connection to PHP node refused." }; }
     }
 
     const registry = JSON.parse(localStorage.getItem(API_CONFIG.GLOBAL_USERS_KEY) || '[]');
@@ -111,7 +132,7 @@ export const api = {
           body: JSON.stringify(data)
         });
         return await safeJson(res);
-      } catch(e) { return { success: false, error: "Uplink timed out. Ensure your server allows POST requests to the 'api/' directory." }; }
+      } catch(e) { return { success: false, error: "Handshake Timeout: Verify API deployment." }; }
     }
     
     const id = generateStableId(data.email);
@@ -208,7 +229,7 @@ export const api = {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-      } catch(e) { console.error("Sync Persistence Failure", e); }
+      } catch(e) { console.error("Persistence Error", e); }
     }
     return { success: true };
   },
