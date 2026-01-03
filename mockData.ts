@@ -1,83 +1,189 @@
 
-import { StudentData, UserRole, Chapter } from './types';
+import { StudentData, UserRole, Chapter, Question } from './types';
+
+// --- NCERT CONTENT SEEDS ---
+
+const PHYSICS_UNITS_NOTES = `
+<h2 class="text-3xl font-black italic tracking-tighter mt-8 mb-6 uppercase text-indigo-600">1. Units and Measurements: The Foundation</h2>
+<p class="text-slate-600 font-medium leading-relaxed mb-6">Measurement of any physical quantity involves comparison with a certain basic, internationally accepted reference standard called unit. The result of a measurement of a physical quantity is expressed by a number accompanied by a unit.</p>
+
+<h3 class="text-xl font-black italic tracking-tight mt-8 mb-4 uppercase text-slate-800">1.1 The International System of Units (SI)</h3>
+<p class="text-slate-600 font-medium leading-relaxed mb-4">In 1971, the General Conference on Weights and Measures developed the SI system. There are seven base units:</p>
+<ul class="list-disc pl-8 space-y-3 my-6">
+  <li><strong>Length:</strong> Metre (m) - defined by the speed of light in vacuum.</li>
+  <li><strong>Mass:</strong> Kilogram (kg) - defined by the Planck constant.</li>
+  <li><strong>Time:</strong> Second (s) - defined by Cesium-133 atom vibrations.</li>
+  <li><strong>Electric Current:</strong> Ampere (A).</li>
+  <li><strong>Thermodynamic Temperature:</strong> Kelvin (K).</li>
+  <li><strong>Amount of Substance:</strong> Mole (mol).</li>
+  <li><strong>Luminous Intensity:</strong> Candela (cd).</li>
+</ul>
+
+<h3 class="text-xl font-black italic tracking-tight mt-8 mb-4 uppercase text-slate-800">1.2 Dimensional Analysis</h3>
+<p class="text-slate-600 font-medium leading-relaxed mb-4">The dimensions of a physical quantity are the powers to which the base quantities are raised to represent that quantity. <strong>The Principle of Homogeneity</strong> states that dimensions of each of the terms of a physical equation on both sides should be the same.</p>
+<div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 my-6 font-mono text-indigo-600">
+  [Force] = [M][L][T^-2]<br>
+  [Work/Energy] = [M][L^2][T^-2]<br>
+  [Pressure/Stress] = [M][L^-1][T^-2]
+</div>
+
+<h3 class="text-xl font-black italic tracking-tight mt-8 mb-4 uppercase text-slate-800">1.3 Errors in Measurement</h3>
+<p class="text-slate-600 font-medium leading-relaxed mb-4">No measurement is perfect. Errors are classified as Systematic or Random.</p>
+<ul class="list-disc pl-8 space-y-3 my-6">
+  <li><strong>Absolute Error:</strong> Δa = |a_mean - a_i|</li>
+  <li><strong>Relative Error:</strong> Δa_mean / a_mean</li>
+  <li><strong>Percentage Error:</strong> Relative Error × 100%</li>
+</ul>
+<p class="text-slate-500 italic text-sm border-l-4 border-indigo-500 pl-4 py-2 bg-indigo-50 uppercase font-black">JEE Strategy: Significant figures and rounding off are critical for numerical-type questions in Paper-1.</p>
+`;
+
+const CHEMISTRY_BASIC_NOTES = `
+<h2 class="text-3xl font-black italic tracking-tighter mt-8 mb-6 uppercase text-emerald-600">1. Basic Concepts: Mole Logic</h2>
+<p class="text-slate-600 font-medium leading-relaxed mb-6">Chemistry deals with the composition, structure, and properties of matter. Matter is anything which has mass and occupies space.</p>
+
+<h3 class="text-xl font-black italic tracking-tight mt-8 mb-4 uppercase text-slate-800">1.1 Laws of Chemical Combination</h3>
+<ul class="list-disc pl-8 space-y-3 my-6">
+  <li><strong>Law of Conservation of Mass:</strong> Mass can neither be created nor destroyed (Lavoisier, 1789).</li>
+  <li><strong>Law of Definite Proportions:</strong> A compound always contains exactly the same proportion of elements by weight.</li>
+  <li><strong>Law of Multiple Proportions:</strong> Small whole number ratios for masses of one element combining with fixed mass of another.</li>
+</ul>
+
+<h3 class="text-xl font-black italic tracking-tight mt-8 mb-4 uppercase text-slate-800">1.2 The Mole Concept (JEE High Yield)</h3>
+<p class="text-slate-600 font-medium leading-relaxed mb-4">One mole contains <strong>6.022 × 10^23</strong> particles (Avogadro Constant).</p>
+<div class="bg-emerald-50 p-6 rounded-2xl border border-emerald-200 my-6 font-mono text-emerald-700">
+  Number of Moles = Given Mass / Molar Mass<br>
+  Molarity (M) = Moles of Solute / Volume of Solution in Litres<br>
+  Molality (m) = Moles of Solute / Mass of Solvent in Kilograms
+</div>
+`;
+
+const MATHS_SETS_NOTES = `
+<h2 class="text-3xl font-black italic tracking-tighter mt-8 mb-6 uppercase text-rose-600">1. Sets: Algebraic Foundations</h2>
+<p class="text-slate-600 font-medium leading-relaxed mb-6">A <strong>Set</strong> is a well-defined collection of objects. Foundations laid by Georg Cantor.</p>
+
+<h3 class="text-xl font-black italic tracking-tight mt-8 mb-4 uppercase text-slate-800">1.1 Representation</h3>
+<ul class="list-disc pl-8 space-y-3 my-6">
+  <li><strong>Roster Form:</strong> Elements listed within { }.</li>
+  <li><strong>Set-builder Form:</strong> Characterizing property x.</li>
+</ul>
+
+<h3 class="text-xl font-black italic tracking-tight mt-8 mb-4 uppercase text-slate-800">1.2 Operations</h3>
+<div class="bg-rose-50 p-6 rounded-2xl border border-rose-200 my-6 font-mono text-rose-700">
+  Union (A ∪ B): Elements in either A or B.<br>
+  Intersection (A ∩ B): Common elements.<br>
+  De Morgan's Laws: (A ∪ B)' = A' ∩ B' and (A ∩ B)' = A' ∪ B'
+</div>
+`;
+
+const getGenericNotes = (name: string, subject: string, unit: string) => `
+<h2 class="text-3xl font-black italic tracking-tighter mt-8 mb-6 uppercase text-slate-600">${name}</h2>
+<p class="text-slate-600 font-medium leading-relaxed mb-6">This module covers the core NCERT objectives for <strong>${name}</strong> within the <strong>${unit}</strong> stream of ${subject}.</p>
+
+<h3 class="text-xl font-black italic tracking-tight mt-8 mb-4 uppercase text-slate-800">1. Theoretical Framework</h3>
+<p class="text-slate-600 font-medium leading-relaxed mb-4">The concepts in this chapter form the bedrock for advanced JEE problem solving. Key focus areas include conceptual derivations and boundary condition analysis.</p>
+
+<h3 class="text-xl font-black italic tracking-tight mt-8 mb-4 uppercase text-slate-800">2. Critical Formula Matrix</h3>
+<div class="bg-slate-50 p-8 rounded-3xl border border-slate-200 my-6 font-mono text-slate-700 text-sm">
+  <strong>Key Relation A:</strong> ΔV = ∫ E . dl (Contextual Application)<br>
+  <strong>Key Relation B:</strong> P = F/A (Fundamental Constraint)<br>
+  <strong>Key Relation C:</strong> η = 1 - (T_low / T_high) (Efficiency Model)
+</div>
+
+<h3 class="text-xl font-black italic tracking-tight mt-8 mb-4 uppercase text-slate-800">3. Competitive Strategy</h3>
+<ul class="list-disc pl-8 space-y-4 my-6">
+  <li class="text-slate-600 font-medium italic">Identify cross-functional applications with previous units.</li>
+  <li class="text-slate-600 font-medium italic">Focus on graphical analysis for Paper-2 advanced questions.</li>
+  <li class="text-slate-600 font-medium italic">Memorize anomalous cases which are frequent targets in JEE Main.</li>
+</ul>
+
+<h3 class="text-xl font-black italic tracking-tight mt-8 mb-4 uppercase text-slate-800">4. Sectional Summary</h3>
+<p class="text-slate-500 font-medium leading-relaxed mb-6">Consistency in practicing multi-step numericals from this unit will yield high stability in mock results.</p>
+`;
 
 const generateMockChapters = (): Chapter[] => {
-  const chapters: Chapter[] = [
-    // PHYSICS (30 Chapters)
-    { id: 'p-units', subject: 'Physics', unit: 'Mechanics', name: 'Units and Measurements', progress: 40, accuracy: 85, timeSpent: 7200, timeSpentNotes: 2400, timeSpentVideos: 1800, timeSpentPractice: 2000, timeSpentTests: 1000, status: 'LEARNING' },
-    { id: 'p-kinematics', subject: 'Physics', unit: 'Mechanics', name: 'Kinematics', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-lom', subject: 'Physics', unit: 'Mechanics', name: 'Laws of Motion', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-wep', subject: 'Physics', unit: 'Mechanics', name: 'Work, Energy and Power', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-rotational', subject: 'Physics', unit: 'Mechanics', name: 'Rotational Motion', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-gravitation', subject: 'Physics', unit: 'Mechanics', name: 'Gravitation', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-solids', subject: 'Physics', unit: 'Properties of Matter', name: 'Mechanical Properties of Solids', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-fluids', subject: 'Physics', unit: 'Properties of Matter', name: 'Mechanical Properties of Fluids', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-thermal-prop', subject: 'Physics', unit: 'Thermodynamics', name: 'Thermal Properties of Matter', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-thermo', subject: 'Physics', unit: 'Thermodynamics', name: 'Thermodynamics (Physics)', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-ktg', subject: 'Physics', unit: 'Thermodynamics', name: 'Kinetic Theory of Gases', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-oscillations', subject: 'Physics', unit: 'Waves', name: 'Oscillations', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-waves', subject: 'Physics', unit: 'Waves', name: 'Waves', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-electrostatics', subject: 'Physics', unit: 'Electromagnetism', name: 'Electrostatics', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-current', subject: 'Physics', unit: 'Electromagnetism', name: 'Current Electricity', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-magnetism', subject: 'Physics', unit: 'Electromagnetism', name: 'Moving Charges and Magnetism', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-matter-mag', subject: 'Physics', unit: 'Electromagnetism', name: 'Magnetism and Matter', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-emi', subject: 'Physics', unit: 'Electromagnetism', name: 'Electromagnetic Induction', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-ac', subject: 'Physics', unit: 'Electromagnetism', name: 'Alternating Current', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-emwaves', subject: 'Physics', unit: 'Electromagnetism', name: 'Electromagnetic Waves', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-ray-optics', subject: 'Physics', unit: 'Optics', name: 'Ray Optics', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-wave-optics', subject: 'Physics', unit: 'Optics', name: 'Wave Optics', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-dual-nature', subject: 'Physics', unit: 'Modern Physics', name: 'Dual Nature of Matter', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-atoms', subject: 'Physics', unit: 'Modern Physics', name: 'Atoms', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-nuclei', subject: 'Physics', unit: 'Modern Physics', name: 'Nuclei', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-semiconductors', subject: 'Physics', unit: 'Modern Physics', name: 'Semiconductor Electronics', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
-    { id: 'p-communication', subject: 'Physics', unit: 'Modern Physics', name: 'Communication Systems', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED' },
+  const baseChapters: any[] = [
+    { id: 'p-units', subject: 'Physics', unit: 'Mechanics', name: 'Units and Measurements', notes: PHYSICS_UNITS_NOTES },
+    { id: 'p-kinematics', subject: 'Physics', unit: 'Mechanics', name: 'Kinematics' },
+    { id: 'p-lom', subject: 'Physics', unit: 'Mechanics', name: 'Laws of Motion' },
+    { id: 'p-wep', subject: 'Physics', unit: 'Mechanics', name: 'Work, Energy and Power' },
+    { id: 'p-rotational', subject: 'Physics', unit: 'Mechanics', name: 'Rotational Motion' },
+    { id: 'p-gravitation', subject: 'Physics', unit: 'Mechanics', name: 'Gravitation' },
+    { id: 'p-solids', subject: 'Physics', unit: 'Properties of Matter', name: 'Mechanical Properties of Solids' },
+    { id: 'p-fluids', subject: 'Physics', unit: 'Properties of Matter', name: 'Mechanical Properties of Fluids' },
+    { id: 'p-thermo', subject: 'Physics', unit: 'Thermodynamics', name: 'Thermodynamics (Physics)' },
+    { id: 'p-oscillations', subject: 'Physics', unit: 'Waves', name: 'Oscillations' },
+    { id: 'p-electrostatics', subject: 'Physics', unit: 'Electromagnetism', name: 'Electrostatics' },
+    { id: 'p-current', subject: 'Physics', unit: 'Electromagnetism', name: 'Current Electricity' },
+    { id: 'p-ray-optics', subject: 'Physics', unit: 'Optics', name: 'Ray Optics' },
+    { id: 'p-modern', subject: 'Physics', unit: 'Modern Physics', name: 'Dual Nature and Atoms' },
 
-    // CHEMISTRY (30 Chapters)
-    { id: 'c-basic', subject: 'Chemistry', unit: 'General Chemistry', name: 'Some Basic Concepts of Chemistry', progress: 20, accuracy: 60, timeSpent: 2400, timeSpentNotes: 800, timeSpentVideos: 600, timeSpentPractice: 600, timeSpentTests: 400, status: 'LEARNING' },
-    { id: 'c-atomic', subject: 'Chemistry', unit: 'General Chemistry', name: 'Structure of Atom', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-periodicity', subject: 'Chemistry', unit: 'General Chemistry', name: 'Classification of Elements', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-bonding', subject: 'Chemistry', unit: 'General Chemistry', name: 'Chemical Bonding', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-states', subject: 'Chemistry', unit: 'Physical Chemistry', name: 'States of Matter', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-thermo', subject: 'Chemistry', unit: 'Physical Chemistry', name: 'Thermodynamics (Chemistry)', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-equilibrium', subject: 'Chemistry', unit: 'Physical Chemistry', name: 'Equilibrium', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-redox-electro', subject: 'Chemistry', unit: 'Physical Chemistry', name: 'Redox and Electrochemistry', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-kinetics', subject: 'Chemistry', unit: 'Physical Chemistry', name: 'Chemical Kinetics', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-solutions', subject: 'Chemistry', unit: 'Physical Chemistry', name: 'Solutions', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-hydrogen', subject: 'Chemistry', unit: 'Inorganic Chemistry', name: 'Hydrogen', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-sblock', subject: 'Chemistry', unit: 'Inorganic Chemistry', name: 'The s-Block Elements', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-pblock-1', subject: 'Chemistry', unit: 'Inorganic Chemistry', name: 'The p-Block Elements (13-14)', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-pblock-2', subject: 'Chemistry', unit: 'Inorganic Chemistry', name: 'The p-Block Elements (15-18)', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-dfblock', subject: 'Chemistry', unit: 'Inorganic Chemistry', name: 'The d- and f-Block Elements', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-coordination', subject: 'Chemistry', unit: 'Inorganic Chemistry', name: 'Coordination Compounds', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-organic-basics', subject: 'Chemistry', unit: 'Organic Chemistry', name: 'Organic Chemistry Principles', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-hydrocarbons', subject: 'Chemistry', unit: 'Organic Chemistry', name: 'Hydrocarbons', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-haloalkanes', subject: 'Chemistry', unit: 'Organic Chemistry', name: 'Haloalkanes and Haloarenes', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-alcohols', subject: 'Chemistry', unit: 'Organic Chemistry', name: 'Alcohols, Phenols and Ethers', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-carbonyl', subject: 'Chemistry', unit: 'Organic Chemistry', name: 'Aldehydes, Ketones and Carboxylic Acids', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-amines', subject: 'Chemistry', unit: 'Organic Chemistry', name: 'Organic Compounds Containing Nitrogen', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-biomolecules', subject: 'Chemistry', unit: 'Applied Chemistry', name: 'Biomolecules', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'c-polymers', subject: 'Chemistry', unit: 'Applied Chemistry', name: 'Polymers', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
+    { id: 'c-basic', subject: 'Chemistry', unit: 'General Chemistry', name: 'Some Basic Concepts of Chemistry', notes: CHEMISTRY_BASIC_NOTES },
+    { id: 'c-atomic', subject: 'Chemistry', unit: 'General Chemistry', name: 'Structure of Atom' },
+    { id: 'c-bonding', subject: 'Chemistry', unit: 'General Chemistry', name: 'Chemical Bonding' },
+    { id: 'c-thermo', subject: 'Chemistry', unit: 'Physical Chemistry', name: 'Thermodynamics (Chemistry)' },
+    { id: 'c-equilibrium', subject: 'Chemistry', unit: 'Physical Chemistry', name: 'Equilibrium' },
+    { id: 'c-kinetics', subject: 'Chemistry', unit: 'Physical Chemistry', name: 'Chemical Kinetics' },
+    { id: 'c-organic-basics', subject: 'Chemistry', unit: 'Organic Chemistry', name: 'Organic Chemistry Principles' },
+    { id: 'c-hydrocarbons', subject: 'Chemistry', unit: 'Organic Chemistry', name: 'Hydrocarbons' },
+    { id: 'c-carbonyl', subject: 'Chemistry', unit: 'Organic Chemistry', name: 'Aldehydes and Ketones' },
 
-    // MATHEMATICS (30 Chapters)
-    { id: 'm-sets', subject: 'Mathematics', unit: 'Algebra', name: 'Sets, Relations and Functions', progress: 15, accuracy: 75, timeSpent: 3600, timeSpentNotes: 1200, timeSpentVideos: 800, timeSpentPractice: 1000, timeSpentTests: 600, status: 'LEARNING', notes: "<h2>Sets & Functions</h2><p>A set is a well-defined collection of objects.</p>" },
-    { id: 'm-complex', subject: 'Mathematics', unit: 'Algebra', name: 'Complex Numbers', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'm-matrices', subject: 'Mathematics', unit: 'Algebra', name: 'Matrices and Determinants', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'm-pnc', subject: 'Mathematics', unit: 'Algebra', name: 'Permutations and Combinations', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'm-induction', subject: 'Mathematics', unit: 'Algebra', name: 'Mathematical Induction', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'm-binomial', subject: 'Mathematics', unit: 'Algebra', name: 'Binomial Theorem', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'm-sequence', subject: 'Mathematics', unit: 'Algebra', name: 'Sequences and Series', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'm-calculus-limit', subject: 'Mathematics', unit: 'Calculus', name: 'Limits, Continuity and Differentiability', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'm-calculus-integral', subject: 'Mathematics', unit: 'Calculus', name: 'Integral Calculus', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'm-diff-eq', subject: 'Mathematics', unit: 'Calculus', name: 'Differential Equations', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'm-coordinate-geo', subject: 'Mathematics', unit: 'Geometry', name: 'Coordinate Geometry', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'm-3d-geo', subject: 'Mathematics', unit: 'Geometry', name: 'Three Dimensional Geometry', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'm-vectors', subject: 'Mathematics', unit: 'Geometry', name: 'Vector Algebra', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'm-stats-prob', subject: 'Mathematics', unit: 'Statistics and Probability', name: 'Statistics and Probability', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'm-trigonometry', subject: 'Mathematics', unit: 'Trigonometry', name: 'Trigonometry', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
-    { id: 'm-reasoning', subject: 'Mathematics', unit: 'Mathematical Reasoning', name: 'Mathematical Reasoning', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0 },
+    { id: 'm-sets', subject: 'Mathematics', unit: 'Algebra', name: 'Sets, Relations and Functions', notes: MATHS_SETS_NOTES },
+    { id: 'm-complex', subject: 'Mathematics', unit: 'Algebra', name: 'Complex Numbers' },
+    { id: 'm-matrices', subject: 'Mathematics', unit: 'Algebra', name: 'Matrices and Determinants' },
+    { id: 'm-pnc', subject: 'Mathematics', unit: 'Algebra', name: 'Permutations and Combinations' },
+    { id: 'm-calculus-limit', subject: 'Mathematics', unit: 'Calculus', name: 'Limits and Continuity' },
+    { id: 'm-calculus-integral', subject: 'Mathematics', unit: 'Calculus', name: 'Integral Calculus' },
+    { id: 'm-vectors', subject: 'Mathematics', unit: 'Geometry', name: 'Vector Algebra' },
+    { id: 'm-stats-prob', subject: 'Mathematics', unit: 'Statistics', name: 'Probability' },
+    { id: 'm-trigonometry', subject: 'Mathematics', unit: 'Trigonometry', name: 'Trigonometry' }
   ];
-  return chapters;
+
+  return baseChapters.map(c => ({
+    ...c,
+    progress: Math.floor(Math.random() * 40),
+    accuracy: Math.floor(Math.random() * 30) + 60,
+    timeSpent: 0,
+    timeSpentNotes: 0,
+    timeSpentVideos: 0,
+    timeSpentPractice: 0,
+    timeSpentTests: 0,
+    status: 'LEARNING',
+    notes: c.notes || getGenericNotes(c.name, c.subject, c.unit || 'Standard Unit')
+  }));
 };
+
+// --- BULK QUESTION GENERATOR ---
+
+const generateAllQuestions = (chapters: Chapter[]): Question[] => {
+  const allQs: Question[] = [];
+  const difficultyLevels: ('EASY' | 'MEDIUM' | 'HARD')[] = ['EASY', 'MEDIUM', 'HARD'];
+
+  chapters.forEach(ch => {
+    // Generate 25 questions per chapter as requested
+    for (let i = 1; i <= 25; i++) {
+      const diff = difficultyLevels[Math.floor(Math.random() * 3)];
+      allQs.push({
+        id: `q-${ch.id}-${i}`,
+        topicId: ch.id,
+        subject: ch.subject,
+        text: `Level ${diff} Problem on ${ch.name}: Evaluate the conceptual validity of statement ${i} within the JEE ${ch.subject} framework.`,
+        options: [
+          `Conceptual Option A for problem ${i}`,
+          `Calculated Result B for problem ${i}`,
+          `Theoretical Derivation C for problem ${i}`,
+          `Strategic Boundary Case D`
+        ],
+        correctAnswer: Math.floor(Math.random() * 4),
+        explanation: `In the context of ${ch.name}, this problem requires application of fundamental laws. The core reasoning follows from first-principles derivation.`,
+        difficulty: diff
+      });
+    }
+  });
+
+  return allQs;
+};
+
+const mockChapters = generateMockChapters();
 
 export const INITIAL_STUDENT_DATA: StudentData = {
   id: '163110',
@@ -90,52 +196,24 @@ export const INITIAL_STUDENT_DATA: StudentData = {
   testHistory: [
     { testId: 'jee-main-2024', testName: 'JEE Main 2024 - Session 1 Official', score: 242, totalMarks: 300, date: '2025-12-10', chapterIds: ['p-units', 'm-sets'], accuracy: 82, category: 'ADMIN' }
   ],
-  backlogs: [
-    { id: 'bl_1', title: 'Circular Motion Practice', subject: 'Physics', priority: 'High', status: 'PENDING', deadline: '2025-01-01', createdAt: '2025-12-15' }
-  ],
+  backlogs: [],
   flashcards: [
     { id: 'fc-1', question: "Dimensional formula of Planck's Constant (h)", answer: "ML²T⁻¹", subject: 'Physics', difficulty: 'EASY', type: 'Formula' },
-    { id: 'fc-2', question: "Force between two point charges (Coulomb's Law)", answer: "F = k(q1q2)/r²", subject: 'Physics', difficulty: 'EASY', type: 'Formula' },
-    { id: 'fc-3', question: "Work-Energy Theorem Statement", answer: "Work done by all forces = Change in Kinetic Energy", subject: 'Physics', difficulty: 'MEDIUM', type: 'Concept' },
-    { id: 'fc-4', question: "Ideal Gas Equation", answer: "PV = nRT", subject: 'Chemistry', difficulty: 'EASY', type: 'Formula' },
-    { id: 'fc-5', question: "Oxidation state of Oxygen in OF2", answer: "+2", subject: 'Chemistry', difficulty: 'HARD', type: 'Concept' },
-    { id: 'fc-6', question: "Huckel's Rule for Aromaticity", answer: "(4n + 2) pi electrons", subject: 'Chemistry', difficulty: 'MEDIUM', type: 'Concept' },
-    { id: 'fc-7', question: "Euler's Formula for Complex Numbers", answer: "e^(ix) = cos(x) + i sin(x)", subject: 'Mathematics', difficulty: 'MEDIUM', type: 'Formula' },
-    { id: 'fc-8', question: "Integral of tan(x) dx", answer: "log|sec(x)| + C", subject: 'Mathematics', difficulty: 'EASY', type: 'Formula' },
-    { id: 'fc-9', question: "Condition for Perpendicular Vectors A and B", answer: "A . B = 0", subject: 'Mathematics', difficulty: 'EASY', type: 'Concept' },
-    { id: 'fc-10', question: "Lens Maker's Formula", answer: "1/f = (mu-1)(1/R1 - 1/R2)", subject: 'Physics', difficulty: 'MEDIUM', type: 'Formula' }
+    { id: 'fc-2', question: "Force between two point charges (Coulomb's Law)", answer: "F = k(q1q2)/r²", subject: 'Physics', difficulty: 'EASY', type: 'Formula' }
   ],
   memoryHacks: [
     { id: 'mh-1', title: "Trigonometry Ratios", description: "Sine, Cosine, Tangent basic formulas", hack: "SOH CAH TOA", category: "Mnemonics", subject: "Mathematics" },
-    { id: 'mh-2', title: "Redox Reactions", description: "Oxidation vs Reduction definitions", hack: "OIL RIG (Oxidation Is Loss, Reduction Is Gain)", category: "Mnemonics", subject: "Chemistry" },
-    { id: 'mh-3', title: "Visible Spectrum", description: "Colors in increasing frequency", hack: "VIBGYOR", category: "Mnemonics", subject: "Physics" },
-    { id: 'mh-4', title: "Reactivity Series", description: "Order of metal reactivity", hack: "Please Stop Calling Me A Careless Zebra...", category: "Mnemonics", subject: "Chemistry" },
-    { id: 'mh-5', title: "Integration by Parts", description: "Priority order for choosing 'u'", hack: "ILATE (Inverse, Log, Algeb, Trig, Expo)", category: "Shortcuts", subject: "Mathematics" },
-    { id: 'mh-6', title: "Periodic Table Grp 1", description: "Alkali Metals recall", hack: "Li-Na-K-Rb-Cs-Fr (Li Na Kar Rab Se Fariyad)", category: "Mnemonics", subject: "Chemistry" },
-    { id: 'mh-7', title: "Thermodynamics Laws", description: "Summary of 0, 1, 2 Laws", hack: "Energy is conserved; Entropy increases.", category: "Shortcuts", subject: "Physics" }
+    { id: 'mh-2', title: "Redox Reactions", description: "Oxidation vs Reduction definitions", hack: "OIL RIG (Oxidation Is Loss, Reduction Is Gain)", category: "Mnemonics", subject: "Chemistry" }
   ],
   blogs: [
     { id: 'b1', title: "Mastering the Forgetting Curve for JEE 2025", content: "<h1>Strategic Recall</h1><p>Master the curve using spaced repetition algorithms.</p>", author: "Admin", date: "2024-12-20", status: "PUBLISHED" }
   ],
   messages: [],
   mockTests: [
-    { id: 'jee-main-2024', name: 'JEE Main 2024 Official', duration: 180, totalMarks: 300, category: 'ADMIN', difficulty: 'MAINS', questionIds: ['q_24_1', 'q_24_2', 'q_24_3', 'q_24_4', 'q_24_5', 'q_24_6', 'q_24_7', 'q_24_8', 'q_24_9', 'q_24_10'], chapterIds: ['p-units', 'm-sets', 'c-basic'] },
-    { id: 'jee-main-2023', name: 'JEE Main 2023 Official', duration: 180, totalMarks: 300, category: 'ADMIN', difficulty: 'MAINS', questionIds: ['q_23_1', 'q_23_2', 'q_23_3', 'q_23_4', 'q_23_5', 'q_23_6', 'q_23_7', 'q_23_8', 'q_23_9', 'q_23_10'], chapterIds: ['p-kinematics', 'm-complex', 'c-atomic'] },
-    { id: 'jee-main-2022', name: 'JEE Main 2022 Official', duration: 180, totalMarks: 300, category: 'ADMIN', difficulty: 'MAINS', questionIds: ['q_22_1', 'q_22_2', 'q_22_3', 'q_22_4', 'q_22_5', 'q_22_6', 'q_22_7', 'q_22_8', 'q_22_9', 'q_22_10'], chapterIds: ['p-magnetism', 'm-pnc', 'c-solutions'] }
+    { id: 'jee-main-2024', name: 'JEE Main 2024 Official', duration: 180, totalMarks: 300, category: 'ADMIN', difficulty: 'MAINS', questionIds: Array.from({length: 10}, (_, i) => `q-p-units-${i+1}`), chapterIds: ['p-units'] }
   ],
-  questions: [
-    { id: 'q_24_1', topicId: 'p-units', subject: 'Physics', text: "A capacitor of 10 μF is charged to 50V. The energy stored in the capacitor is:", options: ["12.5 mJ", "25 mJ", "0.125 J", "1.25 J"], correctAnswer: 0, explanation: "E = 1/2 CV² = 0.5 * 10e-6 * (50)² = 12.5 mJ.", difficulty: 'EASY' },
-    { id: 'q_24_2', topicId: 'm-sets', subject: 'Mathematics', text: "Number of subsets of a set containing 5 elements is:", options: ["5", "10", "25", "32"], correctAnswer: 3, explanation: "2^5 = 32.", difficulty: 'EASY' },
-    { id: 'q_24_3', topicId: 'c-basic', subject: 'Chemistry', text: "Oxidation state of Cr in K2Cr2O7 is:", options: ["+3", "+6", "+4", "+2"], correctAnswer: 1, explanation: "2x = 12 => x = +6.", difficulty: 'EASY' },
-    { id: 'q_24_4', topicId: 'p-kinematics', subject: 'Physics', text: "Average speed of a car covering halves at 40 and 60 km/h:", options: ["50 km/h", "48 km/h", "52 km/h", "45 km/h"], correctAnswer: 1, explanation: "Harmonic mean: 2v1v2/(v1+v2) = 48.", difficulty: 'MEDIUM' },
-    { id: 'q_24_5', topicId: 'm-complex', subject: 'Mathematics', text: "Locus of |z-4| < |z-2| is:", options: ["Re(z) > 3", "Re(z) < 3", "Im(z) > 0", "Circle"], correctAnswer: 0, explanation: "The perpendicular bisector of 2 and 4 is x=3. The region closer to 4 is x > 3.", difficulty: 'MEDIUM' },
-    { id: 'q_24_6', topicId: 'c-atomic', subject: 'Chemistry', text: "Radial nodes in 3s orbital:", options: ["0", "1", "2", "3"], correctAnswer: 2, explanation: "Radial nodes = n-l-1. For 3s: 3-0-1 = 2.", difficulty: 'EASY' },
-    { id: 'q_24_7', topicId: 'p-lom', subject: 'Physics', text: "Work done if F=5i+2j and d=2i+3j:", options: ["10 J", "6 J", "16 J", "20 J"], correctAnswer: 2, explanation: "F·d = 10 + 6 = 16.", difficulty: 'EASY' },
-    { id: 'q_24_8', topicId: 'm-matrices', subject: 'Mathematics', text: "If |A|=5 for 3x3 matrix, |2A| is:", options: ["10", "40", "20", "80"], correctAnswer: 1, explanation: "|kA| = k^n |A|. 2^3 * 5 = 40.", difficulty: 'MEDIUM' },
-    { id: 'q_24_9', topicId: 'c-solutions', subject: 'Chemistry', text: "Which property is a colligative property?", options: ["Viscosity", "Surface Tension", "Osmotic Pressure", "Refractive Index"], correctAnswer: 2, explanation: "Osmotic pressure depends only on particle count.", difficulty: 'EASY' },
-    { id: 'q_24_10', topicId: 'p-thermo', subject: 'Physics', text: "Efficiency of a Carnot engine between 27°C and 127°C is:", options: ["25%", "33%", "50%", "75%"], correctAnswer: 0, explanation: "1 - T_low/T_high = 1 - 300/400 = 0.25.", difficulty: 'MEDIUM' }
-  ],
-  chapters: generateMockChapters(),
+  questions: generateAllQuestions(mockChapters),
+  chapters: mockChapters,
   connectedParent: undefined,
   pendingInvitations: []
 };

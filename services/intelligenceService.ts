@@ -167,3 +167,32 @@ export const chatWithTutor = async (history: any[], userMessage: string, modelId
     return "Intelligence Uplink Unstable. Please verify your API key or model availability.";
   }
 };
+
+/**
+ * Generates exhaustive NCERT-based notes in HTML format for a specific chapter.
+ */
+export const generateChapterNotes = async (chapterName: string, subject: string, unit: string) => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const prompt = `Write exhaustive, professional study notes for the IIT-JEE chapter: "${chapterName}" (${subject}, Unit: ${unit}). 
+  Requirements:
+  1. Strictly follow NCERT curriculum for JEE Main & Advanced.
+  2. Use clean HTML tags: <h2> for main topics, <h3> for sub-topics, <p> for descriptions, <ul class="list-disc pl-8 space-y-3 my-6"> for bullet points, and <strong> for highlighting keywords.
+  3. Include ALL critical formulas in a bold, readable format.
+  4. Break content into logical segments: Introduction, Core Theory, Key Equations, and Critical Notes for JEE.
+  5. Content length should be exhaustive (approx 800-1200 words).
+  6. Return ONLY the HTML content. No markdown code blocks.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: prompt,
+      config: {
+        temperature: 0.4,
+      }
+    });
+    return response.text || "Failed to generate content.";
+  } catch (err) {
+    console.error("Content Seeding Error:", err);
+    return "Intelligence Node Offline. Content could not be seeded.";
+  }
+};

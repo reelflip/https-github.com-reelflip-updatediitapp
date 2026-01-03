@@ -2,11 +2,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StudentData, UserAccount, Subject, Question, MockTest, Chapter, Flashcard, MemoryHack, Blog, UserRole } from '../types';
 import { api } from '../services/apiService';
-import { MODEL_CONFIGS } from '../services/intelligenceService';
+import { MODEL_CONFIGS, generateChapterNotes } from '../services/intelligenceService';
 import JSZip from 'jszip';
 import saveAs from 'file-saver';
 import { 
-  ShieldCheck, BookOpen, Layers, Zap, Loader2, Plus, Trash2, Edit3, X, Target, Code2, Save, Users, PenTool, Check, HelpCircle, Video, Award, Type, Lightbulb, Activity, Filter, Search, Clock, ChevronRight, Layout, List, FileText, Calendar, Globe, Settings, Cpu, Database, Cloud, Download, Eye, AlertTriangle, Star, Signal, SignalHigh, SignalLow, Activity as DiagnosticIcon, ClipboardCheck, RefreshCw, CheckCircle, ShieldAlert, FlaskConical, Map, HeartHandshake, Trash, Mail, Bell, Shield, FileBox, Heart, Bold, Italic, List as ListIcon, Heading1, Heading2, Link as LinkIcon, Maximize2, Minimize2, UserCircle
+  ShieldCheck, BookOpen, Layers, Zap, Loader2, Plus, Trash2, Edit3, X, Target, Code2, Save, Users, PenTool, Check, HelpCircle, Video, Award, Type, Lightbulb, Activity, Filter, Search, Clock, ChevronRight, Layout, List, FileText, Calendar, Globe, Settings, Cpu, Database, Cloud, Download, Eye, AlertTriangle, Star, Signal, SignalHigh, SignalLow, Activity as DiagnosticIcon, ClipboardCheck, RefreshCw, CheckCircle, ShieldAlert, FlaskConical, Map, HeartHandshake, Trash, Mail, Bell, Shield, FileBox, Heart, Bold, Italic, List as ListIcon, Heading1, Heading2, Link as LinkIcon, Maximize2, Minimize2, UserCircle, Sparkles
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -53,7 +53,21 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
     highYield: false
   });
 
+  const [isSeeding, setIsSeeding] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleAutoSeed = async () => {
+    if (!formData.name) return alert("Please enter a chapter name first.");
+    setIsSeeding(true);
+    try {
+      const content = await generateChapterNotes(formData.name, formData.subject, formData.unit);
+      setFormData((prev: any) => ({ ...prev, notes: content }));
+    } catch(e) {
+      alert("Seeding failed. Verify API configuration.");
+    } finally {
+      setIsSeeding(false);
+    }
+  };
 
   const insertTag = (tag: string, closeTag: string = '') => {
     const el = textareaRef.current;
@@ -108,7 +122,17 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                     <InputGroup label="Lecture URL"><input name="videoUrl" value={formData.videoUrl} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black italic shadow-inner" placeholder="YouTube Embed URL" /></InputGroup>
                  </div>
                  <div className="space-y-4">
-                    <RichTextToolbar onInsert={insertTag} />
+                    <div className="flex justify-between items-center px-2">
+                       <RichTextToolbar onInsert={insertTag} />
+                       <button 
+                        onClick={handleAutoSeed}
+                        disabled={isSeeding}
+                        className="bg-indigo-600/10 text-indigo-600 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-3 border border-indigo-200 hover:bg-indigo-600 hover:text-white transition-all shadow-sm mb-4"
+                       >
+                         {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-amber-500 fill-amber-500" />}
+                         {isSeeding ? 'Generating NCERT Data...' : 'Auto-Seed NCERT Notes'}
+                       </button>
+                    </div>
                     <InputGroup label="Theory Notes (HTML Core Engine)">
                        <textarea ref={textareaRef} name="notes" value={formData.notes} onChange={handleChange} rows={15} className="w-full bg-slate-50 border-none rounded-[2.5rem] p-10 text-sm font-mono shadow-inner focus:ring-8 focus:ring-indigo-50/50 transition-all" placeholder="Enter structured HTML content..." />
                     </InputGroup>
@@ -316,6 +340,10 @@ INSERT INTO flashcards (id, question, answer, subject, difficulty, type) VALUES
 
 INSERT INTO memory_hacks (id, title, description, hack, category, subject) VALUES 
 ('mh-1', 'Trigonometry Ratios', 'Sine, Cosine, Tangent basic formulas', 'SOH CAH TOA', 'Mnemonics', 'Mathematics');
+
+INSERT INTO chapters (id, name, subject, unit, notes) VALUES 
+('p-units', 'Units and Measurements', 'Physics', 'Mechanics', '<h2>Chapter Overview</h2><p>Measurement of any physical quantity involves comparison with a certain basic, arbitrarily chosen, internationally accepted reference standard called unit.</p>'),
+('c-basic', 'Some Basic Concepts of Chemistry', 'Chemistry', 'General Chemistry', '<h2>Matter and its Classification</h2><p>Chemistry is the science of atoms and molecules and their transformations.</p>');
 `;
       zip.file("sql/seed_data_v21.sql", seedSql);
 
@@ -354,11 +382,13 @@ $history = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // 3. Fetch Global Data (Metadata)
 $mockTests = $pdo->query("SELECT * FROM mock_tests")->fetchAll(PDO::FETCH_ASSOC);
 $questions = $pdo->query("SELECT * FROM questions")->fetchAll(PDO::FETCH_ASSOC);
+$globalChapters = $pdo->query("SELECT id, name, subject, unit, notes, videoUrl FROM chapters")->fetchAll(PDO::FETCH_ASSOC);
 
 echo json_encode([
     'success' => true, 
     'data' => [
-        'chapters' => $chapters,
+        'chapters' => $globalChapters, // In production, we merge these with individual progress in frontend
+        'individual_progress' => $chapters,
         'testHistory' => $history,
         'mockTests' => $mockTests,
         'questions' => $questions
