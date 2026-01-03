@@ -313,6 +313,11 @@ try {
     echo json_encode(['success'=>true]);
 } catch (Exception \$e) { echo json_encode(['success'=>false, 'error' => \$e->getMessage()]); } ?>`);
 
+      zip.file("manage_messages.php", `<?php require_once 'config/database.php';
+\$action = \$_GET['action'] ?? 'list';
+if (\$action === 'list') { \$stmt = \$pdo->query("SELECT * FROM messages ORDER BY date DESC"); echo json_encode(['success'=>true, 'messages'=>\$stmt->fetchAll()]); }
+else if (\$action === 'read') { \$id = \$_GET['id'] ?? ''; \$pdo->prepare("UPDATE messages SET is_read = 1 WHERE id = ?")->execute([\$id]); echo json_encode(['success'=>true]); } ?>`);
+
       zip.file("manage_users.php", `<?php require_once 'config/database.php';
 \$action = \$_GET['action'] ?? 'list'; \$id = \$_GET['id'] ?? '';
 if (\$action === 'list') { \$stmt = \$pdo->query("SELECT id, name, email, role, created_at as createdAt FROM users"); echo json_encode(['success'=>true, 'users'=>\$stmt->fetchAll()]); }
@@ -329,7 +334,7 @@ echo json_encode(['success'=>true]); ?>`);
 echo json_encode(['success'=>true]); ?>`);
 
       const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, "solaris_v21_production_ready.zip");
+      saveAs(content, "solaris_v21_full_production_stack.zip");
     } catch (e) { alert("ZIP creation failed."); } finally { setIsDownloading(false); }
   };
 

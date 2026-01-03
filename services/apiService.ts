@@ -52,7 +52,6 @@ const safeJson = async (response: Response) => {
 };
 
 export const api = {
-  // Changed default from 'MOCK' to 'LIVE' to satisfy "sandbox disabled by default" requirement
   getMode: (): 'MOCK' | 'LIVE' => (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'LIVE',
   
   setMode: (mode: 'MOCK' | 'LIVE') => { 
@@ -65,8 +64,6 @@ export const api = {
     const demoEmails = ['admin@demo.in', 'parent@demo.in', 'ishu@gmail.com'];
     const isDemo = demoEmails.includes(email);
     
-    // Always use mock logic for demo accounts to ensure they "always work"
-    // even if the PHP backend isn't reachable or configured yet.
     if (this.getMode() === 'LIVE' && !isDemo) {
         try {
           const res = await fetch(`${API_CONFIG.BASE_URL}auth_login.php`, {
@@ -78,7 +75,6 @@ export const api = {
         } catch(e) { return { success: false, error: "Authentication node offline." }; }
     }
 
-    // Mock Role Attribution (Always available for demo accounts)
     let determinedRole = UserRole.STUDENT;
     if (email === 'admin@demo.in') determinedRole = UserRole.ADMIN;
     else if (email === 'parent@demo.in') determinedRole = UserRole.PARENT;
@@ -244,7 +240,7 @@ export const api = {
     return { success: true };
   },
 
-  async resetProgress(studentId: string) {
+  async resetProgress(studentId: string): Promise<StudentData> {
     if (this.getMode() === 'LIVE') {
         await fetch(`${API_CONFIG.BASE_URL}sync_progress.php?action=reset&student_id=${studentId}`, { method: 'POST' });
     }
