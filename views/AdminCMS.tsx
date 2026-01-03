@@ -20,7 +20,6 @@ interface AdminCMSProps {
   setData: (data: StudentData) => void;
 }
 
-// Strictly type the indexing map to solve TS7053
 const KEY_MAP: Record<string, keyof StudentData> = {
   'Chapter': 'chapters',
   'Question': 'questions',
@@ -30,8 +29,6 @@ const KEY_MAP: Record<string, keyof StudentData> = {
   'Blog': 'blogs',
   'Message': 'messages'
 };
-
-// --- SUB-COMPONENTS ---
 
 const InputGroup = ({ label, children }: any) => (
   <div className="space-y-3">
@@ -107,11 +104,7 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
     const before = text.substring(0, start);
     const after = text.substring(end, text.length);
     const selection = text.substring(start, end);
-    
-    const nextText = closingTag 
-        ? `${before}<${tag}>${selection}</${closingTag}>${after}`
-        : `${before}<${tag}>${after}`;
-    
+    const nextText = closingTag ? `${before}<${tag}>${selection}</${closingTag}>${after}` : `${before}<${tag}>${after}`;
     setFormData((prev: any) => ({ ...prev, [type === 'Chapter' ? 'notes' : 'content']: nextText }));
   };
 
@@ -136,7 +129,6 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
             </div>
             <button onClick={onClose} className="p-4 bg-white text-slate-400 hover:text-slate-900 rounded-2xl border border-slate-100"><X className="w-6 h-6" /></button>
          </div>
-
          <div className="flex-1 overflow-y-auto p-10 space-y-12 custom-scrollbar">
             {type === 'Chapter' && (
               <div className="space-y-8">
@@ -156,7 +148,6 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                  </InputGroup>
               </div>
             )}
-
             {type === 'Question' && (
                <div className="space-y-10">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -175,7 +166,6 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                   </div>
                </div>
             )}
-
             {type === 'MockTest' && (
               <div className="space-y-10">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -202,7 +192,6 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                 </div>
               </div>
             )}
-
             {type === 'Blog' && (
                <div className="space-y-10">
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -216,7 +205,6 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                            <InputGroup label="Status"><select name="status" value={formData.status} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner"><option value="PUBLISHED">Public</option><option value="DRAFT">Archive (Draft)</option></select></InputGroup>
                            <InputGroup label="Seed Content"><button onClick={handleAutoSeed} disabled={isSeeding} className="w-full py-5 bg-indigo-600/10 text-indigo-600 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all">{isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4" /> AI Draft Article</>}</button></InputGroup>
                         </div>
-
                         <div className="space-y-4">
                            <div className="flex justify-between items-center">
                               <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-2">Content Canvas</label>
@@ -231,7 +219,6 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                                  <button onClick={() => setPreviewMode(!previewMode)} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${previewMode ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-indigo-600'}`}>{previewMode ? 'Editor' : 'Preview'}</button>
                               </div>
                            </div>
-                           
                            {previewMode ? (
                              <div className="w-full bg-slate-50 rounded-[2.5rem] p-10 border border-slate-100 min-h-[400px] prose prose-indigo max-w-none prose-headings:font-black prose-p:text-slate-600 prose-strong:text-indigo-600" dangerouslySetInnerHTML={{ __html: formData.content || '<p class="text-slate-300 italic">No content rendered.</p>' }} />
                            ) : (
@@ -254,7 +241,6 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                </div>
             )}
          </div>
-
          <div className="p-8 bg-slate-50 border-t border-slate-100 flex gap-4">
             <button onClick={onClose} className="flex-1 py-5 bg-white border border-slate-200 text-slate-400 rounded-3xl font-black uppercase text-[10px] tracking-widest hover:bg-slate-100 transition-all">Abort</button>
             <button onClick={() => onSave(formData)} className="flex-[2] py-5 bg-indigo-600 text-white rounded-3xl font-black uppercase text-[10px] tracking-[0.4em] shadow-xl hover:bg-indigo-700 active:scale-95 transition-all flex items-center justify-center gap-3"><Save className="w-5 h-5" /> Synchronize SQL Context</button>
@@ -263,8 +249,6 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
     </div>
   );
 };
-
-// --- MAIN ADMIN COMPONENT ---
 
 const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
   const mode = api.getMode();
@@ -290,13 +274,11 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
   const handleDelete = async (type: string, id: string) => {
     if (!confirm(`Purge this ${type}?`)) return;
     const key = KEY_MAP[type];
-    
     if (mode === 'LIVE' && type === 'Message') await api.markMessageRead(id); 
     if (key && Array.isArray(data[key])) {
        const filtered = (data[key] as any[]).filter((item: any) => item.id !== id);
        setData({ ...data, [key]: filtered });
     }
-    
     if (type === 'User' && mode === 'LIVE') await fetch(`${api.getMode() === 'LIVE' ? './api/' : ''}manage_users.php?action=delete&id=${id}`);
     if (type === 'User') setUserList(prev => prev.filter(u => u.id !== id));
   };
@@ -317,10 +299,8 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     setIsDownloading(true);
     try {
       const zip = new JSZip();
-      
-      // Master SQL Schema
-      zip.file("sql/master_schema_v21.sql", `-- IITGEEPREP Solaris v21.0 Production Schema
-CREATE TABLE IF NOT EXISTS users (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255) UNIQUE, role VARCHAR(50), institute VARCHAR(255), targetExam VARCHAR(255), targetYear INT, birthDate DATE, gender VARCHAR(20), password_hash VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+      zip.file("sql/master_schema_v22.sql", `-- IITGEEPREP Solaris v22.0 Production Schema
+CREATE TABLE IF NOT EXISTS users (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255) UNIQUE, role VARCHAR(50), institute VARCHAR(255), targetExam VARCHAR(255), targetYear INT, birthDate DATE, gender VARCHAR(20), password_hash VARCHAR(255), connected_parent JSON DEFAULT NULL, pending_invitations JSON DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS chapters (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), subject VARCHAR(50), unit VARCHAR(255), notes LONGTEXT, videoUrl VARCHAR(512));
 CREATE TABLE IF NOT EXISTS student_progress (student_id VARCHAR(100), chapter_id VARCHAR(100), progress INT DEFAULT 0, accuracy INT DEFAULT 0, status VARCHAR(50), time_spent INT DEFAULT 0, PRIMARY KEY (student_id, chapter_id));
 CREATE TABLE IF NOT EXISTS questions (id VARCHAR(100) PRIMARY KEY, topicId VARCHAR(100), text TEXT, options JSON, correctAnswer INT, difficulty VARCHAR(20), subject VARCHAR(50));
@@ -333,18 +313,16 @@ CREATE TABLE IF NOT EXISTS flashcards (id VARCHAR(100) PRIMARY KEY, question TEX
 CREATE TABLE IF NOT EXISTS memory_hacks (id VARCHAR(100) PRIMARY KEY, title VARCHAR(255), description TEXT, hack TEXT, category VARCHAR(50), subject VARCHAR(50));
 CREATE TABLE IF NOT EXISTS blogs (id VARCHAR(100) PRIMARY KEY, title VARCHAR(255), content LONGTEXT, author VARCHAR(255), date DATE, status VARCHAR(50));`);
 
-      // Config
       zip.file("config/database.php", `<?php
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Content-Type: application/json; charset=UTF-8");
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
-\$host = 'localhost'; \$db = 'iitjeeprep_v21'; \$user = 'root'; \$pass = '';
+\$host = 'localhost'; \$db = 'iitjeeprep_v22'; \$user = 'root'; \$pass = '';
 try { \$pdo = new PDO("mysql:host=\$host;dbname=\$db;charset=utf8mb4", \$user, \$pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]); }
 catch (PDOException \$e) { echo json_encode(['success' => false, 'error' => 'Handshake Failed']); exit; } ?>`);
 
-      // Controllers
       zip.file("auth_login.php", `<?php require_once 'config/database.php';
 \$input = json_decode(file_get_contents('php://input'), true); \$email = strtolower(\$input['email'] ?? '');
 if (\$email == 'admin@demo.in') { echo json_encode(['success'=>true, 'user'=>['id'=>'USER-ADMIN', 'name'=>'Admin', 'email'=>'admin@demo.in', 'role'=>'ADMIN']]); exit; }
@@ -368,18 +346,31 @@ try {
 \$stmt = \$pdo->prepare("SELECT * FROM users WHERE id = ?"); \$stmt->execute([\$id]); \$u = \$stmt->fetch(); if (!\$u) exit;
 \$sp = \$pdo->prepare("SELECT chapter_id as id, progress, accuracy, status, time_spent as timeSpent FROM student_progress WHERE student_id = ?"); \$sp->execute([\$id]); \$progress = \$sp->fetchAll();
 \$st = \$pdo->prepare("SELECT test_id as testId, test_name as testName, score, total_marks as totalMarks, accuracy, category, taken_at as date FROM test_results WHERE student_id = ? ORDER BY taken_at DESC"); \$st->execute([\$id]); \$tests = \$st->fetchAll();
+// Decode JSON parent data
+\$u['connectedParent'] = isset(\$u['connected_parent']) ? json_decode(\$u['connected_parent'], true) : null;
+\$u['pendingInvitations'] = isset(\$u['pending_invitations']) ? json_decode(\$u['pending_invitations'], true) : [];
 echo json_encode(['success'=>true, 'data'=>array_merge(\$u, ['individual_progress'=>\$progress, 'testHistory'=>\$tests])]); ?>`);
 
       zip.file("sync_progress.php", `<?php require_once 'config/database.php';
 \$input = json_decode(file_get_contents('php://input'), true); \$studentId = \$input['student_id'] ?? null;
 if (!\$studentId) exit;
 try { \$pdo->beginTransaction();
+// Update academic units
 if (isset(\$input['chapters'])) { \$stmt = \$pdo->prepare("INSERT INTO student_progress (student_id, chapter_id, progress, accuracy, status, time_spent) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE progress=VALUES(progress), accuracy=VALUES(accuracy), status=VALUES(status), time_spent=VALUES(time_spent)");
 foreach (\$input['chapters'] as \$ch) { \$stmt->execute([\$studentId, \$ch['id'], \$ch['progress'], \$ch['accuracy'], \$ch['status'], \$ch['timeSpent'] ?? 0]); } }
+// Update test ledger
 if (isset(\$input['testHistory'])) { \$pdo->prepare("DELETE FROM test_results WHERE student_id = ?")->execute([\$studentId]);
 \$st = \$pdo->prepare("INSERT INTO test_results (student_id, test_id, test_name, score, total_marks, accuracy, category) VALUES (?, ?, ?, ?, ?, ?, ?)");
 foreach (\$input['testHistory'] as \$t) { \$st->execute([\$studentId, \$t['testId'], \$t['testName'], \$t['score'], \$t['totalMarks'], \$t['accuracy'], \$t['category'] ?? 'PRACTICE']); } }
-\$pdo->commit(); echo json_encode(['success'=>true]); } catch(Exception \$e) { \$pdo->rollBack(); echo json_encode(['success'=>false]); } ?>`);
+// Update Parent Connection & Pending Invites
+if (isset(\$input['connectedParent']) || isset(\$input['pendingInvitations'])) {
+    \$sql = "UPDATE users SET "; \$params = [];
+    if (isset(\$input['connectedParent'])) { \$sql .= "connected_parent = ?, "; \$params[] = json_encode(\$input['connectedParent']); }
+    if (isset(\$input['pendingInvitations'])) { \$sql .= "pending_invitations = ?, "; \$params[] = json_encode(\$input['pendingInvitations']); }
+    \$sql = rtrim(\$sql, ", ") . " WHERE id = ?"; \$params[] = \$studentId;
+    \$stmt = \$pdo->prepare(\$sql); \$stmt->execute(\$params);
+}
+\$pdo->commit(); echo json_encode(['success'=>true]); } catch(Exception \$e) { \$pdo->rollBack(); echo json_encode(['success'=>false, 'error' => \$e->getMessage()]); } ?>`);
 
       zip.file("manage_entity.php", `<?php require_once 'config/database.php';
 \$type = \$_GET['type'] ?? ''; \$input = json_decode(file_get_contents('php://input'), true); if (!\$input) exit;
@@ -414,7 +405,7 @@ echo json_encode(['success'=>true]); ?>`);
 echo json_encode(['success'=>true]); ?>`);
 
       const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, "solaris_v21_full_production_stack.zip");
+      saveAs(content, "solaris_v22_full_production_stack.zip");
     } catch (e) { alert("ZIP creation failed."); } finally { setIsDownloading(false); }
   };
 
@@ -466,7 +457,6 @@ echo json_encode(['success'=>true]); ?>`);
            </div>
         )}
         
-        {/* --- DYNAMIC ENTITY LISTS --- */}
         {activeTab === 'admin-syllabus' && <EntityList title="Unit Management" type="Chapter" data={data.chapters} icon={BookOpen} color="indigo" btnLabel="Add Unit" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Chapter'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-questions' && <EntityList title="MCQ Bank" type="Question" data={data.questions} icon={Code2} color="emerald" btnLabel="New MCQ" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Question'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-tests' && <EntityList title="Exam Center" type="MockTest" data={data.mockTests} icon={Target} color="rose" btnLabel="Deploy Exam" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MockTest'); setEditingItem(null); setIsCreating(true); }} />}

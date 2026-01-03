@@ -1,6 +1,6 @@
 {
   "name": "IITGEEPREP: Solaris Ultimate",
-  "version": "21.0.0",
-  "description": "Elite IIT-JEE academic ecosystem with Solaris v21.0 Backend. Features 42+ modular PHP files for high-performance scale and exhaustive SQL schema.",
+  "version": "22.0.0",
+  "description": "Elite IIT-JEE academic ecosystem with Solaris v22.0 Backend. Features 42+ modular PHP files for high-performance scale and exhaustive SQL schema with JSON persistence.",
   "requestFramePermissions": []
 }

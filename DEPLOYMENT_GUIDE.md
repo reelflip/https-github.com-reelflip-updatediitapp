@@ -1,5 +1,5 @@
 
-# IITGEEPREP: Production Deployment Protocol v21.0
+# IITGEEPREP: Production Deployment Protocol v22.0
 
 Follow these strict directory mappings and security steps to deploy the high-performance academic engine.
 
@@ -15,7 +15,7 @@ Your server's root folder (usually `public_html` or `htdocs`) MUST look like thi
 ├── api/                (CORE BACKEND GATEWAY)
 │   ├── config/         (database.php - CONFIGURE DB HERE)
 │   ├── controllers/    (Functional logic controllers)
-│   ├── sql/            (master_schema_v21.sql - IMPORT FIRST)
+│   ├── sql/            (master_schema_v22.sql - IMPORT FIRST)
 │   └── index.php       (Main API Router)
 ├── index.html          (Main frontend entry point)
 └── .htaccess           (For URL rewriting if using clean paths)
@@ -32,13 +32,13 @@ Your server's root folder (usually `public_html` or `htdocs`) MUST look like thi
 ### Phase B: Backend API
 1. Log in as **Admin** on your platform (Demo key: `admin@demo.in`).
 2. Go to **System Hub** -> **Deployment Blueprint**.
-3. Download the **Production ZIP (v21)**.
+3. Download the **Production ZIP (v22)**.
 4. Upload and extract the ZIP inside the `api/` folder on your server.
 
 ### Phase C: SQL Database Initialization
 1. Open **phpMyAdmin**.
-2. Create a database named `iitgrrprep_v21`.
-3. Import `api/sql/master_schema_v21.sql`.
+2. Create a database named `iitgrrprep_v22`.
+3. Import `api/sql/master_schema_v22.sql`.
 4. Edit `api/config/database.php` with your production MySQL credentials.
 
 ---

@@ -134,7 +134,9 @@ export const api = {
                 ...serverData,
                 chapters: mergedChapters,
                 messages: mappedMessages,
-                testHistory: serverData.testHistory || []
+                testHistory: serverData.testHistory || [],
+                connectedParent: serverData.connectedParent || null,
+                pendingInvitations: serverData.pendingInvitations || []
             };
         }
       } catch(e) { console.error("Live sync failed."); }
@@ -144,7 +146,6 @@ export const api = {
   },
 
   async searchStudent(query: string): Promise<UserAccount | null> {
-    // In Mock mode, we scan local storage for user data keys
     const keys = Object.keys(localStorage);
     for (const key of keys) {
       if (key.startsWith('jeepro_data_')) {
@@ -160,7 +161,6 @@ export const api = {
         }
       }
     }
-    // Hardcoded demo student if not found in storage
     if (query === '163110' || query.toLowerCase() === 'aryan') {
       return { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2025-01-01' };
     }
@@ -186,7 +186,9 @@ export const api = {
             chapters: updatedData.chapters.map(c => ({
               id: c.id, progress: c.progress, accuracy: c.accuracy, status: c.status, timeSpent: c.timeSpent
             })),
-            testHistory: updatedData.testHistory
+            testHistory: updatedData.testHistory,
+            connectedParent: updatedData.connectedParent || null,
+            pendingInvitations: updatedData.pendingInvitations || []
           })
         });
       } catch(e) {}
