@@ -3,7 +3,8 @@ import { StudentData, UserRole, UserAccount, RoutineConfig, TestResult, Chapter,
 import { INITIAL_STUDENT_DATA } from '../mockData';
 
 const API_CONFIG = {
-  BASE_URL: './api/', 
+  // Use root-relative path to prevent 404s on nested routes
+  BASE_URL: 'api/', 
   MODE_KEY: 'jeepro_datasource_mode_v10_final',
   GLOBAL_USERS_KEY: 'jeepro_global_users_registry_v22'
 };
@@ -43,17 +44,28 @@ const getZeroStateStudentData = (id: string, name: string): StudentData => ({
 });
 
 const safeJson = async (response: Response) => {
+  const text = await response.text();
   try {
-    const text = await response.text();
-    if (!response.ok) return { success: false, error: `HTTP ${response.status}` };
+    if (!response.ok) {
+      return { 
+        success: false, 
+        error: `System Node Error ${response.status}: The requested resource at '${response.url}' was not found. Please ensure the 'api/' folder is deployed to your server root.` 
+      };
+    }
     return JSON.parse(text);
   } catch (e) {
-    return { success: false, error: "Malformed Response" };
+    if (text.includes('<!DOCTYPE html>') || text.includes('<html>')) {
+      return { 
+        success: false, 
+        error: "Critical Protocol Fault: The server returned an HTML error page instead of a JSON response. This usually indicates a 404 Not Found error for the PHP endpoint." 
+      };
+    }
+    return { success: false, error: "Malformed Response: Core node returned non-JSON data." };
   }
 };
 
 export const api = {
-  getMode: (): 'MOCK' | 'LIVE' => (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'LIVE',
+  getMode: (): 'MOCK' | 'LIVE' => (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'MOCK',
   
   setMode: (mode: 'MOCK' | 'LIVE') => { 
     localStorage.setItem(API_CONFIG.MODE_KEY, mode); 
@@ -73,7 +85,7 @@ export const api = {
             body: JSON.stringify(credentials)
           });
           return await safeJson(res);
-        } catch(e) { return { success: false, error: "Node connection failed." }; }
+        } catch(e) { return { success: false, error: "Node connection failed. Verify PHP API folder is uploaded to the root directory." }; }
     }
 
     const registry = JSON.parse(localStorage.getItem(API_CONFIG.GLOBAL_USERS_KEY) || '[]');
@@ -99,7 +111,7 @@ export const api = {
           body: JSON.stringify(data)
         });
         return await safeJson(res);
-      } catch(e) { return { success: false, error: "Uplink timed out." }; }
+      } catch(e) { return { success: false, error: "Uplink timed out. Ensure your server allows POST requests to the 'api/' directory." }; }
     }
     
     const id = generateStableId(data.email);
@@ -131,7 +143,6 @@ export const api = {
                   return { 
                     ...t, 
                     ...s, 
-                    // Map numeric strings from SQL to numbers
                     progress: Number(s.progress),
                     accuracy: Number(s.accuracy),
                     timeSpent: Number(s.timeSpent),
@@ -252,7 +263,6 @@ export const api = {
     return { success: true };
   },
 
-  // Added missing sendInvite method to fix error in views/ParentDashboard.tsx
   async sendInvite(studentId: string, invitation: ParentInvitation) {
     const studentData = await this.getStudentData(studentId);
     if (studentData) {
@@ -265,7 +275,6 @@ export const api = {
     return { success: false, error: "Student not found" };
   },
 
-  // Added missing markMessageRead method to fix error in views/AdminCMS.tsx
   async markMessageRead(messageId: string) {
     if (this.getMode() === 'LIVE') {
       try {
@@ -276,7 +285,6 @@ export const api = {
     return { success: true };
   },
 
-  // Added missing saveRoutine method to fix error in views/TimetableModule.tsx
   async saveRoutine(studentId: string, routine: RoutineConfig) {
     if (this.getMode() === 'LIVE') {
       try {
@@ -296,7 +304,6 @@ export const api = {
     return { success: true };
   },
 
-  // Added missing saveTimetable method to fix error in views/TimetableModule.tsx
   async saveTimetable(studentId: string, timetable: { schedule: any[], roadmap: any[] }) {
     if (this.getMode() === 'LIVE') {
       try {
