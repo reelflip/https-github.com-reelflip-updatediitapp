@@ -4,7 +4,8 @@ import { INITIAL_STUDENT_DATA } from '../mockData';
 
 const API_CONFIG = {
   BASE_URL: './api/', 
-  MODE_KEY: 'jeepro_datasource_mode_v10_final'
+  MODE_KEY: 'jeepro_datasource_mode_v10_final',
+  GLOBAL_USERS_KEY: 'jeepro_global_users_registry_v22'
 };
 
 const generateStableId = (email: string) => 'USER-' + btoa(email.toLowerCase()).substring(0, 10);
@@ -75,19 +76,17 @@ export const api = {
         } catch(e) { return { success: false, error: "Authentication node offline." }; }
     }
 
+    const registry = JSON.parse(localStorage.getItem(API_CONFIG.GLOBAL_USERS_KEY) || '[]');
+    const registeredUser = registry.find((u: UserAccount) => u.email.toLowerCase() === email);
+    if (registeredUser) return { success: true, user: registeredUser };
+
     let determinedRole = UserRole.STUDENT;
     if (email === 'admin@demo.in') determinedRole = UserRole.ADMIN;
     else if (email === 'parent@demo.in') determinedRole = UserRole.PARENT;
 
     return { 
       success: true, 
-      user: { 
-        id: generateStableId(email), 
-        name: email.split('@')[0], 
-        email: email, 
-        role: determinedRole, 
-        createdAt: new Date().toISOString() 
-      } 
+      user: { id: generateStableId(email), name: email.split('@')[0], email, role: determinedRole, createdAt: new Date().toISOString() } 
     };
   },
 
@@ -102,68 +101,73 @@ export const api = {
         return await safeJson(res);
       } catch(e) { return { success: false, error: "Registration Node Offline." }; }
     }
+    
     const id = generateStableId(data.email);
-    const newUser = { ...data, id, createdAt: new Date().toISOString() };
-    localStorage.setItem(`jeepro_data_${id}`, JSON.stringify(getZeroStateStudentData(id, data.name)));
+    const newUser: UserAccount = { ...data, id, createdAt: new Date().toISOString() };
+    
+    const registry = JSON.parse(localStorage.getItem(API_CONFIG.GLOBAL_USERS_KEY) || '[]');
+    if (!registry.some((u: UserAccount) => u.email.toLowerCase() === data.email.toLowerCase())) {
+        registry.push(newUser);
+        localStorage.setItem(API_CONFIG.GLOBAL_USERS_KEY, JSON.stringify(registry));
+    }
+
+    if (data.role === UserRole.STUDENT) {
+      localStorage.setItem(`jeepro_data_${id}`, JSON.stringify(getZeroStateStudentData(id, data.name)));
+    }
     return { success: true, user: newUser };
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
-    const mode = this.getMode();
-
-    if (mode === 'LIVE') {
+    if (this.getMode() === 'LIVE') {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}get_dashboard.php?id=${studentId}`);
         const result = await safeJson(res);
-        if (result && result.success && result.data) {
+        if (result?.success && result.data) {
             const serverData = result.data;
             const templateChapters = getZeroStateChapters();
-            
-            const mergedChapters = templateChapters.map(templateCh => {
-                const serverCh = serverData.individual_progress?.find((c: any) => c.id === templateCh.id);
-                return serverCh ? { ...templateCh, ...serverCh } : templateCh;
+            const mergedChapters = templateChapters.map(t => {
+                const s = serverData.individual_progress?.find((c: any) => c.id === t.id);
+                return s ? { ...t, ...s } : t;
             });
-            
-            const mappedMessages = (serverData.messages || []).map((m: any) => ({
-              ...m,
-              isRead: m.is_read === 1 || m.is_read === "1" || !!m.is_read
-            }));
-
             return {
                 ...getZeroStateStudentData(studentId, serverData.name || 'Aspirant'),
                 ...serverData,
                 chapters: mergedChapters,
-                messages: mappedMessages,
                 testHistory: serverData.testHistory || [],
                 connectedParent: serverData.connectedParent || null,
                 pendingInvitations: serverData.pendingInvitations || []
             };
         }
-      } catch(e) { console.error("Live sync failed."); }
+      } catch(e) {}
     }
     const cached = localStorage.getItem(`jeepro_data_${studentId}`);
-    return cached ? JSON.parse(cached) : getZeroStateStudentData(studentId, 'New Aspirant');
+    return cached ? JSON.parse(cached) : getZeroStateStudentData(studentId, 'Aspirant');
   },
 
   async searchStudent(query: string): Promise<UserAccount | null> {
-    const keys = Object.keys(localStorage);
-    for (const key of keys) {
-      if (key.startsWith('jeepro_data_')) {
-        const data = JSON.parse(localStorage.getItem(key) || '{}');
-        if (data.id === query || data.name?.toLowerCase().includes(query.toLowerCase())) {
-          return {
-            id: data.id,
-            name: data.name,
-            email: data.email || 'hidden@aspirant.edu',
-            role: UserRole.STUDENT,
-            createdAt: ''
-          };
-        }
-      }
+    const q = query.toLowerCase();
+    
+    // LIVE SERVER MODE: Real-time Database Search
+    if (this.getMode() === 'LIVE') {
+        try {
+            const res = await fetch(`${API_CONFIG.BASE_URL}manage_users.php?action=search&query=${encodeURIComponent(q)}&role=STUDENT`);
+            const result = await safeJson(res);
+            if (result?.success && result.users && result.users.length > 0) {
+                return result.users[0]; // Return the most relevant match
+            }
+        } catch(e) { console.error("Database search failed"); }
     }
-    if (query === '163110' || query.toLowerCase() === 'aryan') {
-      return { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2025-01-01' };
-    }
+    
+    // MOCK MODE FALLBACK
+    const registry = JSON.parse(localStorage.getItem(API_CONFIG.GLOBAL_USERS_KEY) || '[]');
+    const student = registry.find((u: UserAccount) => 
+      u.role === UserRole.STUDENT && 
+      (u.id.toLowerCase() === q || u.name.toLowerCase().includes(q) || u.email.toLowerCase() === q)
+    );
+    if (student) return student;
+
+    if (q === '163110' || q === 'aryan') return { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2025-01-01' };
+    
     return null;
   },
 
@@ -183,9 +187,7 @@ export const api = {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             student_id: studentId, 
-            chapters: updatedData.chapters.map(c => ({
-              id: c.id, progress: c.progress, accuracy: c.accuracy, status: c.status, timeSpent: c.timeSpent
-            })),
+            chapters: updatedData.chapters.map(c => ({ id: c.id, progress: c.progress, accuracy: c.accuracy, status: c.status, timeSpent: c.timeSpent })),
             testHistory: updatedData.testHistory,
             connectedParent: updatedData.connectedParent || null,
             pendingInvitations: updatedData.pendingInvitations || []
@@ -194,6 +196,29 @@ export const api = {
       } catch(e) {}
     }
     return { success: true };
+  },
+
+  async getAccounts(): Promise<UserAccount[]> {
+    // LIVE SERVER MODE: Fetch full user list from MySQL
+    if (this.getMode() === 'LIVE') {
+      try {
+        const res = await fetch(`${API_CONFIG.BASE_URL}manage_users.php?action=list`);
+        const result = await safeJson(res);
+        if (result?.success && result.users) return result.users;
+      } catch(e) { console.error("Database fetch failed"); }
+    }
+    
+    // MOCK MODE FALLBACK
+    const registry = JSON.parse(localStorage.getItem(API_CONFIG.GLOBAL_USERS_KEY) || '[]');
+    const demoAccounts = [
+      { id: 'USER-ADMIN', name: 'Admin', email: 'admin@demo.in', role: UserRole.ADMIN, createdAt: '2025-01-01' },
+      { id: 'USER-PARENT', name: 'Parent', email: 'parent@demo.in', role: UserRole.PARENT, createdAt: '2025-01-01' },
+      { id: '163110', name: 'Aryan Sharma', email: 'ishu@gmail.com', role: UserRole.STUDENT, createdAt: '2025-01-01' }
+    ];
+    
+    const combined = [...registry];
+    demoAccounts.forEach(demo => { if (!combined.some(u => u.email.toLowerCase() === demo.email.toLowerCase())) combined.push(demo); });
+    return combined;
   },
 
   async saveEntity(type: string, data: any) {
@@ -222,61 +247,36 @@ export const api = {
   },
 
   async markMessageRead(id: string) {
-    if (this.getMode() === 'LIVE') {
-      await fetch(`${API_CONFIG.BASE_URL}manage_messages.php?action=read&id=${id}`);
-    }
+    if (this.getMode() === 'LIVE') await fetch(`${API_CONFIG.BASE_URL}manage_messages.php?action=read&id=${id}`);
     return { success: true };
   },
 
-  async getAccounts(): Promise<UserAccount[]> {
-    if (this.getMode() === 'LIVE') {
-      try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}manage_users.php`);
-        const result = await safeJson(res);
-        if (result?.users) return result.users;
-      } catch(e) {}
-    }
-    return [];
-  },
-
   async saveRoutine(studentId: string, routine: RoutineConfig) {
-    if (this.getMode() === 'LIVE') {
-      await fetch(`${API_CONFIG.BASE_URL}manage_routine.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ student_id: studentId, routine })
-      });
-    }
+    if (this.getMode() === 'LIVE') await fetch(`${API_CONFIG.BASE_URL}manage_routine.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: studentId, routine }) });
     return { success: true };
   },
 
   async saveTimetable(studentId: string, timetable: any) {
-    if (this.getMode() === 'LIVE') {
-      await fetch(`${API_CONFIG.BASE_URL}manage_timetable.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ student_id: studentId, ...timetable })
-      });
-    }
+    if (this.getMode() === 'LIVE') await fetch(`${API_CONFIG.BASE_URL}manage_timetable.php`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ student_id: studentId, ...timetable }) });
     return { success: true };
   },
 
   async updateUserProfile(userId: string, profile: any) {
     if (this.getMode() === 'LIVE') {
-      const res = await fetch(`${API_CONFIG.BASE_URL}manage_users.php?action=update&id=${userId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profile)
-      });
+      const res = await fetch(`${API_CONFIG.BASE_URL}manage_users.php?action=update&id=${userId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile) });
       return await safeJson(res);
+    }
+    const registry = JSON.parse(localStorage.getItem(API_CONFIG.GLOBAL_USERS_KEY) || '[]');
+    const index = registry.findIndex((u: UserAccount) => u.id === userId);
+    if (index > -1) {
+      registry[index] = { ...registry[index], ...profile };
+      localStorage.setItem(API_CONFIG.GLOBAL_USERS_KEY, JSON.stringify(registry));
     }
     return { success: true };
   },
 
   async resetProgress(studentId: string): Promise<StudentData> {
-    if (this.getMode() === 'LIVE') {
-        await fetch(`${API_CONFIG.BASE_URL}sync_progress.php?action=reset&student_id=${studentId}`, { method: 'POST' });
-    }
+    if (this.getMode() === 'LIVE') await fetch(`${API_CONFIG.BASE_URL}sync_progress.php?action=reset&student_id=${studentId}`, { method: 'POST' });
     const cleanData = getZeroStateStudentData(studentId, 'Aspirant');
     localStorage.setItem(`jeepro_data_${studentId}`, JSON.stringify(cleanData));
     return cleanData;

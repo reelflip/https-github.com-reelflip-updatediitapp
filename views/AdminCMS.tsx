@@ -266,7 +266,18 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     else if (activeTab === 'admin-messages') loadMessages();
   }, [activeTab]);
 
-  const loadUsers = async () => { setIsLoadingUsers(true); const users = await api.getAccounts(); setUserList(users || []); setIsLoadingUsers(false); };
+  const loadUsers = async () => { 
+    setIsLoadingUsers(true); 
+    try {
+      const users = await api.getAccounts(); 
+      setUserList(users || []); 
+    } catch (e) {
+      console.error("Failed to load users", e);
+    } finally {
+      setIsLoadingUsers(false); 
+    }
+  };
+  
   const loadMessages = async () => { setIsLoadingMessages(true); const msgs = await api.getMessages(); setData({ ...data, messages: msgs }); setIsLoadingMessages(false); };
 
   const handleEdit = (type: string, item: any) => { setCreationType(type); setEditingItem(item); setIsCreating(true); };
@@ -391,8 +402,26 @@ else if (\$action === 'read') { \$id = \$_GET['id'] ?? ''; \$pdo->prepare("UPDAT
 
       zip.file("manage_users.php", `<?php require_once 'config/database.php';
 \$action = \$_GET['action'] ?? 'list'; \$id = \$_GET['id'] ?? '';
-if (\$action === 'list') { \$stmt = \$pdo->query("SELECT id, name, email, role, created_at as createdAt FROM users"); echo json_encode(['success'=>true, 'users'=>\$stmt->fetchAll()]); }
-else if (\$action === 'delete') { \$pdo->prepare("DELETE FROM users WHERE id = ?")->execute([\$id]); echo json_encode(['success'=>true]); } ?>`);
+if (\$action === 'list') { 
+    \$stmt = \$pdo->query("SELECT id, name, email, role, created_at as createdAt FROM users"); 
+    echo json_encode(['success'=>true, 'users'=>\$stmt->fetchAll()]); 
+}
+else if (\$action === 'search') {
+    \$q = '%' . (\$_GET['query'] ?? '') . '%';
+    \$role = \$_GET['role'] ?? null;
+    if (\$role) {
+        \$stmt = \$pdo->prepare("SELECT id, name, email, role, created_at as createdAt FROM users WHERE (id LIKE ? OR name LIKE ? OR email LIKE ?) AND role = ?");
+        \$stmt->execute([\$q, \$q, \$q, \$role]);
+    } else {
+        \$stmt = \$pdo->prepare("SELECT id, name, email, role, created_at as createdAt FROM users WHERE (id LIKE ? OR name LIKE ? OR email LIKE ?)");
+        \$stmt->execute([\$q, \$q, \$q]);
+    }
+    echo json_encode(['success'=>true, 'users'=>\$stmt->fetchAll()]);
+}
+else if (\$action === 'delete') { 
+    \$pdo->prepare("DELETE FROM users WHERE id = ?")->execute([\$id]); 
+    echo json_encode(['success'=>true]); 
+} ?>`);
 
       zip.file("manage_routine.php", `<?php require_once 'config/database.php';
 \$input = json_decode(file_get_contents('php://input'), true); \$studentId = \$input['student_id'] ?? null; if (!\$studentId) exit;
@@ -441,7 +470,7 @@ echo json_encode(['success'=>true]); ?>`);
                <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-3"><Users className="w-6 h-6 text-indigo-600" /> Authorized Identities</h3>
                <button onClick={loadUsers} className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-indigo-600 shadow-sm transition-all"><RefreshCw className={`w-4 h-4 ${isLoadingUsers ? 'animate-spin' : ''}`} /></button>
              </div>
-             <div className="overflow-x-auto"><table className="w-full text-left min-w-[800px]"><thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-black uppercase text-slate-400 tracking-widest"><tr><th className="p-6">Account</th><th className="p-6">Role</th><th className="p-6">Date</th><th className="p-6 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-50">{userList.length === 0 ? (<tr><td colSpan={4} className="p-20 text-center text-slate-300 font-black uppercase text-[10px] tracking-widest italic">No identities in database.</td></tr>) : (userList.map(user => (<tr key={user.id} className="hover:bg-slate-50/50 transition-colors group"><td className="p-6"><div className="flex items-center gap-4"><div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center font-black text-xs">{user.name[0]}</div><div><div className="text-sm font-bold text-slate-800">{user.name}</div><div className="text-[10px] font-medium text-slate-400">{user.email}</div></div></div></td><td className="p-6"><span className={`px-4 py-1.5 rounded-full text-[9px] font-black tracking-widest uppercase border ${user.role === UserRole.ADMIN ? 'bg-rose-50 text-rose-600 border-rose-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>{user.role}</span></td><td className="p-6 text-xs font-bold text-slate-400 uppercase">{user.createdAt}</td><td className="p-6 text-right"><div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={() => handleDelete('User', user.id)} className="p-3 bg-white border border-slate-100 text-slate-400 rounded-xl hover:text-rose-600 shadow-sm"><Trash2 className="w-4 h-4" /></button></div></td></tr>)))}</tbody></table></div>
+             <div className="overflow-x-auto"><table className="w-full text-left min-w-[800px]"><thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-black uppercase text-slate-400 tracking-widest"><tr><th className="p-6">Account</th><th className="p-6">Role</th><th className="p-6">Date</th><th className="p-6 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-50">{userList.length === 0 ? (<tr><td colSpan={4} className="p-20 text-center text-slate-300 font-black uppercase text-[10px] tracking-widest italic">No identities in database.</td></tr>) : (userList.map(user => (<tr key={user.id} className="hover:bg-slate-50/50 transition-colors group"><td className="p-6"><div className="flex items-center gap-4"><div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center font-black text-xs">{user.name?.[0] || '?'}</div><div><div className="text-sm font-bold text-slate-800">{user.name || 'Unknown'}</div><div className="text-[10px] font-medium text-slate-400">{user.email}</div></div></div></td><td className="p-6"><span className={`px-4 py-1.5 rounded-full text-[9px] font-black tracking-widest uppercase border ${user.role === UserRole.ADMIN ? 'bg-rose-50 text-rose-600 border-rose-100' : user.role === UserRole.PARENT ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>{user.role}</span></td><td className="p-6 text-xs font-bold text-slate-400 uppercase">{user.createdAt || 'N/A'}</td><td className="p-6 text-right"><div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={() => handleDelete('User', user.id)} className="p-3 bg-white border border-slate-100 text-slate-400 rounded-xl hover:text-rose-600 shadow-sm"><Trash2 className="w-4 h-4" /></button></div></td></tr>)))}</tbody></table></div>
            </div>
         )}
 
