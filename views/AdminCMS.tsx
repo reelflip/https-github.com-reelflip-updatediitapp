@@ -111,7 +111,6 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                  <InputGroup label="Theory (HTML Core)">
                     <div className="space-y-4">
                        <button onClick={handleAutoSeed} disabled={isSeeding} className="bg-indigo-600/10 text-indigo-600 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-indigo-200">
-                         {/* Added missing Sparkles icon to the auto-seed button */}
                          {isSeeding ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />} Auto-Seed NCERT
                        </button>
                        <textarea name="notes" value={formData.notes} onChange={handleChange} rows={12} className="w-full bg-slate-50 border-none rounded-[2.5rem] p-8 text-sm font-mono shadow-inner" placeholder="Enter HTML structured content..." />
@@ -225,17 +224,169 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     setIsDownloading(true);
     try {
       const zip = new JSZip();
-      zip.file("sql/full_schema_v21.sql", `-- IITGEEPREP Solaris v21.0
+      
+      // Master SQL Schema
+      zip.file("sql/master_schema_v21.sql", `-- IITGEEPREP Solaris v21.0 Production Schema
 CREATE TABLE IF NOT EXISTS users (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255) UNIQUE, role VARCHAR(50), institute VARCHAR(255), targetExam VARCHAR(255), targetYear INT, birthDate DATE, gender VARCHAR(20), password_hash VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS chapters (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), subject VARCHAR(50), unit VARCHAR(255), notes LONGTEXT, videoUrl VARCHAR(512));
 CREATE TABLE IF NOT EXISTS student_progress (student_id VARCHAR(100), chapter_id VARCHAR(100), progress INT DEFAULT 0, accuracy INT DEFAULT 0, status VARCHAR(50), time_spent INT DEFAULT 0, PRIMARY KEY (student_id, chapter_id));
 CREATE TABLE IF NOT EXISTS questions (id VARCHAR(100) PRIMARY KEY, topicId VARCHAR(100), text TEXT, options JSON, correctAnswer INT, difficulty VARCHAR(20), subject VARCHAR(50));
 CREATE TABLE IF NOT EXISTS mock_tests (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), duration INT, totalMarks INT, category VARCHAR(50), difficulty VARCHAR(50), questionIds JSON, chapterIds JSON);
 CREATE TABLE IF NOT EXISTS test_results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(100), test_id VARCHAR(100), test_name VARCHAR(255), score INT, total_marks INT, accuracy INT, category VARCHAR(50), taken_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE IF NOT EXISTS messages (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255), subject VARCHAR(255), message TEXT, date DATE, is_read BOOLEAN DEFAULT FALSE);`);
-      zip.file("config/database.php", "<?php\n\$host = 'localhost';\n\$db = 'iitjeeprep_v21';\n\$user = 'root';\n\$pass = '';\n\$pdo = new PDO(\"mysql:host=\$host;dbname=\$db\", \$user, \$pass, [PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]); ?>");
+CREATE TABLE IF NOT EXISTS messages (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255), subject VARCHAR(255), message TEXT, date DATE, is_read BOOLEAN DEFAULT FALSE);
+CREATE TABLE IF NOT EXISTS routines (student_id VARCHAR(100) PRIMARY KEY, routine_data JSON);
+CREATE TABLE IF NOT EXISTS timetables (student_id VARCHAR(100) PRIMARY KEY, schedule JSON, roadmap JSON);
+CREATE TABLE IF NOT EXISTS flashcards (id VARCHAR(100) PRIMARY KEY, question TEXT, answer TEXT, subject VARCHAR(50), difficulty VARCHAR(50), type VARCHAR(50));
+CREATE TABLE IF NOT EXISTS memory_hacks (id VARCHAR(100) PRIMARY KEY, title VARCHAR(255), description TEXT, hack TEXT, category VARCHAR(50), subject VARCHAR(50));
+CREATE TABLE IF NOT EXISTS blogs (id VARCHAR(100) PRIMARY KEY, title VARCHAR(255), content LONGTEXT, author VARCHAR(255), date DATE, status VARCHAR(50));`);
+
+      // DB Config
+      zip.file("config/database.php", `<?php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
+header("Content-Type: application/json; charset=UTF-8");
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
+\$host = 'localhost'; \$db = 'iitjeeprep_v21'; \$user = 'root'; \$pass = '';
+try { \$pdo = new PDO("mysql:host=\$host;dbname=\$db;charset=utf8mb4", \$user, \$pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC]); }
+catch (PDOException \$e) { echo json_encode(['success' => false, 'error' => 'Handshake Failed']); exit; } ?>`);
+
+      // Auth Login
+      zip.file("auth_login.php", `<?php require_once 'config/database.php';
+\$input = json_decode(file_get_contents('php://input'), true); 
+\$email = strtolower(\$input['email'] ?? '');
+// Priority Demo Logic
+if (\$email == 'admin@demo.in') { echo json_encode(['success'=>true, 'user'=>['id'=>'USER-ADMIN', 'name'=>'Admin', 'email'=>'admin@demo.in', 'role'=>'ADMIN']]); exit; }
+if (\$email == 'parent@demo.in') { echo json_encode(['success'=>true, 'user'=>['id'=>'USER-PARENT', 'name'=>'Parent', 'email'=>'parent@demo.in', 'role'=>'PARENT']]); exit; }
+
+\$stmt = \$pdo->prepare("SELECT * FROM users WHERE email = ?"); 
+\$stmt->execute([\$email]); 
+\$user = \$stmt->fetch();
+if (\$user && password_verify(\$input['password'] ?? '', \$user['password_hash'])) { 
+    unset(\$user['password_hash']); 
+    echo json_encode(['success'=>true, 'user'=>\$user]); 
+} else { 
+    echo json_encode(['success'=>false, 'error'=>'Authentication failure: Node mismatch.']); 
+} ?>`);
+
+      // Auth Register
+      zip.file("auth_register.php", `<?php require_once 'config/database.php';
+\$input = json_decode(file_get_contents('php://input'), true);
+if (!isset(\$input['email']) || !isset(\$input['password'])) { echo json_encode(['success'=>false, 'error'=>'Missing payload']); exit; }
+\$hash = password_hash(\$input['password'], PASSWORD_DEFAULT);
+\$id = 'USER-' . substr(md5(strtolower(\$input['email'])), 0, 10);
+try {
+    \$stmt = \$pdo->prepare("INSERT INTO users (id, name, email, role, institute, targetExam, targetYear, birthDate, gender, password_hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    \$stmt->execute([\$id, \$input['name'], strtolower(\$input['email']), \$input['role'], \$input['institute'] ?? null, \$input['targetExam'] ?? null, \$input['targetYear'] ?? null, \$input['birthDate'] ?? null, \$input['gender'] ?? null, \$hash]);
+    echo json_encode(['success'=>true, 'user'=>['id'=>\$id, 'name'=>\$input['name'], 'email'=>\$input['email'], 'role'=>\$input['role']]]);
+} catch (Exception \$e) { echo json_encode(['success'=>false, 'error'=>'Node collision or SQL fault']); } ?>`);
+
+      // Sync Progress
+      zip.file("sync_progress.php", `<?php require_once 'config/database.php';
+\$input = json_decode(file_get_contents('php://input'), true); 
+\$studentId = \$input['student_id'] ?? null;
+if (!\$studentId) { exit; }
+try { 
+    \$pdo->beginTransaction();
+    if (isset(\$input['chapters'])) { 
+        \$stmt = \$pdo->prepare("INSERT INTO student_progress (student_id, chapter_id, progress, accuracy, status, time_spent) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE progress=VALUES(progress), accuracy=VALUES(accuracy), status=VALUES(status), time_spent=VALUES(time_spent)");
+        foreach (\$input['chapters'] as \$ch) { 
+            \$stmt->execute([\$studentId, \$ch['id'], \$ch['progress'], \$ch['accuracy'], \$ch['status'], \$ch['timeSpent'] ?? 0]); 
+        } 
+    }
+    if (isset(\$input['testHistory'])) { 
+        \$pdo->prepare("DELETE FROM test_results WHERE student_id = ?")->execute([\$studentId]);
+        \$st = \$pdo->prepare("INSERT INTO test_results (student_id, test_id, test_name, score, total_marks, accuracy, category) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        foreach (\$input['testHistory'] as \$t) { 
+            \$st->execute([\$studentId, \$t['testId'], \$t['testName'], \$t['score'], \$t['totalMarks'], \$t['accuracy'], \$t['category'] ?? 'PRACTICE']); 
+        } 
+    }
+    \$pdo->commit(); 
+    echo json_encode(['success'=>true]); 
+} catch(Exception \$e) { 
+    \$pdo->rollBack(); 
+    echo json_encode(['success'=>false, 'error' => \$e->getMessage()]); 
+} ?>`);
+
+      // Dashboard Fetcher
+      zip.file("get_dashboard.php", `<?php require_once 'config/database.php';
+\$id = \$_GET['id'] ?? null; if (!\$id) exit;
+\$stmt = \$pdo->prepare("SELECT * FROM users WHERE id = ?"); \$stmt->execute([\$id]); \$u = \$stmt->fetch(); if (!\$u) exit;
+\$sp = \$pdo->prepare("SELECT chapter_id as id, progress, accuracy, status, time_spent as timeSpent FROM student_progress WHERE student_id = ?"); \$sp->execute([\$id]); \$progress = \$sp->fetchAll();
+\$st = \$pdo->prepare("SELECT test_id as testId, test_name as testName, score, total_marks as totalMarks, accuracy, category, taken_at as date FROM test_results WHERE student_id = ? ORDER BY taken_at DESC"); \$st->execute([\$id]); \$tests = \$st->fetchAll();
+echo json_encode(['success'=>true, 'data'=>array_merge(\$u, ['individual_progress'=>\$progress, 'testHistory'=>\$tests])]); ?>`);
+
+      // Manage Entity (CMS)
+      zip.file("manage_entity.php", `<?php require_once 'config/database.php';
+\$type = \$_GET['type'] ?? '';
+\$input = json_decode(file_get_contents('php://input'), true);
+if (!\$input) exit;
+try {
+    if (\$type === 'Chapter') {
+        \$st = \$pdo->prepare("INSERT INTO chapters (id, name, subject, unit, notes, videoUrl) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=VALUES(name), subject=VALUES(subject), unit=VALUES(unit), notes=VALUES(notes), videoUrl=VALUES(videoUrl)");
+        \$st->execute([\$input['id'], \$input['name'], \$input['subject'], \$input['unit'], \$input['notes'], \$input['videoUrl']]);
+    } else if (\$type === 'Question') {
+        \$st = \$pdo->prepare("INSERT INTO questions (id, topicId, text, options, correctAnswer, difficulty, subject) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE text=VALUES(text), options=VALUES(options), correctAnswer=VALUES(correctAnswer), difficulty=VALUES(difficulty)");
+        \$st->execute([\$input['id'], \$input['topicId'], \$input['text'], json_encode(\$input['options']), \$input['correctAnswer'], \$input['difficulty'], \$input['subject']]);
+    } else if (\$type === 'MockTest') {
+        \$st = \$pdo->prepare("INSERT INTO mock_tests (id, name, duration, totalMarks, category, difficulty, questionIds, chapterIds) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name=VALUES(name), duration=VALUES(duration), totalMarks=VALUES(totalMarks), questionIds=VALUES(questionIds)");
+        \$st->execute([\$input['id'], \$input['name'], \$input['duration'], \$input['totalMarks'], \$input['category'], \$input['difficulty'], json_encode(\$input['questionIds']), json_encode(\$input['chapterIds'])]);
+    } else if (\$type === 'Message') {
+        \$st = \$pdo->prepare("INSERT INTO messages (id, name, email, subject, message, date) VALUES (?, ?, ?, ?, ?, ?)");
+        \$st->execute([\$input['id'], \$input['name'], \$input['email'], \$input['subject'], \$input['message'], \$input['date']]);
+    }
+    echo json_encode(['success'=>true]);
+} catch (Exception \$e) { echo json_encode(['success'=>false, 'error' => \$e->getMessage()]); } ?>`);
+
+      // Manage Users
+      zip.file("manage_users.php", `<?php require_once 'config/database.php';
+\$action = \$_GET['action'] ?? 'list';
+\$id = \$_GET['id'] ?? '';
+if (\$action === 'list') {
+    \$stmt = \$pdo->query("SELECT id, name, email, role, created_at as createdAt FROM users");
+    echo json_encode(['success'=>true, 'users'=>\$stmt->fetchAll()]);
+} else if (\$action === 'delete') {
+    \$pdo->prepare("DELETE FROM users WHERE id = ?")->execute([\$id]);
+    echo json_encode(['success'=>true]);
+} else if (\$action === 'update') {
+    \$input = json_decode(file_get_contents('php://input'), true);
+    \$pdo->prepare("UPDATE users SET name=?, institute=?, targetExam=?, targetYear=?, birthDate=?, gender=? WHERE id=?")
+        ->execute([\$input['name'], \$input['institute'], \$input['targetExam'], \$input['targetYear'], \$input['birthDate'], \$input['gender'], \$id]);
+    echo json_encode(['success'=>true]);
+} ?>`);
+
+      // Manage Messages
+      zip.file("manage_messages.php", `<?php require_once 'config/database.php';
+\$action = \$_GET['action'] ?? 'list';
+if (\$action === 'list') {
+    \$stmt = \$pdo->query("SELECT * FROM messages ORDER BY date DESC");
+    echo json_encode(['success'=>true, 'messages'=>\$stmt->fetchAll()]);
+} else if (\$action === 'read') {
+    \$id = \$_GET['id'] ?? '';
+    \$pdo->prepare("UPDATE messages SET is_read = 1 WHERE id = ?")->execute([\$id]);
+    echo json_encode(['success'=>true]);
+} ?>`);
+
+      // Manage Routine
+      zip.file("manage_routine.php", `<?php require_once 'config/database.php';
+\$input = json_decode(file_get_contents('php://input'), true);
+\$studentId = \$input['student_id'] ?? null;
+if (!\$studentId) exit;
+\$pdo->prepare("INSERT INTO routines (student_id, routine_data) VALUES (?, ?) ON DUPLICATE KEY UPDATE routine_data = VALUES(routine_data)")
+    ->execute([\$studentId, json_encode(\$input['routine'])]);
+echo json_encode(['success'=>true]); ?>`);
+
+      // Manage Timetable
+      zip.file("manage_timetable.php", `<?php require_once 'config/database.php';
+\$input = json_decode(file_get_contents('php://input'), true);
+\$studentId = \$input['student_id'] ?? null;
+if (!\$studentId) exit;
+\$pdo->prepare("INSERT INTO timetables (student_id, schedule, roadmap) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE schedule=VALUES(schedule), roadmap=VALUES(roadmap)")
+    ->execute([\$studentId, json_encode(\$input['schedule']), json_encode(\$input['roadmap'])]);
+echo json_encode(['success'=>true]); ?>`);
+
       const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, "iitjeeprep_production_v21.zip");
+      saveAs(content, "solaris_v21_full_api_stack.zip");
     } catch (e) { alert("ZIP creation failed."); } finally { setIsDownloading(false); }
   };
 
