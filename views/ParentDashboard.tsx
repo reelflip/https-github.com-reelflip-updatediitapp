@@ -8,7 +8,7 @@ import {
   Brain, ShieldCheck, Activity, BarChart, 
   Sparkles, Target, History,
   RefreshCcw, Send, Loader2, ChevronRight,
-  TrendingUp, Link, User, Zap
+  TrendingUp, Link, User, Zap, XCircle
 } from 'lucide-react';
 
 interface ParentDashboardProps {
@@ -42,6 +42,7 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ externalActiveTab }) 
   const [searchId, setSearchId] = useState('');
   const [searchResult, setSearchResult] = useState<UserAccount | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [isInviting, setIsInviting] = useState(false);
   const [inviteSentForId, setInviteSentForId] = useState<string | null>(null);
   const [linkedStudentData, setLinkedStudentData] = useState<StudentData | null>(null);
@@ -81,8 +82,10 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ externalActiveTab }) 
   const handleSearch = async () => {
     if (!searchId.trim()) return;
     setIsSearching(true);
+    setHasSearched(false);
     const result = await api.searchStudent(searchId);
     setSearchResult(result);
+    setHasSearched(true);
     setIsSearching(false);
   };
 
@@ -128,84 +131,6 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ externalActiveTab }) 
   const latestWellness = student?.psychometricHistory?.length 
     ? student.psychometricHistory[student.psychometricHistory.length - 1] 
     : null;
-
-  const renderConnectionHub = () => (
-    <div className="max-w-4xl mx-auto space-y-10 animate-in fade-in duration-500 py-10">
-      <div className="bg-white p-12 rounded-[3.5rem] border border-slate-200 shadow-2xl text-center space-y-8 overflow-hidden relative">
-        <div className="absolute top-0 left-0 p-12 opacity-5"><UserPlus className="w-64 h-64" /></div>
-        <div className="w-20 h-20 bg-indigo-600 text-white rounded-[2rem] flex items-center justify-center mx-auto border-8 border-indigo-50 shadow-xl relative z-10">
-          <UserPlus className="w-8 h-8" />
-        </div>
-        <div className="relative z-10">
-          <h3 className="text-3xl font-black text-slate-900 tracking-tighter italic">Establish Connection.</h3>
-          <p className="text-slate-500 max-w-sm mx-auto mt-2 text-sm font-medium italic">Enter your student's unique ID to request access to their academic profile.</p>
-        </div>
-
-        {/* Quick Connect for Demo Parent */}
-        {isDemoAccount && !linkedStudentData && (
-          <div className="relative z-10 p-6 bg-indigo-50 border border-indigo-100 rounded-3xl animate-in zoom-in-95 duration-700">
-             <div className="flex items-center justify-between gap-6">
-                <div className="flex items-center gap-4 text-left">
-                   <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-100">
-                      <Zap className="w-6 h-6" />
-                   </div>
-                   <div>
-                      <div className="font-black text-slate-800 text-sm italic">Demo Simulation Point</div>
-                      <p className="text-[10px] text-slate-500 font-medium">Instantly connect to "Aryan Sharma" (ID: 163110) for preview.</p>
-                   </div>
-                </div>
-                <button 
-                  onClick={handleDemoConnect}
-                  className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg flex items-center gap-2"
-                >
-                   Quick Link <ChevronRight className="w-4 h-4" />
-                </button>
-             </div>
-          </div>
-        )}
-
-        <div className="flex flex-col md:flex-row gap-3 max-w-lg mx-auto relative z-10">
-          <div className="relative flex-1">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="Student ID (e.g. 163110)" 
-              value={searchId} 
-              onChange={(e) => setSearchId(e.target.value)} 
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="w-full pl-12 pr-6 py-4 bg-slate-50 border-2 border-transparent rounded-[1.5rem] text-sm font-bold focus:ring-4 focus:ring-indigo-100 focus:border-indigo-600 transition-all shadow-inner outline-none" 
-            />
-          </div>
-          <button onClick={handleSearch} disabled={isSearching} className="bg-slate-900 text-white px-10 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all shadow-xl flex items-center gap-2">
-            {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Execute Search'}
-          </button>
-        </div>
-
-        {searchResult && (
-          <div className="bg-indigo-50 p-8 rounded-[2.5rem] border border-indigo-100 flex flex-col md:flex-row items-center justify-between animate-in zoom-in-95 duration-500 relative z-10">
-            <div className="flex items-center gap-6 text-left">
-              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center font-black text-2xl text-indigo-600 shadow-lg border border-indigo-100">{searchResult.name[0]}</div>
-              <div>
-                <div className="font-black text-xl text-slate-900 italic tracking-tight">{searchResult.name}</div>
-                <div className="text-[9px] font-black uppercase text-indigo-600 bg-white px-3 py-1 rounded-lg w-fit mt-1 tracking-widest">ID: {searchResult.id}</div>
-              </div>
-            </div>
-            <div className="mt-6 md:mt-0">
-               {inviteSentForId === searchResult.id ? (
-                 <div className="flex items-center gap-3 px-6 py-3 bg-emerald-100 text-emerald-700 rounded-xl text-[9px] font-black uppercase tracking-widest border border-emerald-200">
-                    <CheckCircle2 className="w-4 h-4" /> Invitation Transmitted
-                 </div>
-               ) : (
-                 <button onClick={() => sendInvitation(searchResult)} disabled={isInviting} className="bg-indigo-600 text-white px-8 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all shadow-xl flex items-center gap-3">
-                    {isInviting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /> Send Invitation</>}
-                 </button>
-               )}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
 
   return (
     <div className="max-w-7xl mx-auto space-y-10 pb-32 animate-in fade-in duration-700 px-4">
@@ -400,7 +325,107 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({ externalActiveTab }) 
         )}
 
         {/* CONNECT VIEW */}
-        {activeView === 'connect' && renderConnectionHub()}
+        {activeView === 'connect' && (
+          <div className="max-w-4xl mx-auto space-y-10 animate-in fade-in duration-500 py-10">
+            <div className="bg-white p-12 rounded-[3.5rem] border border-slate-200 shadow-2xl text-center space-y-8 overflow-hidden relative">
+              <div className="absolute top-0 left-0 p-12 opacity-5"><UserPlus className="w-64 h-64" /></div>
+              <div className="w-20 h-20 bg-indigo-600 text-white rounded-[2rem] flex items-center justify-center mx-auto border-8 border-indigo-50 shadow-xl relative z-10">
+                <UserPlus className="w-8 h-8" />
+              </div>
+              <div className="relative z-10">
+                <h3 className="text-3xl font-black text-slate-900 tracking-tighter italic">Establish Connection.</h3>
+                <p className="text-slate-500 max-w-sm mx-auto mt-2 text-sm font-medium italic">Enter your student's unique ID or Name to request access to their academic profile.</p>
+              </div>
+
+              {/* Quick Connect for Demo Parent */}
+              {isDemoAccount && !linkedStudentData && (
+                <div className="relative z-10 p-6 bg-indigo-50 border border-indigo-100 rounded-3xl animate-in zoom-in-95 duration-700">
+                   <div className="flex items-center justify-between gap-6">
+                      <div className="flex items-center gap-4 text-left">
+                         <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm border border-indigo-100">
+                            <Zap className="w-6 h-6" />
+                         </div>
+                         <div>
+                            <div className="font-black text-slate-800 text-sm italic">Demo Simulation Point</div>
+                            <p className="text-[10px] text-slate-500 font-medium">Instantly connect to "Aryan Sharma" (ID: 163110) for preview.</p>
+                         </div>
+                      </div>
+                      <button 
+                        onClick={handleDemoConnect}
+                        className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg flex items-center gap-2"
+                      >
+                         Quick Link <ChevronRight className="w-4 h-4" />
+                      </button>
+                   </div>
+                </div>
+              )}
+
+              <div className="flex flex-col md:flex-row gap-3 max-w-lg mx-auto relative z-10">
+                <div className="relative flex-1">
+                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input 
+                    type="text" 
+                    placeholder="Student ID or Name (e.g. 163110)" 
+                    value={searchId} 
+                    onChange={(e) => setSearchId(e.target.value)} 
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    className="w-full pl-12 pr-6 py-4 bg-slate-50 border-2 border-transparent rounded-[1.5rem] text-sm font-bold focus:ring-4 focus:ring-indigo-100 focus:border-indigo-600 transition-all shadow-inner outline-none" 
+                  />
+                </div>
+                <button onClick={handleSearch} disabled={isSearching} className="bg-slate-900 text-white px-10 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all shadow-xl flex items-center gap-2">
+                  {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Execute Search'}
+                </button>
+              </div>
+
+              {/* SEARCH RESULTS FEEDBACK */}
+              <div className="relative z-10">
+                {isSearching ? (
+                  <div className="p-12 text-center">
+                    <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mx-auto mb-4" />
+                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Querying Identity Vault...</p>
+                  </div>
+                ) : searchResult ? (
+                  <div className="bg-indigo-50 p-8 rounded-[2.5rem] border border-indigo-100 flex flex-col md:flex-row items-center justify-between animate-in zoom-in-95 duration-500">
+                    <div className="flex items-center gap-6 text-left">
+                      <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center font-black text-2xl text-indigo-600 shadow-lg border border-indigo-100">
+                        {searchResult.name[0]}
+                      </div>
+                      <div>
+                        <div className="font-black text-xl text-slate-900 italic tracking-tight">{searchResult.name}</div>
+                        <div className="text-[9px] font-black uppercase text-indigo-600 bg-white px-3 py-1 rounded-lg w-fit mt-1 tracking-widest">ID: {searchResult.id}</div>
+                        <p className="text-[10px] text-slate-400 mt-1 font-bold italic">{searchResult.email}</p>
+                      </div>
+                    </div>
+                    <div className="mt-6 md:mt-0">
+                       {inviteSentForId === searchResult.id ? (
+                         <div className="flex items-center gap-3 px-6 py-3 bg-emerald-100 text-emerald-700 rounded-xl text-[9px] font-black uppercase tracking-widest border border-emerald-200">
+                            <CheckCircle2 className="w-4 h-4" /> Invitation Transmitted
+                         </div>
+                       ) : (
+                         <button onClick={() => sendInvitation(searchResult)} disabled={isInviting} className="bg-indigo-600 text-white px-8 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all shadow-xl flex items-center gap-3">
+                            {isInviting ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /> Send Invitation</>}
+                         </button>
+                       )}
+                    </div>
+                  </div>
+                ) : hasSearched ? (
+                  <div className="bg-rose-50 p-12 rounded-[2.5rem] border border-rose-100 flex flex-col items-center gap-4 animate-in zoom-in-95 duration-500">
+                    <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-rose-500 shadow-sm">
+                      <XCircle className="w-8 h-8" />
+                    </div>
+                    <div className="text-center">
+                      <h4 className="text-lg font-black text-rose-800 italic uppercase">Identity Not Found.</h4>
+                      <p className="text-[10px] text-rose-600 font-bold uppercase tracking-widest mt-1">Verification failed for query: "{searchId}"</p>
+                    </div>
+                    <p className="text-xs text-slate-500 italic max-w-xs leading-relaxed">
+                      Please ensure the Student ID or Name is correct. Students can find their unique ID in their Profile section.
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
