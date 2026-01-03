@@ -1,5 +1,5 @@
 
-import { StudentData, UserRole, UserAccount, RoutineConfig, TestResult, Chapter, PsychometricScore } from '../types';
+import { StudentData, UserRole, UserAccount, RoutineConfig, TestResult, Chapter, PsychometricScore, ContactMessage } from '../types';
 import { INITIAL_STUDENT_DATA } from '../mockData';
 
 const API_CONFIG = {
@@ -116,22 +116,10 @@ export const api = {
 
   async getStudentData(studentId: string): Promise<StudentData> {
     const localKey = `jeepro_data_${studentId}`;
-    
-    const cached = localStorage.getItem(localKey);
-    if (cached) {
-        try { 
-            const parsed = JSON.parse(cached);
-            if (parsed && parsed.chapters && parsed.chapters.length > 0) {
-                return parsed; 
-            }
-        } catch(e) {}
-    }
+    const mode = this.getMode();
 
-    let baseData: StudentData = studentId === '163110' 
-      ? INITIAL_STUDENT_DATA 
-      : getCleanStudentData(studentId, 'New Aspirant');
-
-    if (this.getMode() === 'LIVE') {
+    // 1. In LIVE mode, ALWAYS try fetching from server first to get new messages/syncs
+    if (mode === 'LIVE') {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}get_dashboard.php?id=${studentId}`);
         const result = await safeJson(res);
@@ -143,25 +131,45 @@ export const api = {
                 return serverCh ? { ...templateCh, ...serverCh } : templateCh;
             });
             
-            // CRITICAL: Preserve global metadata if server returns empty arrays
+            // Map messages read status from SQL 0/1 to Boolean
+            const mappedMessages = (serverData.messages || []).map((m: any) => ({
+              ...m,
+              isRead: m.is_read === 1 || m.is_read === "1" || !!m.is_read
+            }));
+
             const finalData: StudentData = {
-                ...baseData,
+                ...getCleanStudentData(studentId, 'Aspirant'),
                 ...serverData,
                 chapters: mergedChapters,
-                // Only use server lists if they have content, otherwise keep default library
-                flashcards: (serverData.flashcards && serverData.flashcards.length > 0) ? serverData.flashcards : baseData.flashcards,
-                memoryHacks: (serverData.memoryHacks && serverData.memoryHacks.length > 0) ? serverData.memoryHacks : baseData.memoryHacks,
-                mockTests: (serverData.mockTests && serverData.mockTests.length > 0) ? serverData.mockTests : baseData.mockTests,
-                questions: (serverData.questions && serverData.questions.length > 0) ? serverData.questions : baseData.questions,
+                messages: mappedMessages,
+                flashcards: (serverData.flashcards && serverData.flashcards.length > 0) ? serverData.flashcards : INITIAL_STUDENT_DATA.flashcards,
+                memoryHacks: (serverData.memoryHacks && serverData.memoryHacks.length > 0) ? serverData.memoryHacks : INITIAL_STUDENT_DATA.memoryHacks,
+                mockTests: (serverData.mockTests && serverData.mockTests.length > 0) ? serverData.mockTests : INITIAL_STUDENT_DATA.mockTests,
+                questions: (serverData.questions && serverData.questions.length > 0) ? serverData.questions : INITIAL_STUDENT_DATA.questions,
                 testHistory: serverData.testHistory || []
             };
             localStorage.setItem(localKey, JSON.stringify(finalData));
             return finalData;
         }
-      } catch(e) {}
+      } catch(e) {
+        console.warn("Live fetch failed, falling back to local state.");
+      }
     }
 
-    return baseData;
+    // 2. Fallback to cache if offline or in MOCK mode
+    const cached = localStorage.getItem(localKey);
+    if (cached) {
+        try { 
+            const parsed = JSON.parse(cached);
+            if (parsed && parsed.chapters && parsed.chapters.length > 0) {
+                return parsed; 
+            }
+        } catch(e) {}
+    }
+
+    return studentId === '163110' 
+      ? INITIAL_STUDENT_DATA 
+      : getCleanStudentData(studentId, 'New Aspirant');
   },
 
   async updateStudentData(studentId: string, updatedData: StudentData) {
@@ -201,6 +209,31 @@ export const api = {
         });
         return await safeJson(res);
       } catch(e) { return { success: false, error: "Uplink Failed" }; }
+    }
+    return { success: true };
+  },
+
+  async getMessages(): Promise<ContactMessage[]> {
+    if (this.getMode() === 'LIVE') {
+       try {
+         const res = await fetch(`${API_CONFIG.BASE_URL}manage_messages.php?action=list`);
+         const result = await safeJson(res);
+         if (result && result.messages) {
+            return result.messages.map((m: any) => ({
+              ...m,
+              isRead: m.is_read === 1 || m.is_read === "1" || !!m.is_read
+            }));
+         }
+       } catch(e) {}
+    }
+    return [];
+  },
+
+  async markMessageRead(id: string) {
+    if (this.getMode() === 'LIVE') {
+      try {
+        await fetch(`${API_CONFIG.BASE_URL}manage_messages.php?action=read&id=${id}`);
+      } catch(e) {}
     }
     return { success: true };
   },

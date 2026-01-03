@@ -291,11 +291,14 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
   const [creationType, setCreationType] = useState<string>('Question');
   const [userList, setUserList] = useState<UserAccount[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
 
   useEffect(() => {
     if (activeTab === 'admin-users') {
         loadUsers();
+    } else if (activeTab === 'admin-messages') {
+        loadMessages();
     }
   }, [activeTab]);
 
@@ -308,9 +311,19 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     setIsLoadingUsers(false);
   };
 
+  const loadMessages = async () => {
+    if (mode === 'MOCK') return;
+    setIsLoadingMessages(true);
+    try {
+        const msgs = await api.getMessages();
+        setData({ ...data, messages: msgs });
+    } catch(e) { console.error("Message Sync Error", e); }
+    setIsLoadingMessages(false);
+  };
+
   const handleEdit = (type: string, item: any) => { setCreationType(type); setEditingItem(item); setIsCreating(true); };
 
-  const handleDelete = (type: string, id: string) => {
+  const handleDelete = async (type: string, id: string) => {
     if (!confirm(`Purge this ${type} from the database?`)) return;
     const keyMap: Record<string, keyof StudentData> = {
       'Chapter': 'chapters', 'Question': 'questions', 'MockTest': 'mockTests', 
@@ -318,6 +331,11 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
       'Message': 'messages'
     };
     const key = keyMap[type];
+    
+    if (mode === 'LIVE' && type === 'Message') {
+      await fetch(`${api.getMode() === 'LIVE' ? './api/' : ''}manage_messages.php?action=delete&id=${id}`);
+    }
+
     if (key) setData({ ...data, [key]: (data[key] as any[]).filter((item: any) => item.id !== id) });
     if (type === 'User') setUserList(prev => prev.filter(u => u.id !== id));
   };
@@ -607,7 +625,10 @@ echo json_encode(['success' => true]);
            <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden mx-4">
               <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
                  <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-3"><Inbox className="w-6 h-6 text-amber-500" /> Admin Inbox</h3>
-                 <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest bg-white border border-slate-100 px-4 py-1.5 rounded-full shadow-inner">{data.messages?.length || 0} Total Packets</div>
+                 <div className="flex items-center gap-4">
+                    <button onClick={loadMessages} className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-indigo-600 shadow-sm transition-all"><RefreshCw className={`w-4 h-4 ${isLoadingMessages ? 'animate-spin' : ''}`} /></button>
+                    <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest bg-white border border-slate-100 px-4 py-1.5 rounded-full shadow-inner">{data.messages?.length || 0} Total Packets</div>
+                 </div>
               </div>
               <div className="divide-y divide-slate-50 max-h-[600px] overflow-y-auto custom-scrollbar">
                  {(!data.messages || data.messages.length === 0) ? (
@@ -697,9 +718,12 @@ echo json_encode(['success' => true]);
       {selectedMessage && (
         <MessageDetailModal 
           message={selectedMessage} 
-          onClose={() => {
+          onClose={async () => {
             const updated = data.messages.map(m => m.id === selectedMessage.id ? { ...m, isRead: true } : m);
             setData({ ...data, messages: updated });
+            if (mode === 'LIVE') {
+              await api.markMessageRead(selectedMessage.id);
+            }
             setSelectedMessage(null);
           }} 
         />
