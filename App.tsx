@@ -153,7 +153,6 @@ const App: React.FC = () => {
         case 'backlogs': return <BacklogModule data={studentData} />;
         case 'focus': return <FocusTimer />;
         case 'profile': return <ProfileModule data={studentData} setData={syncStudentData} />;
-        case 'blog': return <BlogModule data={studentData} />; 
         default: return <StudentDashboard data={studentData} />;
       }
     };
@@ -179,7 +178,7 @@ const App: React.FC = () => {
       case 'features': return <FeaturesModule />;
       case 'examguide': return <ExamGuideModule />;
       case 'blog': return <BlogModule data={studentData} />;
-      case 'contact': return <ContactModule data={studentData} />;
+      case 'contact': return <ContactModule data={studentData} setData={syncStudentData} />;
       case 'login': return <LoginModule onLoginSuccess={onLoginSuccess} onCancel={() => setActiveTab('about')} onNavigate={setActiveTab} />;
       default: return <AboutModule />;
     }

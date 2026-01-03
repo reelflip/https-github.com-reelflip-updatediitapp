@@ -50,11 +50,12 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
     const videoEmbed = getEmbedUrl(activeChapter.videoUrl || '');
 
     const startChapterPractice = () => {
-      const qIds = chapterQuestions.map(q => q.id);
+      // Use up to 20 questions for the practice test
+      const qIds = chapterQuestions.slice(0, 20).map(q => q.id);
       setTakingTest({
         id: `chapter-drill-${activeChapter.id}`,
-        name: `Chapter Practice: ${activeChapter.name}`,
-        duration: Math.max(15, qIds.length * 2), 
+        name: `Mastery Challenge: ${activeChapter.name}`,
+        duration: 40, // Standard 40 minutes for 20 questions
         totalMarks: qIds.length * 4,
         category: 'PRACTICE',
         difficulty: 'MIXED',
@@ -119,37 +120,25 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
             </div>
           ) : activeContentTab === 'practice' ? (
             <div className="p-8 md:p-16 animate-in slide-in-from-bottom-4">
-               <div className="max-w-5xl mx-auto space-y-12">
+               <div className="max-w-5xl mx-auto py-12">
                   <div className="bg-indigo-900 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden group">
                      <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-[4s]"><Target className="w-48 h-48" /></div>
                      <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-10">
                         <div className="space-y-4 text-center md:text-left">
-                           <div className="inline-flex px-4 py-1 bg-white/10 border border-white/20 rounded-full text-[9px] font-black uppercase tracking-widest">Single Practice Session</div>
-                           <h3 className="text-4xl font-black italic tracking-tighter uppercase leading-none">Chapter Mastery <br /><span className="text-indigo-400">Drill Engine.</span></h3>
+                           <div className="inline-flex px-4 py-1 bg-white/10 border border-white/20 rounded-full text-[9px] font-black uppercase tracking-widest">Standardized Challenge</div>
+                           <h3 className="text-4xl font-black italic tracking-tighter uppercase leading-none">20 Question <br /><span className="text-indigo-400">Mastery Test.</span></h3>
                            <div className="flex gap-6 justify-center md:justify-start">
-                              <div className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2"><Clock className="w-4 h-4 text-indigo-400" /> {chapterQuestions.length * 2} Minutes</div>
-                              <div className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2"><Layers className="w-4 h-4 text-indigo-400" /> {chapterQuestions.length} Problems</div>
+                              <div className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2"><Clock className="w-4 h-4 text-indigo-400" /> 40 Minutes</div>
+                              <div className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-2"><Layers className="w-4 h-4 text-indigo-400" /> 20 Critical Problems</div>
                            </div>
                         </div>
-                        <button onClick={startChapterPractice} className="px-12 py-5 bg-[#82c341] text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-4">
-                           Start Full Drill <PlayCircle className="w-6 h-6" />
+                        <button onClick={startChapterPractice} className="px-12 py-5 bg-[#82c341] text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-4">
+                           Start Practice Test <PlayCircle className="w-6 h-6" />
                         </button>
                      </div>
                   </div>
-
-                  <div className="space-y-6">
-                     <h3 className="text-lg font-black italic tracking-tighter uppercase text-slate-400 px-4">Problem Bank Preview</h3>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                         {chapterQuestions.map((q, idx) => (
-                           <div key={q.id} className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between group">
-                              <div className="flex items-center gap-6">
-                                 <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center font-black text-xs text-slate-300 border border-slate-100 shadow-inner">{idx + 1}</div>
-                                 <div className="text-sm font-bold text-slate-800 italic leading-tight line-clamp-1">{q.text}</div>
-                              </div>
-                              <ChevronRight className="w-4 h-4 text-slate-200 group-hover:text-indigo-400 transition-colors" />
-                           </div>
-                         ))}
-                     </div>
+                  <div className="mt-8 text-center">
+                    <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em]">System has synced {chapterQuestions.length} questions for this unit.</p>
                   </div>
                </div>
             </div>
@@ -213,7 +202,6 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
         </div>
 
         <div className="divide-y divide-slate-100">
-          {/* Explicitly cast Object.entries to fix 'unknown' type inference error on 'chapters' variable */}
           {(Object.entries(groupedChapters) as [string, Chapter[]][]).map(([unit, chapters]) => {
             const unitAvgProgress = Math.round(chapters.reduce((acc, c) => acc + c.progress, 0) / chapters.length);
             return (

@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { StudentData, UserAccount, Subject, Question, MockTest, Chapter, Flashcard, MemoryHack, Blog, UserRole } from '../types';
+import { StudentData, UserAccount, Subject, Question, MockTest, Chapter, Flashcard, MemoryHack, Blog, UserRole, ContactMessage } from '../types';
 import { api } from '../services/apiService';
 import { MODEL_CONFIGS, generateChapterNotes } from '../services/intelligenceService';
 import JSZip from 'jszip';
 import saveAs from 'file-saver';
 import { 
-  ShieldCheck, BookOpen, Layers, Zap, Loader2, Plus, Trash2, Edit3, X, Target, Code2, Save, Users, PenTool, Check, HelpCircle, Video, Award, Type, Lightbulb, Activity, Filter, Search, Clock, ChevronRight, Layout, List, FileText, Calendar, Globe, Settings, Cpu, Database, Cloud, Download, Eye, AlertTriangle, Star, Signal, SignalHigh, SignalLow, Activity as DiagnosticIcon, ClipboardCheck, RefreshCw, CheckCircle, ShieldAlert, FlaskConical, Map, HeartHandshake, Trash, Mail, Bell, Shield, FileBox, Heart, Bold, Italic, List as ListIcon, Heading1, Heading2, Link as LinkIcon, Maximize2, Minimize2, UserCircle, Sparkles
+  ShieldCheck, BookOpen, Layers, Zap, Loader2, Plus, Trash2, Edit3, X, Target, Code2, Save, Users, PenTool, Check, HelpCircle, Video, Award, Type, Lightbulb, Activity, Filter, Search, Clock, ChevronRight, Layout, List, FileText, Calendar, Globe, Settings, Cpu, Database, Cloud, Download, Eye, AlertTriangle, Star, Signal, SignalHigh, SignalLow, Activity as DiagnosticIcon, ClipboardCheck, RefreshCw, CheckCircle, ShieldAlert, FlaskConical, Map, HeartHandshake, Trash, Mail, Bell, Shield, FileBox, Heart, Bold, Italic, List as ListIcon, Heading1, Heading2, Link as LinkIcon, Maximize2, Minimize2, UserCircle, Sparkles, Inbox, MessageSquare, Send
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -16,6 +16,39 @@ interface AdminCMSProps {
 }
 
 // --- HELPER COMPONENTS ---
+
+const MessageDetailModal = ({ message, onClose }: { message: ContactMessage; onClose: () => void }) => (
+  <div className="fixed inset-0 z-[300] flex items-center justify-center p-6">
+    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md" onClick={onClose}></div>
+    <div className="bg-white w-full max-w-2xl rounded-[3.5rem] shadow-2xl relative z-10 animate-in zoom-in-95 overflow-hidden">
+       <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+          <div className="flex items-center gap-5">
+             <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg">
+                <Mail className="w-6 h-6" />
+             </div>
+             <div>
+                <h3 className="text-xl font-black italic tracking-tighter text-slate-900 uppercase">Incoming <span className="text-indigo-600">Payload.</span></h3>
+                <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest mt-1">Uplink established {message.date}</p>
+             </div>
+          </div>
+          <button onClick={onClose} className="p-3 bg-white text-slate-400 hover:text-slate-900 rounded-xl border border-slate-100"><X className="w-5 h-5" /></button>
+       </div>
+       <div className="p-12 space-y-10">
+          <div className="grid grid-cols-2 gap-8">
+             <div><div className="text-[8px] font-black uppercase text-slate-400 tracking-widest mb-1">Sender Entity</div><div className="font-bold text-slate-800">{message.name}</div></div>
+             <div><div className="text-[8px] font-black uppercase text-slate-400 tracking-widest mb-1">Origin Node</div><div className="font-bold text-slate-800">{message.email}</div></div>
+          </div>
+          <div><div className="text-[8px] font-black uppercase text-slate-400 tracking-widest mb-1">Operational Objective</div><div className="text-lg font-black text-indigo-600 italic">"{message.subject}"</div></div>
+          <div className="p-8 bg-slate-50 rounded-[2rem] border border-slate-100">
+             <p className="text-slate-600 font-medium leading-relaxed italic">"{message.message}"</p>
+          </div>
+       </div>
+       <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+          <button onClick={onClose} className="px-8 py-3.5 bg-slate-900 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:scale-105 transition-all">Acknowledge</button>
+       </div>
+    </div>
+  </div>
+);
 
 const InputGroup = ({ label, children }: any) => (
   <div className="space-y-3">
@@ -232,7 +265,7 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                  <div className="space-y-4">
                     <RichTextToolbar onInsert={insertTag} />
                     <InputGroup label="Manuscript Content (HTML Enabled)">
-                       <textarea ref={textareaRef} name="content" value={formData.content} onChange={handleChange} rows={15} className="w-full bg-slate-50 border-none rounded-[2.5rem] p-10 text-sm font-mono shadow-inner focus:ring-8 focus:ring-indigo-50/50 transition-all" placeholder="Enter strategic blog content..." />
+                       <textarea ref={textareaRef} name="content" value={formData.content} onChange={handleChange} rows={15} className="w-full bg-slate-50 border-none rounded-[2.5rem] p-10 text-sm font-mono shadow-inner focus:ring-8 focus:ring-indigo-50/50 transition-all" placeholder="Enter journal content..." />
                     </InputGroup>
                  </div>
               </div>
@@ -258,6 +291,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
   const [creationType, setCreationType] = useState<string>('Question');
   const [userList, setUserList] = useState<UserAccount[]>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
 
   useEffect(() => {
     if (activeTab === 'admin-users') {
@@ -280,7 +314,8 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     if (!confirm(`Purge this ${type} from the database?`)) return;
     const keyMap: Record<string, keyof StudentData> = {
       'Chapter': 'chapters', 'Question': 'questions', 'MockTest': 'mockTests', 
-      'Flashcard': 'flashcards', 'MemoryHack': 'memoryHacks', 'Blog': 'blogs'
+      'Flashcard': 'flashcards', 'MemoryHack': 'memoryHacks', 'Blog': 'blogs',
+      'Message': 'messages'
     };
     const key = keyMap[type];
     if (key) setData({ ...data, [key]: (data[key] as any[]).filter((item: any) => item.id !== id) });
@@ -312,42 +347,87 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     try {
       const zip = new JSZip();
       
-      // 1. SQL Schema - Comprehensive for v21.0
       const sqlSchema = `-- IITGEEPREP Solaris v21.0 Production Schema
 CREATE TABLE IF NOT EXISTS users (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255) UNIQUE, role VARCHAR(50), institute VARCHAR(255), targetExam VARCHAR(255), targetYear INT, password_hash VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE IF NOT EXISTS chapters (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), subject VARCHAR(50), unit VARCHAR(255), notes TEXT, videoUrl VARCHAR(512));
+CREATE TABLE IF NOT EXISTS chapters (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), subject VARCHAR(50), unit VARCHAR(255), notes LONGTEXT, videoUrl VARCHAR(512));
 CREATE TABLE IF NOT EXISTS student_progress (student_id VARCHAR(100), chapter_id VARCHAR(100), progress INT DEFAULT 0, accuracy INT DEFAULT 0, status VARCHAR(50), time_spent INT DEFAULT 0, PRIMARY KEY (student_id, chapter_id));
 CREATE TABLE IF NOT EXISTS questions (id VARCHAR(100) PRIMARY KEY, topicId VARCHAR(100), text TEXT, options JSON, correctAnswer INT, difficulty VARCHAR(20), subject VARCHAR(50));
 CREATE TABLE IF NOT EXISTS mock_tests (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), duration INT, totalMarks INT, category VARCHAR(50), difficulty VARCHAR(50), questionIds JSON, chapterIds JSON);
 CREATE TABLE IF NOT EXISTS flashcards (id VARCHAR(100) PRIMARY KEY, question TEXT, answer TEXT, subject VARCHAR(50), difficulty VARCHAR(20), type VARCHAR(50));
 CREATE TABLE IF NOT EXISTS memory_hacks (id VARCHAR(100) PRIMARY KEY, title VARCHAR(255), description TEXT, hack TEXT, category VARCHAR(100), subject VARCHAR(50));
 CREATE TABLE IF NOT EXISTS test_results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(100), test_id VARCHAR(100), test_name VARCHAR(255), score INT, total_marks INT, accuracy INT, category VARCHAR(50), taken_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS messages (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255), subject VARCHAR(255), message TEXT, date DATE, is_read BOOLEAN DEFAULT FALSE);
 CREATE TABLE IF NOT EXISTS psychometric (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(100), stress INT, focus INT, motivation INT, examFear INT, timestamp DATE, studentSummary TEXT, parentAdvice TEXT);
 `;
       zip.file("sql/full_schema_v21.sql", sqlSchema);
 
-      // 2. SEED DATA SQL
-      const seedSql = `-- Core Academic Seed Data
-INSERT INTO mock_tests (id, name, duration, totalMarks, category, difficulty, questionIds, chapterIds) VALUES 
-('jee-main-2024', 'JEE Main 2024 Official', 180, 300, 'ADMIN', 'MAINS', '["q_24_1", "q_24_2"]', '["p-units", "m-sets"]');
+      zip.file("manage_entity.php", `<?php
+header('Content-Type: application/json');
+include 'config/database.php';
 
-INSERT INTO questions (id, topicId, text, options, correctAnswer, difficulty, subject) VALUES 
-('q_24_1', 'p-units', 'A capacitor of 10 μF is charged to 50V. The energy stored is:', '["12.5 mJ", "25 mJ", "0.125 J", "1.25 J"]', 0, 'EASY', 'Physics');
+$type = $_GET['type'] ?? '';
+$data = json_decode(file_get_contents('php://input'), true);
 
-INSERT INTO flashcards (id, question, answer, subject, difficulty, type) VALUES 
-('fc-1', 'Dimensional formula of Planck''s Constant (h)', 'ML²T⁻¹', 'Physics', 'EASY', 'Formula'),
-('fc-2', 'Ideal Gas Equation', 'PV = nRT', 'Chemistry', 'EASY', 'Formula');
+if (!$type || !$data) {
+    die(json_encode(['success' => false, 'error' => 'Invalid transaction payload']));
+}
 
-INSERT INTO memory_hacks (id, title, description, hack, category, subject) VALUES 
-('mh-1', 'Trigonometry Ratios', 'Sine, Cosine, Tangent basic formulas', 'SOH CAH TOA', 'Mnemonics', 'Mathematics');
+try {
+    if ($type === 'Chapter') {
+        $stmt = $pdo->prepare("INSERT INTO chapters (id, name, subject, unit, notes, videoUrl) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE name=?, subject=?, unit=?, notes=?, videoUrl=?");
+        $stmt->execute([$data['id'], $data['name'], $data['subject'], $data['unit'], $data['notes'], $data['videoUrl'], $data['name'], $data['subject'], $data['unit'], $data['notes'], $data['videoUrl']]);
+    } else if ($type === 'Question') {
+        $opts = json_encode($data['options']);
+        $stmt = $pdo->prepare("INSERT INTO questions (id, topicId, text, options, correctAnswer, difficulty, subject) VALUES (?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE topicId=?, text=?, options=?, correctAnswer=?, difficulty=?, subject=?");
+        $stmt->execute([$data['id'], $data['topicId'], $data['text'], $opts, $data['correctAnswer'], $data['difficulty'], $data['subject'], $data['topicId'], $data['text'], $opts, $data['correctAnswer'], $data['difficulty'], $data['subject']]);
+    } else if ($type === 'MockTest') {
+        $qids = json_encode($data['questionIds']);
+        $chids = json_encode($data['chapterIds']);
+        $stmt = $pdo->prepare("INSERT INTO mock_tests (id, name, duration, totalMarks, category, difficulty, questionIds, chapterIds) VALUES (?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE name=?, duration=?, totalMarks=?, category=?, difficulty=?, questionIds=?, chapterIds=?");
+        $stmt->execute([$data['id'], $data['name'], $data['duration'], $data['totalMarks'], $data['category'], $data['difficulty'], $qids, $chids, $data['name'], $data['duration'], $data['totalMarks'], $data['category'], $data['difficulty'], $qids, $chids]);
+    } else if ($type === 'Flashcard') {
+        $stmt = $pdo->prepare("INSERT INTO flashcards (id, question, answer, subject, difficulty, type) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE question=?, answer=?, subject=?, difficulty=?, type=?");
+        $stmt->execute([$data['id'], $data['question'], $data['answer'], $data['subject'], $data['difficulty'], $data['type'], $data['question'], $data['answer'], $data['subject'], $data['difficulty'], $data['type']]);
+    } else if ($type === 'MemoryHack') {
+        $stmt = $pdo->prepare("INSERT INTO memory_hacks (id, title, description, hack, category, subject) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE title=?, description=?, hack=?, category=?, subject=?");
+        $stmt->execute([$data['id'], $data['title'], $data['description'], $data['hack'], $data['category'], $data['subject'], $data['title'], $data['description'], $data['hack'], $data['category'], $data['subject']]);
+    } else if ($type === 'Message') {
+        $stmt = $pdo->prepare("INSERT INTO messages (id, name, email, subject, message, date) VALUES (?,?,?,?,?,?)");
+        $stmt->execute([$data['id'], $data['name'], $data['email'], $data['subject'], $data['message'], $data['date']]);
+    }
+    
+    echo json_encode(['success' => true]);
+} catch (PDOException $e) {
+    echo json_encode(['success' => false, 'error' => 'Database Fault: ' . $e->getMessage()]);
+}
+?>`);
 
-INSERT INTO chapters (id, name, subject, unit, notes) VALUES 
-('p-units', 'Units and Measurements', 'Physics', 'Mechanics', '<h2>Chapter Overview</h2><p>Measurement of any physical quantity involves comparison with a certain basic, arbitrarily chosen, internationally accepted reference standard called unit.</p>'),
-('c-basic', 'Some Basic Concepts of Chemistry', 'Chemistry', 'General Chemistry', '<h2>Matter and its Classification</h2><p>Chemistry is the science of atoms and molecules and their transformations.</p>');
-`;
-      zip.file("sql/seed_data_v21.sql", seedSql);
+      zip.file("manage_messages.php", `<?php
+header('Content-Type: application/json');
+include 'config/database.php';
 
-      // 3. Main Logic Endpoints
+$action = $_GET['action'] ?? 'list';
+
+try {
+    if ($action === 'list') {
+        $stmt = $pdo->query("SELECT * FROM messages ORDER BY date DESC");
+        echo json_encode(['success' => true, 'messages' => $stmt->fetchAll()]);
+    } else if ($action === 'delete') {
+        $id = $_GET['id'] ?? '';
+        $stmt = $pdo->prepare("DELETE FROM messages WHERE id = ?");
+        $stmt->execute([$id]);
+        echo json_encode(['success' => true]);
+    } else if ($action === 'read') {
+        $id = $_GET['id'] ?? '';
+        $stmt = $pdo->prepare("UPDATE messages SET is_read = 1 WHERE id = ?");
+        $stmt->execute([$id]);
+        echo json_encode(['success' => true]);
+    }
+} catch (PDOException $e) {
+    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+}
+?>`);
+
       zip.file("auth_login.php", `<?php
 header('Content-Type: application/json');
 include 'config/database.php';
@@ -369,29 +449,28 @@ include 'config/database.php';
 $sid = $_GET['id'] ?? '';
 if(!$sid) die(json_encode(['success' => false, 'error' => 'No ID']));
 
-// 1. Fetch Student Progress
 $stmt = $pdo->prepare("SELECT chapter_id as id, progress, accuracy, status, time_spent as timeSpent FROM student_progress WHERE student_id = ?");
 $stmt->execute([$sid]);
 $chapters = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 2. Fetch Test History
 $stmt = $pdo->prepare("SELECT test_id as testId, test_name as testName, score, total_marks as totalMarks, accuracy, category, taken_at as date FROM test_results WHERE student_id = ? ORDER BY taken_at DESC");
 $stmt->execute([$sid]);
 $history = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 3. Fetch Global Data (Metadata)
 $mockTests = $pdo->query("SELECT * FROM mock_tests")->fetchAll(PDO::FETCH_ASSOC);
 $questions = $pdo->query("SELECT * FROM questions")->fetchAll(PDO::FETCH_ASSOC);
 $globalChapters = $pdo->query("SELECT id, name, subject, unit, notes, videoUrl FROM chapters")->fetchAll(PDO::FETCH_ASSOC);
+$messages = $pdo->query("SELECT * FROM messages ORDER BY date DESC")->fetchAll(PDO::FETCH_ASSOC);
 
 echo json_encode([
     'success' => true, 
     'data' => [
-        'chapters' => $globalChapters, // In production, we merge these with individual progress in frontend
+        'chapters' => $globalChapters, 
         'individual_progress' => $chapters,
         'testHistory' => $history,
         'mockTests' => $mockTests,
-        'questions' => $questions
+        'questions' => $questions,
+        'messages' => $messages
     ]
 ]);
 ?>`);
@@ -420,13 +499,11 @@ $data = json_decode(file_get_contents('php://input'), true);
 $sid = $data['student_id'] ?? '';
 if(!$sid) die(json_encode(['success' => false, 'error' => 'No ID']));
 
-// Sync Chapters
 foreach(($data['chapters'] ?? []) as $ch) {
     $stmt = $pdo->prepare("INSERT INTO student_progress (student_id, chapter_id, progress, accuracy, status, time_spent) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE progress=?, accuracy=?, status=?, time_spent=?");
     $stmt->execute([$sid, $ch['id'], $ch['progress'], $ch['accuracy'], $ch['status'], $ch['timeSpent'], $ch['progress'], $ch['accuracy'], $ch['status'], $ch['timeSpent']]);
 }
 
-// Sync Results
 foreach(($data['testHistory'] ?? []) as $res) {
     $stmt = $pdo->prepare("INSERT IGNORE INTO test_results (student_id, test_id, test_name, score, total_marks, accuracy, category, taken_at) VALUES (?,?,?,?,?,?,?,?)");
     $stmt->execute([$sid, $res['testId'], $res['testName'], $res['score'], $res['totalMarks'], $res['accuracy'], $res['category'], $res['date']]);
@@ -463,7 +540,7 @@ echo json_encode(['success' => true]);
               { label: 'Chapters', val: data.chapters.length, icon: BookOpen, color: 'indigo' },
               { label: 'MCQs', val: data.questions.length, icon: Code2, color: 'emerald' },
               { label: 'Exams', val: data.mockTests.length, icon: Target, color: 'rose' },
-              { label: 'Cards/Hacks', val: (data.flashcards?.length || 0) + (data.memoryHacks?.length || 0), icon: Zap, color: 'amber' },
+              { label: 'Active Inquiries', val: data.messages?.length || 0, icon: Mail, color: 'amber' },
             ].map((stat, i) => (
               <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
                 <div className={`w-12 h-12 bg-${stat.color}-50 text-${stat.color}-600 rounded-2xl flex items-center justify-center mb-6`}><stat.icon className="w-6 h-6" /></div>
@@ -525,13 +602,53 @@ echo json_encode(['success' => true]);
              </div>
            </div>
         )}
+
+        {activeTab === 'admin-messages' && (
+           <div className="bg-white rounded-[3.5rem] border border-slate-200 shadow-sm overflow-hidden mx-4">
+              <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
+                 <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-3"><Inbox className="w-6 h-6 text-amber-500" /> Admin Inbox</h3>
+                 <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest bg-white border border-slate-100 px-4 py-1.5 rounded-full shadow-inner">{data.messages?.length || 0} Total Packets</div>
+              </div>
+              <div className="divide-y divide-slate-50 max-h-[600px] overflow-y-auto custom-scrollbar">
+                 {(!data.messages || data.messages.length === 0) ? (
+                    <div className="p-24 text-center space-y-4">
+                       <MessageSquare className="w-12 h-12 text-slate-100 mx-auto" />
+                       <p className="text-slate-300 font-black uppercase text-[10px] tracking-widest italic">Communications silence.</p>
+                    </div>
+                 ) : (
+                    data.messages.map(msg => (
+                      <div key={msg.id} onClick={() => setSelectedMessage(msg)} className={`p-8 flex items-center justify-between hover:bg-slate-50 transition-all cursor-pointer group border-l-4 ${msg.isRead ? 'border-transparent' : 'border-indigo-600 bg-indigo-50/10'}`}>
+                         <div className="flex items-center gap-6">
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black ${msg.isRead ? 'bg-slate-50 text-slate-300' : 'bg-indigo-600 text-white shadow-lg'}`}>
+                               {msg.isRead ? <Mail className="w-5 h-5" /> : <Send className="w-5 h-5" />}
+                            </div>
+                            <div>
+                               <div className="flex items-center gap-3">
+                                  <span className="text-sm font-black text-slate-800 italic">{msg.subject}</span>
+                                  {!msg.isRead && <span className="px-2 py-0.5 bg-indigo-600 text-white text-[8px] font-black uppercase rounded-full tracking-widest">New</span>}
+                               </div>
+                               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{msg.name} ({msg.email})</div>
+                            </div>
+                         </div>
+                         <div className="flex items-center gap-8">
+                            <div className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{msg.date}</div>
+                            <button onClick={(e) => { e.stopPropagation(); handleDelete('Message', msg.id); }} className="p-3 bg-white border border-slate-100 text-slate-300 hover:text-rose-500 rounded-xl shadow-sm transition-all opacity-0 group-hover:opacity-100">
+                               <Trash2 className="w-4 h-4" />
+                            </button>
+                         </div>
+                      </div>
+                    ))
+                 )}
+              </div>
+           </div>
+        )}
         
         {activeTab === 'admin-syllabus' && <EntityList title="Syllabus Architect" type="Chapter" data={data.chapters} icon={BookOpen} color="indigo" btnLabel="Add Chapter" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Chapter'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-questions' && <EntityList title="MCQ Bank" type="Question" data={data.questions} icon={Code2} color="emerald" btnLabel="New MCQ" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Question'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-tests' && <EntityList title="Mock Exam Library" type="MockTest" data={data.mockTests} icon={Target} color="rose" btnLabel="Deploy Exam" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MockTest'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-flashcards' && <EntityList title="Card Manager" type="Flashcard" data={data.flashcards || []} icon={Layers} color="indigo" btnLabel="New Card" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Flashcard'); setEditingItem(null); setIsCreating(true); }} />}
         {activeTab === 'admin-hacks' && <EntityList title="Hack Manager" type="MemoryHack" data={data.memoryHacks || []} icon={Lightbulb} color="amber" btnLabel="Deploy Hack" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('MemoryHack'); setEditingItem(null); setIsCreating(true); }} />}
-        {activeTab === 'admin-blogs' && <EntityList title="Strategy Feed" type="Blog" data={data.blogs} icon={PenTool} color="indigo" btnLabel="Draft Post" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Blog'); setEditingItem(null); setIsCreating(true); }} />}
+        {activeTab === 'admin-blogs' && <EntityList title="Editorial Archive" type="Blog" data={data.blogs} icon={PenTool} color="indigo" btnLabel="Draft Post" onEdit={handleEdit} onDelete={handleDelete} onNew={() => { setCreationType('Blog'); setEditingItem(null); setIsCreating(true); }} />}
 
         {activeTab === 'admin-system' && (
            <div className="space-y-8 animate-in slide-in-from-bottom-4">
@@ -574,6 +691,17 @@ echo json_encode(['success' => true]);
           onSave={(entity: any) => handleSaveEntity(creationType, entity)} 
           allQuestions={data.questions} 
           allChapters={data.chapters} 
+        />
+      )}
+
+      {selectedMessage && (
+        <MessageDetailModal 
+          message={selectedMessage} 
+          onClose={() => {
+            const updated = data.messages.map(m => m.id === selectedMessage.id ? { ...m, isRead: true } : m);
+            setData({ ...data, messages: updated });
+            setSelectedMessage(null);
+          }} 
         />
       )}
     </div>

@@ -1,13 +1,15 @@
 
 import React, { useState } from 'react';
 import { Mail, Phone, Send, CheckCircle, Loader2, Sparkles, Building, ArrowRight, ShieldCheck, Terminal, MapPin } from 'lucide-react';
-import { StudentData } from '../types';
+import { StudentData, ContactMessage } from '../types';
+import { api } from '../services/apiService';
 
 interface ContactModuleProps {
   data: StudentData;
+  setData?: (data: StudentData) => void;
 }
 
-const ContactModule: React.FC<ContactModuleProps> = ({ data }) => {
+const ContactModule: React.FC<ContactModuleProps> = ({ data, setData }) => {
   const [formData, setFormData] = useState({ name: '', email: '', subject: 'Academic Support Request', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -15,11 +17,34 @@ const ContactModule: React.FC<ContactModuleProps> = ({ data }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+
+    const newMessage: ContactMessage = {
+        id: `MSG-${Math.random().toString(36).substr(2, 9)}`,
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject,
+        message: formData.message,
+        date: new Date().toISOString().split('T')[0],
+        isRead: false
+    };
+
+    // Global Sync for Sandbox Mode
+    if (setData) {
+        const updatedData = {
+            ...data,
+            messages: [newMessage, ...(data.messages || [])]
+        };
+        setData(updatedData);
+    }
+
+    // Backend Sync for Live Mode
+    await api.saveEntity('Message', newMessage);
+
     setTimeout(() => {
         setIsSubmitting(false);
         setSubmitted(true);
         setFormData({ name: '', email: '', subject: 'Academic Support Request', message: '' });
-    }, 1500);
+    }, 1200);
   };
 
   const inputClasses = "w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none text-base font-medium text-slate-800 transition-all placeholder:text-slate-400";

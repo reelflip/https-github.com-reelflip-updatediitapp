@@ -5,15 +5,25 @@ import { getSmartStudyAdvice } from '../services/intelligenceService';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
-import { Sparkles, Timer, Target, Brain, TrendingUp, Loader2, ChevronRight, Activity, Box } from 'lucide-react';
+import { Sparkles, Timer, Target, Brain, TrendingUp, Loader2, ChevronRight, Activity, Box, Quote, ChevronLeft } from 'lucide-react';
 
 interface StudentDashboardProps {
   data: StudentData;
 }
 
+const MOTIVATIONAL_QUOTES = [
+  { text: "AIR-1 is not a destination; it is a daily habit of non-negotiable discipline.", author: "Solaris Core" },
+  { text: "One more numerical. One more derivation. One step closer to the Apex.", author: "Tactical Protocol" },
+  { text: "Pressure is a privilege. It is the friction that polishes the engineering mind.", author: "Performance Kernel" },
+  { text: "The forgetting curve is your only enemy. Spaced recall is your primary weapon.", author: "Neural Link" },
+  { text: "Consistency scales exponentially. Intensity without routine is just noise.", author: "Systems Analyst" }
+];
+
 const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
   const [advice, setAdvice] = useState<any>(null);
   const [loadingAdvice, setLoadingAdvice] = useState(false);
+  const [quoteIndex, setQuoteIndex] = useState(0);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const fetchAdvice = async () => {
@@ -29,6 +39,20 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
     };
     fetchAdvice();
   }, [data]);
+
+  // Motivational Slider Logic
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          setQuoteIndex((current) => (current + 1) % MOTIVATIONAL_QUOTES.length);
+          return 0;
+        }
+        return prev + 0.5;
+      });
+    }, 40);
+    return () => clearInterval(timer);
+  }, []);
 
   const chapters = data?.chapters || [];
   const psychHistory = data?.psychometricHistory || [];
@@ -56,9 +80,60 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
     ? (chapters.find(c => c.accuracy < 60) || null) 
     : null;
 
+  const renderPriority = (p: any) => {
+    if (typeof p === 'string') return p;
+    if (p && typeof p === 'object') return p.task || p.description || "Study Task";
+    return "Study Task";
+  };
+
   return (
-    <div className="space-y-6 md:space-y-12 animate-in fade-in duration-700 pb-20">
-      {/* Mobile-First Grid */}
+    <div className="space-y-6 md:space-y-10 animate-in fade-in duration-700 pb-20">
+      
+      {/* --- MOTIVATIONAL SLIDER --- */}
+      <section className="bg-[#0a1128] rounded-[2.5rem] md:rounded-[4rem] p-8 md:p-14 text-white shadow-2xl relative overflow-hidden group">
+         <div className="absolute top-0 right-0 p-12 opacity-5 rotate-12 transition-transform duration-[10s] group-hover:scale-110 group-hover:rotate-45">
+            <Quote className="w-64 h-64" />
+         </div>
+         
+         <div className="relative z-10 flex flex-col md:flex-row items-center gap-10">
+            <div className="w-20 h-20 bg-indigo-500/20 rounded-[2rem] flex items-center justify-center shrink-0 border border-indigo-400/30 backdrop-blur-xl">
+               <Sparkles className="w-10 h-10 text-indigo-400 animate-pulse" />
+            </div>
+            
+            <div className="flex-1 text-center md:text-left space-y-4 md:space-y-6 min-h-[120px] flex flex-col justify-center">
+               <div className="space-y-2">
+                  <div className="text-[10px] font-black uppercase text-indigo-400 tracking-[0.5em] mb-2 flex items-center justify-center md:justify-start gap-3">
+                     <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></div> Mental Calibration Active
+                  </div>
+                  <h2 className="text-2xl md:text-4xl font-black italic tracking-tighter leading-tight font-space animate-in slide-in-from-right-4 duration-500">
+                    "{MOTIVATIONAL_QUOTES[quoteIndex].text}"
+                  </h2>
+               </div>
+               <div className="flex flex-col md:flex-row items-center gap-6">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Source: {MOTIVATIONAL_QUOTES[quoteIndex].author}</span>
+                  <div className="flex-1 w-full max-w-[200px] h-1 bg-white/5 rounded-full overflow-hidden">
+                     <div className="h-full bg-indigo-500 transition-all duration-75" style={{ width: `${progress}%` }}></div>
+                  </div>
+               </div>
+            </div>
+
+            <div className="flex gap-3">
+               <button 
+                  onClick={() => { setQuoteIndex((prev) => (prev - 1 + MOTIVATIONAL_QUOTES.length) % MOTIVATIONAL_QUOTES.length); setProgress(0); }}
+                  className="p-4 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all"
+               >
+                  <ChevronLeft className="w-5 h-5 text-indigo-400" />
+               </button>
+               <button 
+                  onClick={() => { setQuoteIndex((prev) => (prev + 1) % MOTIVATIONAL_QUOTES.length); setProgress(0); }}
+                  className="p-4 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all"
+               >
+                  <ChevronRight className="w-5 h-5 text-indigo-400" />
+               </button>
+            </div>
+         </div>
+      </section>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
          <div className="bg-white p-6 md:p-10 rounded-3xl md:rounded-[3.5rem] border border-slate-200 shadow-sm flex flex-col justify-between group hover:border-[#82c341] transition-all">
             <div className="w-10 h-10 md:w-12 md:h-12 bg-emerald-50 text-[#82c341] rounded-2xl flex items-center justify-center mb-4 md:mb-6 group-hover:scale-110 transition-transform shadow-inner"><Target className="w-5 h-5 md:w-6 md:h-6" /></div>
@@ -191,10 +266,12 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({ data }) => {
                       <div>
                          <div className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-4 md:mb-6">Immediate Priorities</div>
                          <div className="space-y-4 md:space-y-6">
-                            {(advice.priorities || []).map((p: string, i: number) => (
+                            {(advice.priorities || []).map((p: any, i: number) => (
                               <div key={i} className="flex gap-4 md:gap-5 group">
                                  <div className="w-5 h-5 md:w-6 md:h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-[9px] md:text-[10px] font-black shrink-0 border border-indigo-100">0{i+1}</div>
-                                 <p className="text-xs md:text-sm font-bold text-slate-600 italic leading-relaxed group-hover:text-[#0a1128] transition-colors line-clamp-2">"{p}"</p>
+                                 <p className="text-xs md:text-sm font-bold text-slate-600 italic leading-relaxed group-hover:text-[#0a1128] transition-colors line-clamp-2">
+                                   "{renderPriority(p)}"
+                                 </p>
                               </div>
                             ))}
                          </div>

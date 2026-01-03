@@ -1,6 +1,6 @@
 
 import { StudentData } from "../types";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 
 /**
  * SOLARIS INTELLIGENCE KERNEL v9.0
@@ -125,11 +125,26 @@ export const getSmartStudyAdvice = async (data: StudentData) => {
   try {
     const response = await ai.models.generateContent({
       model: modelId,
-      contents: "Analyze my progress and provide 3 priorities and 1 mindset tip.",
+      contents: "Analyze my progress and provide 3 priorities and 1 mindset tip. Ensure priorities are plain strings.",
       config: {
         systemInstruction: constructSystemInstruction(data, MODEL_CONFIGS[modelKey]?.name || "Base Engine"),
         temperature: 0.7,
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            priorities: {
+              type: Type.ARRAY,
+              items: { type: Type.STRING },
+              description: "Three prioritized tasks as short plain text strings."
+            },
+            mindsetTip: {
+              type: Type.STRING,
+              description: "A short motivational advice string."
+            }
+          },
+          required: ["priorities", "mindsetTip"]
+        }
       }
     });
 
@@ -140,6 +155,7 @@ export const getSmartStudyAdvice = async (data: StudentData) => {
       burnoutAlert: null
     };
   } catch (err) {
+    console.error("AI Advice generation failed:", err);
     return { priorities: ["Syllabus Sync", "Mock Test", "Formula Check"], mindsetTip: "Stay focused.", burnoutAlert: null };
   }
 };
