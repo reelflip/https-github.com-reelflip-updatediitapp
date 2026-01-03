@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { StudentData, Blog } from '../types';
 import { 
   Calendar, ArrowLeft, Share2, Bookmark, Clock, Sparkles, 
@@ -16,24 +16,27 @@ const BlogModule: React.FC<BlogModuleProps> = ({ data }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<'ALL' | 'EXAM' | 'STRATEGY' | 'TECH'>('ALL');
 
-  const blogs = (data.blogs || []).filter(b => b.status === 'PUBLISHED').map(b => {
-    let cat: 'EXAM' | 'STRATEGY' | 'TECH' = 'STRATEGY';
-    if (b.title.toLowerCase().includes('exam') || b.title.toLowerCase().includes('jee')) cat = 'EXAM';
-    if (b.title.toLowerCase().includes('system') || b.title.toLowerCase().includes('sync')) cat = 'TECH';
-    return { ...b, category: cat };
-  });
+  const blogs = useMemo(() => (data.blogs || [])
+    .filter(b => b.status === 'PUBLISHED')
+    .map(b => {
+        let cat: 'EXAM' | 'STRATEGY' | 'TECH' = 'STRATEGY';
+        const titleLow = b.title.toLowerCase();
+        if (titleLow.includes('exam') || titleLow.includes('jee')) cat = 'EXAM';
+        if (titleLow.includes('system') || titleLow.includes('sync')) cat = 'TECH';
+        return { ...b, category: cat };
+    }), [data.blogs]);
 
-  const filteredBlogs = blogs.filter(b => {
+  const filteredBlogs = useMemo(() => blogs.filter(b => {
     const matchesSearch = b.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           b.author.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCat = activeCategory === 'ALL' || b.category === activeCategory;
     return matchesSearch && matchesCat;
-  });
+  }), [blogs, searchQuery, activeCategory]);
 
   const calculateReadTime = (content: string) => {
     const wordsPerMinute = 200;
     const wordCount = (content || '').split(/\s+/g).length;
-    return `${Math.ceil(wordCount / wordsPerMinute)} MIN`;
+    return `${Math.max(1, Math.ceil(wordCount / wordsPerMinute))} MIN`;
   };
 
   if (selectedBlog) {
@@ -138,9 +141,13 @@ const BlogModule: React.FC<BlogModuleProps> = ({ data }) => {
             >
               <div className="h-56 md:h-64 bg-slate-50 relative overflow-hidden p-10 flex items-center justify-center border-b border-slate-50">
                  <div className="absolute inset-0 bg-indigo-600/5 group-hover:scale-110 transition-transform duration-[3s]"></div>
-                 {blog.category === 'EXAM' ? <Target className="w-16 h-16 text-slate-200 group-hover:text-rose-500/20 transition-colors" /> : 
-                  blog.category === 'TECH' ? <Cpu className="w-16 h-16 text-slate-200 group-hover:text-emerald-500/20 transition-colors" /> :
-                  <Zap className="w-16 h-16 text-slate-200 group-hover:text-indigo-500/20 transition-colors" />}
+                 {blog.coverImage ? (
+                   <img src={blog.coverImage} alt={blog.title} className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
+                 ) : (
+                    blog.category === 'EXAM' ? <Target className="w-16 h-16 text-slate-200 group-hover:text-rose-500/20 transition-colors" /> : 
+                    blog.category === 'TECH' ? <Cpu className="w-16 h-16 text-slate-200 group-hover:text-emerald-500/20 transition-colors" /> :
+                    <Zap className="w-16 h-16 text-slate-200 group-hover:text-indigo-500/20 transition-colors" />
+                 )}
                  <div className="absolute top-8 left-8">
                     <span className={`px-4 py-1.5 border text-[8px] font-black uppercase tracking-widest rounded-lg ${
                       blog.category === 'EXAM' ? 'bg-rose-50 border-rose-100 text-rose-500' :

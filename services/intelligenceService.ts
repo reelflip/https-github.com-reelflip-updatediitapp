@@ -212,3 +212,26 @@ export const generateChapterNotes = async (chapterName: string, subject: string,
     return "Intelligence Node Offline. Content could not be seeded.";
   }
 };
+
+/**
+ * Generates an exhaustive blog post draft.
+ */
+export const generateBlogDraft = async (title: string) => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const prompt = `Write a professional, motivating, and highly informative academic article titled: "${title}". 
+  The audience consists of serious IIT-JEE aspirants and their parents.
+  Use HTML format with <h1>, <h2>, <h3>, <p>, and <ul> tags.
+  Ensure the tone is expert, encouraging, and data-driven.
+  Length: 600-800 words. Return ONLY the HTML content.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: prompt,
+      config: { temperature: 0.7 }
+    });
+    return response.text || "Drafting failed.";
+  } catch (err) {
+    return "Editorial AI Node currently offline.";
+  }
+};

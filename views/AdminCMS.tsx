@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StudentData, UserAccount, Subject, Question, MockTest, Chapter, Flashcard, MemoryHack, Blog, UserRole, ContactMessage } from '../types';
 import { api } from '../services/apiService';
-import { generateChapterNotes } from '../services/intelligenceService';
+import { generateChapterNotes, generateBlogDraft } from '../services/intelligenceService';
 import JSZip from 'jszip';
 import saveAs from 'file-saver';
 import { 
@@ -11,7 +11,7 @@ import {
   Activity, Filter, Search, Clock, ChevronRight, Layout, List, FileText, Calendar, 
   Globe, Settings, Cpu, Database, Cloud, Download, Eye, AlertTriangle, Star, 
   RefreshCw, CheckCircle, ShieldAlert, Trash, Mail, Send, MessageSquare, Inbox,
-  Sparkles
+  Sparkles, Bold, Italic, Heading1, Heading2, ListIcon, LinkIcon, FileJson, Newspaper
 } from 'lucide-react';
 
 interface AdminCMSProps {
@@ -74,18 +74,45 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
     progress: 0, accuracy: 0, timeSpent: 0,
     question: '', answer: '', category: 'Mnemonics', hack: '',
     duration: 180, totalMarks: 300, questionIds: [], chapterIds: [],
-    notes: '', videoUrl: ''
+    notes: '', videoUrl: '', coverImage: ''
   });
 
   const [isSeeding, setIsSeeding] = useState(false);
+  const [previewMode, setPreviewMode] = useState(false);
+  const contentRef = useRef<HTMLTextAreaElement>(null);
 
   const handleAutoSeed = async () => {
-    if (!formData.name) return alert("Enter chapter name.");
-    setIsSeeding(true);
-    try {
-      const content = await generateChapterNotes(formData.name, formData.subject, formData.unit);
-      setFormData((prev: any) => ({ ...prev, notes: content }));
-    } catch(e) { alert("Seed error."); } finally { setIsSeeding(false); }
+    if (type === 'Chapter') {
+        if (!formData.name) return alert("Enter chapter name.");
+        setIsSeeding(true);
+        try {
+          const content = await generateChapterNotes(formData.name, formData.subject, formData.unit);
+          setFormData((prev: any) => ({ ...prev, notes: content }));
+        } catch(e) { alert("Seed error."); } finally { setIsSeeding(false); }
+    } else if (type === 'Blog') {
+        if (!formData.title) return alert("Enter article title.");
+        setIsSeeding(true);
+        try {
+          const content = await generateBlogDraft(formData.title);
+          setFormData((prev: any) => ({ ...prev, content: content }));
+        } catch(e) { alert("Draft error."); } finally { setIsSeeding(false); }
+    }
+  };
+
+  const insertTag = (tag: string, closingTag?: string) => {
+    if (!contentRef.current) return;
+    const start = contentRef.current.selectionStart;
+    const end = contentRef.current.selectionEnd;
+    const text = contentRef.current.value;
+    const before = text.substring(0, start);
+    const after = text.substring(end, text.length);
+    const selection = text.substring(start, end);
+    
+    const nextText = closingTag 
+        ? `${before}<${tag}>${selection}</${closingTag}>${after}`
+        : `${before}<${tag}>${after}`;
+    
+    setFormData((prev: any) => ({ ...prev, [type === 'Chapter' ? 'notes' : 'content']: nextText }));
   };
 
   const handleChange = (e: any) => {
@@ -100,7 +127,7 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
          <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <div className="flex items-center gap-6">
                <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl">
-                  {type === 'Chapter' ? <BookOpen className="w-7 h-7" /> : type === 'MockTest' ? <Target className="w-7 h-7" /> : <HelpCircle className="w-7 h-7" />}
+                  {type === 'Chapter' ? <BookOpen className="w-7 h-7" /> : type === 'MockTest' ? <Target className="w-7 h-7" /> : type === 'Blog' ? <Newspaper className="w-7 h-7" /> : <HelpCircle className="w-7 h-7" />}
                </div>
                <div>
                   <h3 className="text-2xl font-black italic tracking-tighter text-slate-900 uppercase">{item ? 'Edit' : 'Deploy'} <span className="text-indigo-600">{type}.</span></h3>
@@ -124,7 +151,7 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                        <button onClick={handleAutoSeed} disabled={isSeeding} className="bg-indigo-600/10 text-indigo-600 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border border-indigo-200">
                          {isSeeding ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />} Auto-Seed NCERT
                        </button>
-                       <textarea name="notes" value={formData.notes} onChange={handleChange} rows={12} className="w-full bg-slate-50 border-none rounded-[2.5rem] p-8 text-sm font-mono shadow-inner" placeholder="Enter HTML structured content..." />
+                       <textarea ref={contentRef} name="notes" value={formData.notes} onChange={handleChange} rows={12} className="w-full bg-slate-50 border-none rounded-[2.5rem] p-8 text-sm font-mono shadow-inner" placeholder="Enter HTML structured content..." />
                     </div>
                  </InputGroup>
               </div>
@@ -174,6 +201,57 @@ const CreationHub = ({ type, item, onClose, onSave, allQuestions = [], allChapte
                    </InputGroup>
                 </div>
               </div>
+            )}
+
+            {type === 'Blog' && (
+               <div className="space-y-10">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                     <div className="lg:col-span-8 space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                           <InputGroup label="Article Headline"><input name="title" value={formData.title} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-xl font-black italic shadow-inner" placeholder="Enter headline..." /></InputGroup>
+                           <InputGroup label="Author Node"><input name="author" value={formData.author} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner" /></InputGroup>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                           <InputGroup label="Date"><input type="date" name="date" value={formData.date} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner" /></InputGroup>
+                           <InputGroup label="Status"><select name="status" value={formData.status} onChange={handleChange} className="w-full bg-slate-50 border-none rounded-2xl p-6 text-sm font-black shadow-inner"><option value="PUBLISHED">Public</option><option value="DRAFT">Archive (Draft)</option></select></InputGroup>
+                           <InputGroup label="Seed Content"><button onClick={handleAutoSeed} disabled={isSeeding} className="w-full py-5 bg-indigo-600/10 text-indigo-600 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 border border-indigo-100 hover:bg-indigo-600 hover:text-white transition-all">{isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4" /> AI Draft Article</>}</button></InputGroup>
+                        </div>
+
+                        <div className="space-y-4">
+                           <div className="flex justify-between items-center">
+                              <label className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] ml-2">Content Canvas</label>
+                              <div className="flex gap-2 p-1.5 bg-slate-50 rounded-xl border border-slate-100">
+                                 <button onClick={() => insertTag('b', 'b')} className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-indigo-600 transition-all shadow-sm" title="Bold"><Bold className="w-4 h-4" /></button>
+                                 <button onClick={() => insertTag('i', 'i')} className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-indigo-600 transition-all shadow-sm" title="Italic"><Italic className="w-4 h-4" /></button>
+                                 <button onClick={() => insertTag('h2', 'h2')} className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-indigo-600 transition-all shadow-sm" title="Heading 1"><Heading1 className="w-4 h-4" /></button>
+                                 <button onClick={() => insertTag('h3', 'h3')} className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-indigo-600 transition-all shadow-sm" title="Heading 2"><Heading2 className="w-4 h-4" /></button>
+                                 <button onClick={() => insertTag('li', 'li')} className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-indigo-600 transition-all shadow-sm" title="List Item"><ListIcon className="w-4 h-4" /></button>
+                                 <button onClick={() => insertTag('a href=""', 'a')} className="p-2 hover:bg-white rounded-lg text-slate-400 hover:text-indigo-600 transition-all shadow-sm" title="Link"><LinkIcon className="w-4 h-4" /></button>
+                                 <div className="w-px bg-slate-200 mx-1"></div>
+                                 <button onClick={() => setPreviewMode(!previewMode)} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${previewMode ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-indigo-600'}`}>{previewMode ? 'Editor' : 'Preview'}</button>
+                              </div>
+                           </div>
+                           
+                           {previewMode ? (
+                             <div className="w-full bg-slate-50 rounded-[2.5rem] p-10 border border-slate-100 min-h-[400px] prose prose-indigo max-w-none prose-headings:font-black prose-p:text-slate-600 prose-strong:text-indigo-600" dangerouslySetInnerHTML={{ __html: formData.content || '<p class="text-slate-300 italic">No content rendered.</p>' }} />
+                           ) : (
+                             <textarea ref={contentRef} name="content" value={formData.content} onChange={handleChange} rows={16} className="w-full bg-slate-50 border-none rounded-[2.5rem] p-8 text-sm font-mono shadow-inner outline-none focus:ring-4 focus:ring-indigo-100 transition-all" placeholder="Enter HTML content..." />
+                           )}
+                        </div>
+                     </div>
+                     <div className="lg:col-span-4 space-y-8">
+                        <div className="p-8 bg-indigo-50 border border-indigo-100 rounded-[2.5rem] space-y-6">
+                           <div className="flex items-center gap-3 text-indigo-600"><Newspaper className="w-5 h-5" /><h4 className="text-sm font-black uppercase tracking-widest">Metadata</h4></div>
+                           <InputGroup label="Cover URL (Static)"><input name="coverImage" value={formData.coverImage} onChange={handleChange} className="w-full bg-white border border-indigo-100 rounded-xl p-4 text-xs font-bold shadow-sm" placeholder="https://..." /></InputGroup>
+                           <div className="bg-white/50 p-6 rounded-2xl border border-indigo-50"><p className="text-[10px] text-slate-500 font-medium italic">"Blogs marked as 'Public' will be instantly visible to all users across the platform."</p></div>
+                        </div>
+                        <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-xl text-white space-y-4">
+                           <h4 className="text-lg font-black italic text-indigo-400">Editorial Logic</h4>
+                           <p className="text-xs text-slate-400 leading-relaxed">Ensure all technical terms are wrapped in <code>&lt;strong&gt;</code> tags for better indexing in the student search engine.</p>
+                        </div>
+                     </div>
+                  </div>
+               </div>
             )}
          </div>
 
@@ -310,6 +388,8 @@ try {
         \$st->execute([\$input['id'], \$input['name'], \$input['subject'], \$input['unit'], \$input['notes'], \$input['videoUrl']]); }
     else if (\$type === 'Question') { \$st = \$pdo->prepare("INSERT INTO questions (id, topicId, text, options, correctAnswer, difficulty, subject) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE text=VALUES(text), options=VALUES(options), correctAnswer=VALUES(correctAnswer), difficulty=VALUES(difficulty)");
         \$st->execute([\$input['id'], \$input['topicId'], \$input['text'], json_encode(\$input['options']), \$input['correctAnswer'], \$input['difficulty'], \$input['subject']]); }
+    else if (\$type === 'Blog') { \$st = \$pdo->prepare("INSERT INTO blogs (id, title, content, author, date, status) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE title=VALUES(title), content=VALUES(content), author=VALUES(author), date=VALUES(date), status=VALUES(status)");
+        \$st->execute([\$input['id'], \$input['title'], \$input['content'], \$input['author'], \$input['date'], \$input['status']]); }
     echo json_encode(['success'=>true]);
 } catch (Exception \$e) { echo json_encode(['success'=>false, 'error' => \$e->getMessage()]); } ?>`);
 
