@@ -58,11 +58,11 @@ export const MODEL_CONFIGS: Record<string, ModelConfig> = {
     color: 'emerald',
     actualModel: 'gemini-3-pro-preview'
   },
-  'mistral-large': { 
-    name: 'Mistral Large', 
-    tag: 'BALANCED', 
-    desc: 'Balanced performance for general guidance and motivation.', 
-    color: 'orange',
+  'gemini-3-flash-search': { 
+    name: 'Gemini 3 Flash Search', 
+    tag: 'RESEARCH', 
+    desc: 'Search-enabled for latest exam dates and news.', 
+    color: 'amber',
     actualModel: 'gemini-3-flash-preview'
   }
 };
@@ -73,7 +73,9 @@ const getActiveModelId = (userSelected?: string): string => {
 };
 
 const constructSystemInstruction = (data: StudentData, modelLabel: string) => {
-  const completed = data.chapters.filter(c => c.status === 'COMPLETED').length;
+  const completed = data?.chapters?.filter(c => c.status === 'COMPLETED').length || 0;
+  const total = data?.chapters?.length || 0;
+  const name = data?.name || 'Aspirant';
   
   let persona = "";
   if (modelLabel.includes("Math")) persona = "You are an elite Mathematics professor.";
@@ -82,11 +84,11 @@ const constructSystemInstruction = (data: StudentData, modelLabel: string) => {
   else persona = "You are an expert IIT-JEE tutor specialized in Physics, Chemistry, and Math.";
 
   return `${persona} currently operating as the "${modelLabel}" engine.
-Goal: Help ${data.name} achieve AIR-1.
+Goal: Help ${name} achieve AIR-1.
 
 CONTEXT:
-- Student Name: ${data.name}
-- Progress: ${completed} / ${data.chapters.length} chapters mastered.
+- Student Name: ${name}
+- Progress: ${completed} / ${total} chapters mastered.
 
 INSTRUCTIONS:
 1. Provide extremely helpful, technically precise academic explanations.

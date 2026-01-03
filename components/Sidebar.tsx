@@ -5,7 +5,7 @@ import {
   LayoutDashboard, BookOpen, Bot, FileText, Brain, Timer, 
   BarChart3, Calendar, RefreshCw, AlertCircle, Layers, 
   ListChecks, Lightbulb, Heart, User, ShieldCheck,
-  Users, Inbox, PenTool, Settings, LogOut, Info, Sparkles, Mail, Target, FileCode, Activity
+  Users, Inbox, PenTool, Settings, LogOut, Info, Sparkles, Mail, Target, FileCode, Activity, UserPlus
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -61,6 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab, handle
     { id: 'parent-analytics', label: 'Performance', icon: BarChart3 },
     { id: 'parent-syllabus', label: 'Syllabus', icon: BookOpen },
     { id: 'parent-psychometric', label: 'Mental State', icon: Brain },
+    { id: 'parent-connect', label: 'Connect Student', icon: UserPlus },
   ];
 
   const currentLinks = role === UserRole.ADMIN ? adminLinks : role === UserRole.PARENT ? parentLinks : studentLinks;
