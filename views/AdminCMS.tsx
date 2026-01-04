@@ -331,8 +331,8 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
       sqlDump += `-- MOCK EXAM CENTER\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS mock_tests (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), duration INT, totalMarks INT, category VARCHAR(50), difficulty VARCHAR(50), questionIds JSON, chapterIds JSON) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       
-      sqlDump += `-- EXAMINATION LOGS\n`;
-      sqlDump += `CREATE TABLE IF NOT EXISTS test_results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(100), test_id VARCHAR(100), test_name VARCHAR(255), score INT, total_marks INT, accuracy INT, category VARCHAR(50), taken_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
+      sqlDump += `-- EXAMINATION LOGS (Updated with chapter_ids for individual tracking)\n`;
+      sqlDump += `CREATE TABLE IF NOT EXISTS test_results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(100), test_id VARCHAR(100), test_name VARCHAR(255), score INT, total_marks INT, accuracy INT, category VARCHAR(50), chapter_ids JSON DEFAULT NULL, taken_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       
       sqlDump += `-- UPLINK COMMUNICATIONS\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS messages (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255), subject VARCHAR(255), message TEXT, date DATE, is_read BOOLEAN DEFAULT FALSE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
@@ -401,14 +401,19 @@ class Response {
           { name: "get_dashboard.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$id = \$_GET['id'] ?? ''; \$pdo = getPDO(); 
           \$u = \$pdo->prepare("SELECT * FROM users WHERE id = ?"); \$u->execute([\$id]); \$user = \$u->fetch(); 
           \$prog = \$pdo->prepare("SELECT chapter_id as id, progress, accuracy, status, time_spent as timeSpent, time_spent_notes as timeSpentNotes, time_spent_videos as timeSpentVideos, time_spent_practice as timeSpentPractice, time_spent_tests as timeSpentTests FROM student_progress WHERE student_id = ?"); \$prog->execute([\$id]);
-          \$tests = \$pdo->prepare("SELECT test_id as testId, test_name as testName, score, total_marks as totalMarks, accuracy, category, DATE_FORMAT(taken_at, '%Y-%m-%d %H:%i:%s') as date FROM test_results WHERE student_id = ? ORDER BY taken_at DESC"); \$tests->execute([\$id]);
+          \$tests = \$pdo->prepare("SELECT test_id as testId, test_name as testName, score, total_marks as totalMarks, accuracy, category, chapter_ids as chapterIds, DATE_FORMAT(taken_at, '%Y-%m-%d %H:%i:%s') as date FROM test_results WHERE student_id = ? ORDER BY taken_at DESC"); \$tests->execute([\$id]);
           
           \$r_st = \$pdo->prepare("SELECT routine_data FROM routines WHERE student_id = ?"); \$r_st->execute([\$id]); \$r_raw = \$r_st->fetch();
           \$t_st = \$pdo->prepare("SELECT schedule, roadmap FROM timetables WHERE student_id = ?"); \$t_st->execute([\$id]); \$t_raw = \$t_st->fetch();
           
+          \$rawTests = \$tests->fetchAll();
+          foreach(\$rawTests as &\$rt) {
+              \$rt['chapterIds'] = \$rt['chapterIds'] ? json_decode(\$rt['chapterIds'], true) : [];
+          }
+          
           \$extra = [
              'individual_progress' => \$prog->fetchAll(), 
-             'testHistory' => \$tests->fetchAll(),
+             'testHistory' => \$rawTests,
              'routine' => \$r_raw ? json_decode(\$r_raw['routine_data'], true) : null,
              'smartPlan' => \$t_raw ? ['schedule' => json_decode(\$t_raw['schedule'], true), 'roadmap' => json_decode(\$t_raw['roadmap'], true)] : null
           ];
@@ -425,16 +430,16 @@ class Response {
               \$check = \$pdo->prepare("SELECT id FROM test_results WHERE student_id = ? AND test_id = ? AND taken_at = ?");
               \$check->execute([\$in['student_id'], \$t['testId'], \$t['date']]);
               if(!\$check->fetch()) {
-                \$st = \$pdo->prepare("INSERT INTO test_results (student_id, test_id, test_name, score, total_marks, accuracy, category, taken_at) VALUES (?,?,?,?,?,?,?,?)");
-                \$st->execute([\$in['student_id'], \$t['testId'], \$t['testName'], \$t['score'], \$t['totalMarks'], \$t['accuracy'], \$t['category'], \$t['date']]);
+                \$st = \$pdo->prepare("INSERT INTO test_results (student_id, test_id, test_name, score, total_marks, accuracy, category, chapter_ids, taken_at) VALUES (?,?,?,?,?,?,?,?,?)");
+                \$st->execute([\$in['student_id'], \$t['testId'], \$t['testName'], \$t['score'], \$t['totalMarks'], \$t['accuracy'], \$t['category'], json_encode(\$t['chapterIds'] ?? []), \$t['date']]);
               }
             }
             \$pdo->commit();
             Response::success();
           } catch(Exception \$e) { \$pdo->rollBack(); Response::error(\$e->getMessage()); } ?>` },
           { name: "manage_users.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$action = \$_GET['action'] ?? ''; \$pdo = getPDO(); if(\$action == 'list') Response::success(['users' => \$pdo->query("SELECT id, name, email, role FROM users")->fetchAll()]); ?>` },
-          { name: "manage_messages.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$pdo = getPDO(); Response::success(['messages' => \$pdo->query("SELECT * FROM messages")->fetchAll()]); ?>` },
-          { name: "manage_entity.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$type = \$_GET['type'] ?? ''; \$in = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO(); if(\$type == 'Psychometric') { \$st = \$pdo->prepare("INSERT INTO wellness_metrics (student_id, stress, focus, motivation, exam_fear, summary) VALUES (?,?,?,?,?,?)"); \$st->execute([\$in['student_id'], \$in['stress'], \$in['focus'], \$in['motivation'], \$in['examFear'], \$in['studentSummary']]); } Response::success(['status' => 'acknowledged']); ?>` },
+          { name: "manage_messages.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$action = \$_GET['action'] ?? ''; \$pdo = getPDO(); if(\$action == 'read') { \$st = \$pdo->prepare("UPDATE messages SET is_read = 1 WHERE id = ?"); \$st->execute([\$_GET['id']]); Response::success(); } Response::success(['messages' => \$pdo->query("SELECT * FROM messages ORDER BY date DESC")->fetchAll()]); ?>` },
+          { name: "manage_entity.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$type = \$_GET['type'] ?? ''; \$in = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO(); if(\$type == 'Psychometric') { \$st = \$pdo->prepare("INSERT INTO wellness_metrics (student_id, stress, focus, motivation, exam_fear, summary) VALUES (?,?,?,?,?,?)"); \$st->execute([\$in['student_id'], \$in['stress'], \$in['focus'], \$in['motivation'], \$in['examFear'], \$in['studentSummary']]); } elseif(\$type == 'Message') { \$st = \$pdo->prepare("INSERT INTO messages (id, name, email, subject, message, date) VALUES (?,?,?,?,?,?)"); \$st->execute([\$in['id'], \$in['name'], \$in['email'], \$in['subject'], \$in['message'], \$in['date']]); } Response::success(['status' => 'acknowledged']); ?>` },
           { name: "manage_routine.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$in = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO(); \$st = \$pdo->prepare("INSERT INTO routines (student_id, routine_data) VALUES (?, ?) ON DUPLICATE KEY UPDATE routine_data = VALUES(routine_data)"); \$st->execute([\$in['student_id'], json_encode(\$in['routine'])]); Response::success(); ?>` },
           { name: "manage_timetable.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$in = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO(); \$st = \$pdo->prepare("INSERT INTO timetables (student_id, schedule, roadmap) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE schedule=VALUES(schedule), roadmap=VALUES(roadmap)"); \$st->execute([\$in['student_id'], json_encode(\$in['schedule']), json_encode(\$in['roadmap'])]); Response::success(); ?>` }
       ];
