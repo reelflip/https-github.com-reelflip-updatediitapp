@@ -434,6 +434,14 @@ class Response {
                 \$st->execute([\$in['student_id'], \$t['testId'], \$t['testName'], \$t['score'], \$t['totalMarks'], \$t['accuracy'], \$t['category'], json_encode(\$t['chapterIds'] ?? []), \$t['date']]);
               }
             }
+            if(isset(\$in['routine'])) {
+              \$st = \$pdo->prepare("INSERT INTO routines (student_id, routine_data) VALUES (?, ?) ON DUPLICATE KEY UPDATE routine_data = VALUES(routine_data)");
+              \$st->execute([\$in['student_id'], json_encode(\$in['routine'])]);
+            }
+            if(isset(\$in['smartPlan'])) {
+              \$st = \$pdo->prepare("INSERT INTO timetables (student_id, schedule, roadmap) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE schedule=VALUES(schedule), roadmap=VALUES(roadmap)");
+              \$st->execute([\$in['student_id'], json_encode(\$in['smartPlan']['schedule'] ?? []), json_encode(\$in['smartPlan']['roadmap'] ?? [])]);
+            }
             \$pdo->commit();
             Response::success();
           } catch(Exception \$e) { \$pdo->rollBack(); Response::error(\$e->getMessage()); } ?>` },

@@ -194,11 +194,13 @@ export const api = {
                 ...zeroState,
                 ...serverData,
                 chapters: mergedChapters,
-                questions: zeroState.questions, // Never overwrite questions with null
-                mockTests: zeroState.mockTests, // Never overwrite mockTests with null
+                questions: zeroState.questions, 
+                mockTests: zeroState.mockTests, 
                 testHistory: serverData.testHistory || [],
                 connectedParent: serverData.connectedParent || null,
-                pendingInvitations: serverData.pendingInvitations || []
+                pendingInvitations: serverData.pendingInvitations || [],
+                routine: serverData.routine || null,
+                smartPlan: serverData.smartPlan || null
             };
         }
       } catch(e) { console.error("Sync Error", e); }
@@ -233,11 +235,17 @@ export const api = {
             progress: c.progress || 0, 
             accuracy: c.accuracy || 0, 
             status: c.status || 'NOT_STARTED', 
-            timeSpent: c.timeSpent || 0
+            timeSpent: c.timeSpent || 0,
+            timeSpentNotes: c.timeSpentNotes || 0,
+            timeSpentVideos: c.timeSpentVideos || 0,
+            timeSpentPractice: c.timeSpentPractice || 0,
+            timeSpentTests: c.timeSpentTests || 0
           })),
           testHistory: updatedData.testHistory || [],
           connectedParent: updatedData.connectedParent || null,
-          pendingInvitations: updatedData.pendingInvitations || []
+          pendingInvitations: updatedData.pendingInvitations || [],
+          routine: updatedData.routine || null,
+          smartPlan: updatedData.smartPlan || null
         };
         await fetch(`${API_CONFIG.BASE_URL}sync_progress.php`, {
           method: 'POST',
