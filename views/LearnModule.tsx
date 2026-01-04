@@ -23,7 +23,8 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
   
   const handleFinish = () => {
     if (!activeChapter) return;
-    const updatedChapters = data.chapters.map(c => 
+    const chapters = data.chapters || [];
+    const updatedChapters = chapters.map(c => 
       c.id === activeChapter.id ? { ...c, progress: 100, status: 'COMPLETED' as ChapterStatus } : c
     );
     setData({ ...data, chapters: updatedChapters });
@@ -45,17 +46,18 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
 
   // --- CHAPTER VIEW (INLINE) ---
   if (activeChapter) {
-    const chapterQuestions = data.questions.filter(q => q.topicId === activeChapter.id);
-    const chapterHistory = data.testHistory.filter(t => t.category === 'PRACTICE' && t.chapterIds.includes(activeChapter.id));
+    const questions = data.questions || [];
+    const history = data.testHistory || [];
+    const chapterQuestions = questions.filter(q => q.topicId === activeChapter.id);
+    const chapterHistory = history.filter(t => t.category === 'PRACTICE' && (t.chapterIds || []).includes(activeChapter.id));
     const videoEmbed = getEmbedUrl(activeChapter.videoUrl || '');
 
     const startChapterPractice = () => {
-      // Use up to 20 questions for the practice test
       const qIds = chapterQuestions.slice(0, 20).map(q => q.id);
       setTakingTest({
         id: `chapter-drill-${activeChapter.id}`,
         name: `Mastery Challenge: ${activeChapter.name}`,
-        duration: 40, // Standard 40 minutes for 20 questions
+        duration: 40,
         totalMarks: qIds.length * 4,
         category: 'PRACTICE',
         difficulty: 'MIXED',
@@ -66,7 +68,6 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
 
     return (
       <div className="space-y-8 animate-in fade-in duration-500 pb-20">
-        {/* Breadcrumb & Title */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="space-y-2">
             <button onClick={() => setActiveChapter(null)} className="flex items-center gap-2 text-[10px] font-black uppercase text-indigo-600 tracking-widest hover:gap-4 transition-all">
@@ -94,11 +95,10 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
           </div>
         </div>
 
-        {/* Content Region */}
         <div className="bg-white rounded-[3rem] border border-slate-200 shadow-sm overflow-hidden min-h-[60vh]">
           {activeContentTab === 'notes' ? (
             <div className="p-8 md:p-16">
-               <div className="max-w-4xl mx-auto prose prose-slate max-w-none prose-headings:font-black prose-headings:italic prose-headings:tracking-tighter prose-p:text-lg prose-p:font-medium prose-p:text-slate-600 prose-p:leading-relaxed prose-li:text-slate-600 prose-li:font-medium prose-strong:text-indigo-600 animate-in slide-in-from-bottom-4" dangerouslySetInnerHTML={{ __html: activeChapter.notes || '' }} />
+               <div className="max-w-4xl mx-auto prose prose-slate max-w-none prose-headings:font-black prose-headings:italic prose-headings:tracking-tighter prose-p:text-lg prose-p:font-medium prose-p:text-slate-600 prose-p:leading-relaxed prose-li:text-slate-600 prose-li:font-medium prose-strong:text-indigo-600 animate-in slide-in-from-bottom-4" dangerouslySetInnerHTML={{ __html: activeChapter.notes || '<p class="text-slate-300 italic">No conceptual data found for this unit.</p>' }} />
                <div className="mt-16 pt-10 border-t border-slate-100 flex justify-center">
                   <button onClick={handleFinish} className="px-12 py-5 bg-emerald-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-emerald-600 transition-all flex items-center gap-3">
                     Mark Chapter as Completed <CheckCircle className="w-5 h-5" />
@@ -178,9 +178,12 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
   }
 
   // --- SYLLABUS LIST VIEW (STANDARD) ---
-  const groupedChapters = data.chapters.reduce((acc, chapter) => {
+  const chapters = data.chapters || [];
+  const searchQueryLower = searchQuery.toLowerCase();
+  
+  const groupedChapters = chapters.reduce((acc, chapter) => {
     if (selectedSubject && chapter.subject !== selectedSubject) return acc;
-    if (!chapter.name.toLowerCase().includes(searchQuery.toLowerCase())) return acc;
+    if (!chapter.name.toLowerCase().includes(searchQueryLower)) return acc;
     if (!acc[chapter.unit]) acc[chapter.unit] = [];
     acc[chapter.unit].push(chapter);
     return acc;
@@ -202,55 +205,59 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
         </div>
 
         <div className="divide-y divide-slate-100">
-          {(Object.entries(groupedChapters) as [string, Chapter[]][]).map(([unit, chapters]) => {
-            const unitAvgProgress = Math.round(chapters.reduce((acc, c) => acc + c.progress, 0) / chapters.length);
-            return (
-              <div key={unit}>
-                <button onClick={() => setExpandedUnits(prev => prev.includes(unit) ? prev.filter(u => u !== unit) : [...prev, unit])} className="w-full px-8 md:px-12 py-10 flex items-center justify-between hover:bg-slate-50 transition-colors group">
-                  <div className="flex items-center gap-6 text-left flex-1 min-w-0">
-                    <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all shadow-inner shrink-0">
-                      <Layers className="w-6 h-6" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-black text-2xl text-slate-800 italic tracking-tight leading-tight uppercase">{unit}</h3>
-                      <div className="flex items-center gap-3 mt-1">
-                        <div className="w-24 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-emerald-500" style={{ width: `${unitAvgProgress}%` }}></div>
+          {Object.keys(groupedChapters).length === 0 ? (
+            <div className="p-32 text-center text-slate-300 font-black uppercase text-xs italic tracking-widest">No matching units found in syllabus.</div>
+          ) : (
+            (Object.entries(groupedChapters) as [string, Chapter[]][]).map(([unit, chapters]) => {
+              const unitAvgProgress = Math.round(chapters.reduce((acc, c) => acc + (c.progress || 0), 0) / chapters.length);
+              return (
+                <div key={unit}>
+                  <button onClick={() => setExpandedUnits(prev => prev.includes(unit) ? prev.filter(u => u !== unit) : [...prev, unit])} className="w-full px-8 md:px-12 py-10 flex items-center justify-between hover:bg-slate-50 transition-colors group">
+                    <div className="flex items-center gap-6 text-left flex-1 min-w-0">
+                      <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all shadow-inner shrink-0">
+                        <Layers className="w-6 h-6" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-black text-2xl text-slate-800 italic tracking-tight leading-tight uppercase">{unit}</h3>
+                        <div className="flex items-center gap-3 mt-1">
+                          <div className="w-24 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div className="h-full bg-emerald-500" style={{ width: `${unitAvgProgress}%` }}></div>
+                          </div>
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{unitAvgProgress}% COMPLETION</span>
                         </div>
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{unitAvgProgress}% COMPLETION</span>
                       </div>
                     </div>
-                  </div>
-                  <ChevronDown className={`transition-transform duration-500 shrink-0 ${expandedUnits.includes(unit) ? 'rotate-180' : ''}`} />
-                </button>
-                {expandedUnits.includes(unit) && (
-                  <div className="bg-slate-50/50 px-6 md:px-12 pb-10 space-y-3 animate-in slide-in-from-top-4">
-                    {chapters.map(c => (
-                      <div key={c.id} onClick={() => { setActiveChapter(c); setActiveContentTab('notes'); }} className="p-6 bg-white border border-slate-200 rounded-[2rem] hover:border-indigo-400 hover:shadow-xl cursor-pointer flex justify-between items-center transition-all group/item">
-                         <div className="flex items-center gap-6 min-w-0 flex-1">
-                            <div className="relative shrink-0">
-                              <svg className="w-12 h-12 -rotate-90">
-                                <circle cx="50%" cy="50%" r="40%" fill="transparent" stroke="#f1f5f9" strokeWidth="3" />
-                                <circle cx="50%" cy="50%" r="40%" fill="transparent" stroke={c.progress === 100 ? '#10b981' : '#6366f1'} strokeWidth="3" strokeDasharray="100 100" strokeDashoffset={100 - c.progress} pathLength="100" strokeLinecap="round" className="transition-all duration-1000" />
-                              </svg>
-                              <div className="absolute inset-0 flex items-center justify-center"><span className="text-[9px] font-black text-slate-900">{c.progress}%</span></div>
-                            </div>
-                            <div className="min-w-0">
-                               <div className="font-black text-slate-800 group-hover/item:text-indigo-600 transition-colors italic tracking-tight text-base truncate">{c.name}</div>
-                               <div className="flex gap-3 mt-0.5">
-                                  <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Accuracy: {c.accuracy}%</div>
-                                  {c.status === 'COMPLETED' && <div className="text-[10px] font-black uppercase text-emerald-500 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Mastered</div>}
-                               </div>
-                            </div>
-                         </div>
-                         <ChevronRight className="w-6 h-6 text-slate-200 group-hover/item:text-indigo-600 transition-all" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                    <ChevronDown className={`transition-transform duration-500 shrink-0 ${expandedUnits.includes(unit) ? 'rotate-180' : ''}`} />
+                  </button>
+                  {expandedUnits.includes(unit) && (
+                    <div className="bg-slate-50/50 px-6 md:px-12 pb-10 space-y-3 animate-in slide-in-from-top-4">
+                      {chapters.map(c => (
+                        <div key={c.id} onClick={() => { setActiveChapter(c); setActiveContentTab('notes'); }} className="p-6 bg-white border border-slate-200 rounded-[2rem] hover:border-indigo-400 hover:shadow-xl cursor-pointer flex justify-between items-center transition-all group/item">
+                           <div className="flex items-center gap-6 min-w-0 flex-1">
+                              <div className="relative shrink-0">
+                                <svg className="w-12 h-12 -rotate-90">
+                                  <circle cx="50%" cy="50%" r="40%" fill="transparent" stroke="#f1f5f9" strokeWidth="3" />
+                                  <circle cx="50%" cy="50%" r="40%" fill="transparent" stroke={c.progress === 100 ? '#10b981' : '#6366f1'} strokeWidth="3" strokeDasharray="100 100" strokeDashoffset={100 - (c.progress || 0)} pathLength="100" strokeLinecap="round" className="transition-all duration-1000" />
+                                </svg>
+                                <div className="absolute inset-0 flex items-center justify-center"><span className="text-[9px] font-black text-slate-900">{c.progress || 0}%</span></div>
+                              </div>
+                              <div className="min-w-0">
+                                 <div className="font-black text-slate-800 group-hover/item:text-indigo-600 transition-colors italic tracking-tight text-base truncate">{c.name}</div>
+                                 <div className="flex gap-3 mt-0.5">
+                                    <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Accuracy: {c.accuracy || 0}%</div>
+                                    {c.status === 'COMPLETED' && <div className="text-[10px] font-black uppercase text-emerald-500 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Mastered</div>}
+                                 </div>
+                              </div>
+                           </div>
+                           <ChevronRight className="w-6 h-6 text-slate-200 group-hover/item:text-indigo-600 transition-all" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>

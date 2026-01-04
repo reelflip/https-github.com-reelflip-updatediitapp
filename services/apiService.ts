@@ -47,6 +47,9 @@ const getZeroStateStudentData = (id: string, name: string): StudentData => ({
   chapters: getZeroStateChapters(),
   flashcards: INITIAL_STUDENT_DATA.flashcards || [],
   memoryHacks: INITIAL_STUDENT_DATA.memoryHacks || [],
+  questions: INITIAL_STUDENT_DATA.questions || [],
+  mockTests: INITIAL_STUDENT_DATA.mockTests || [],
+  blogs: INITIAL_STUDENT_DATA.blogs || [],
   testHistory: [], 
   psychometricHistory: [],
   backlogs: [],
@@ -170,28 +173,29 @@ export const api = {
         const result = await safeJson(res);
         if (result?.success && result.data) {
             const serverData = result.data;
-            const templateChapters = getZeroStateChapters();
-            const mergedChapters = templateChapters.map(t => {
-                const s = serverData.individual_progress?.find((c: any) => c.id === t.id);
+            const zeroState = getZeroStateStudentData(studentId, serverData.name || 'Aspirant');
+            
+            const serverProgress = serverData.individual_progress || [];
+            const mergedChapters = zeroState.chapters.map(t => {
+                const s = serverProgress.find((c: any) => c.id === t.id);
                 if (s) {
                   return { 
                     ...t, 
                     ...s, 
-                    progress: Number(s.progress),
-                    accuracy: Number(s.accuracy),
-                    timeSpent: Number(s.timeSpent),
-                    timeSpentNotes: Number(s.timeSpentNotes || 0),
-                    timeSpentVideos: Number(s.timeSpentVideos || 0),
-                    timeSpentPractice: Number(s.timeSpentPractice || 0),
-                    timeSpentTests: Number(s.timeSpentTests || 0)
+                    progress: Number(s.progress || 0),
+                    accuracy: Number(s.accuracy || 0),
+                    timeSpent: Number(s.timeSpent || 0)
                   };
                 }
                 return t;
             });
+
             return {
-                ...getZeroStateStudentData(studentId, serverData.name || 'Aspirant'),
+                ...zeroState,
                 ...serverData,
                 chapters: mergedChapters,
+                questions: zeroState.questions, // Never overwrite questions with null
+                mockTests: zeroState.mockTests, // Never overwrite mockTests with null
                 testHistory: serverData.testHistory || [],
                 connectedParent: serverData.connectedParent || null,
                 pendingInvitations: serverData.pendingInvitations || []
@@ -224,18 +228,14 @@ export const api = {
       try {
         const payload = { 
           student_id: studentId, 
-          chapters: updatedData.chapters.map(c => ({ 
+          chapters: (updatedData.chapters || []).map(c => ({ 
             id: c.id, 
-            progress: c.progress, 
-            accuracy: c.accuracy, 
-            status: c.status, 
-            timeSpent: c.timeSpent,
-            timeSpentNotes: c.timeSpentNotes,
-            timeSpentVideos: c.timeSpentVideos,
-            timeSpentPractice: c.timeSpentPractice,
-            timeSpentTests: c.timeSpentTests
+            progress: c.progress || 0, 
+            accuracy: c.accuracy || 0, 
+            status: c.status || 'NOT_STARTED', 
+            timeSpent: c.timeSpent || 0
           })),
-          testHistory: updatedData.testHistory,
+          testHistory: updatedData.testHistory || [],
           connectedParent: updatedData.connectedParent || null,
           pendingInvitations: updatedData.pendingInvitations || []
         };

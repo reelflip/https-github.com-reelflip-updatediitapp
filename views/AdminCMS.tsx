@@ -402,7 +402,18 @@ class Response {
           \$u = \$pdo->prepare("SELECT * FROM users WHERE id = ?"); \$u->execute([\$id]); \$user = \$u->fetch(); 
           \$prog = \$pdo->prepare("SELECT chapter_id as id, progress, accuracy, status, time_spent as timeSpent, time_spent_notes as timeSpentNotes, time_spent_videos as timeSpentVideos, time_spent_practice as timeSpentPractice, time_spent_tests as timeSpentTests FROM student_progress WHERE student_id = ?"); \$prog->execute([\$id]);
           \$tests = \$pdo->prepare("SELECT test_id as testId, test_name as testName, score, total_marks as totalMarks, accuracy, category, DATE_FORMAT(taken_at, '%Y-%m-%d %H:%i:%s') as date FROM test_results WHERE student_id = ? ORDER BY taken_at DESC"); \$tests->execute([\$id]);
-          Response::success(['data' => array_merge(\$user ?: [], ['individual_progress' => \$prog->fetchAll(), 'testHistory' => \$tests->fetchAll()])]); ?>` },
+          
+          \$r_st = \$pdo->prepare("SELECT routine_data FROM routines WHERE student_id = ?"); \$r_st->execute([\$id]); \$r_raw = \$r_st->fetch();
+          \$t_st = \$pdo->prepare("SELECT schedule, roadmap FROM timetables WHERE student_id = ?"); \$t_st->execute([\$id]); \$t_raw = \$t_st->fetch();
+          
+          \$extra = [
+             'individual_progress' => \$prog->fetchAll(), 
+             'testHistory' => \$tests->fetchAll(),
+             'routine' => \$r_raw ? json_decode(\$r_raw['routine_data'], true) : null,
+             'smartPlan' => \$t_raw ? ['schedule' => json_decode(\$t_raw['schedule'], true), 'roadmap' => json_decode(\$t_raw['roadmap'], true)] : null
+          ];
+          
+          Response::success(['data' => array_merge(\$user ?: [], \$extra)]); ?>` },
           { name: "sync_progress.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$in = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO(); 
           try {
             \$pdo->beginTransaction();
@@ -430,7 +441,7 @@ class Response {
 
       endpoints.forEach(e => zip.file(`api/${e.name}`, e.content));
       const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, "solaris_v22_CORE_SYNC_BUILD.zip");
+      saveAs(content, "solaris_v22_FULL_SYNC_BUILD.zip");
     } catch (e) { alert("Bundle generation error."); } finally { setIsDownloading(false); }
   };
 
@@ -465,7 +476,7 @@ class Response {
                <h3 className="text-xl font-black italic text-slate-800 flex items-center gap-3"><Users className="w-6 h-6 text-indigo-600" /> Authorized Identities</h3>
                <button onClick={loadUsers} className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-indigo-600 shadow-sm transition-all"><RefreshCw className={`w-4 h-4 ${isLoadingUsers ? 'animate-spin' : ''}`} /></button>
              </div>
-             <div className="overflow-x-auto"><table className="w-full text-left min-w-[800px]"><thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-black uppercase text-slate-400 tracking-widest"><tr><th className="p-6">Account</th><th className="p-6">Role</th><th className="p-6">Date</th><th className="p-6 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-50">{userList.length === 0 ? (<tr><td colSpan={4} className="p-20 text-center text-slate-300 font-black uppercase text-[10px] tracking-widest italic">No identities in database.</td></tr>) : (userList.map(user => (<tr key={user.id} className="hover:bg-slate-50/50 transition-colors group"><td className="p-6"><div className="flex items-center gap-4"><div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center font-black text-xs">{user.name?.[0] || '?'}</div><div><div className="text-sm font-bold text-slate-800">{user.name || 'Unknown'}</div><div className="text-[10px] font-medium text-slate-400">{user.email}</div></div></div></td><td className="p-6"><span className={`px-4 py-1.5 rounded-full text-[9px] font-black tracking-widest uppercase border ${user.role === UserRole.ADMIN ? 'bg-rose-50 text-rose-600 border-rose-100' : user.role === UserRole.PARENT ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>{user.role}</span></td><td className="p-6 text-xs font-bold text-slate-400 uppercase">{user.createdAt || 'N/A'}</td><td className="p-6 text-right"><div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={() => handleDelete('User', user.id)} className="p-3 bg-white border border-slate-100 text-slate-400 rounded-xl hover:text-rose-600 shadow-sm"><Trash2 className="w-4 h-4" /></button></div></td></tr>)))}</tbody></table></div>
+             <div className="overflow-x-auto"><table className="w-full text-left min-w-[800px]"><thead className="bg-slate-50 border-b border-slate-100 text-[10px] font-black uppercase text-slate-400 tracking-widest"><tr><th className="p-6">Account</th><th className="p-6">Role</th><th className="p-6">Date</th><th className="p-6 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-50">{userList.length === 0 ? (<tr><td colSpan={4} className="p-20 text-center text-slate-300 font-black uppercase text-xs tracking-widest italic">No identities in database.</td></tr>) : (userList.map(user => (<tr key={user.id} className="hover:bg-slate-50/50 transition-colors group"><td className="p-6"><div className="flex items-center gap-4"><div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center font-black text-xs">{user.name?.[0] || '?'}</div><div><div className="text-sm font-bold text-slate-800">{user.name || 'Unknown'}</div><div className="text-[10px] font-medium text-slate-400">{user.email}</div></div></div></td><td className="p-6"><span className={`px-4 py-1.5 rounded-full text-[9px] font-black tracking-widest uppercase border ${user.role === UserRole.ADMIN ? 'bg-rose-50 text-rose-600 border-rose-100' : user.role === UserRole.PARENT ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-emerald-50 text-emerald-600 border-emerald-100'}`}>{user.role}</span></td><td className="p-6 text-xs font-bold text-slate-400 uppercase">{user.createdAt || 'N/A'}</td><td className="p-6 text-right"><div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity"><button onClick={() => handleDelete('User', user.id)} className="p-3 bg-white border border-slate-100 text-slate-400 rounded-xl hover:text-rose-600 shadow-sm"><Trash2 className="w-4 h-4" /></button></div></td></tr>)))}</tbody></table></div>
            </div>
         )}
 
@@ -498,27 +509,27 @@ class Response {
                         <div className="text-right"><div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">System Status</div><div className={`text-xs font-black uppercase tracking-widest ${mode === 'LIVE' ? 'text-emerald-400' : 'text-amber-400'}`}>{mode === 'LIVE' ? 'Production (Live)' : 'Sandbox Mode'}</div></div>
                      </div>
                   </div>
-                  <div className="pt-10 border-t border-white/10 text-center"><button onClick={handleDownloadProduction} disabled={isDownloading} className="bg-indigo-600 px-12 py-5 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:scale-105 transition-all disabled:opacity-50 mx-auto">{isDownloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />} {isDownloading ? 'Finalizing Core...' : 'Download Fresh Deploy Bundle (ZIP)'}</button></div>
+                  <div className="pt-10 border-t border-white/10 text-center"><button onClick={handleDownloadProduction} disabled={isDownloading} className="bg-indigo-600 px-12 py-5 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:scale-105 transition-all disabled:opacity-50 mx-auto">{isDownloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />} {isDownloading ? 'Finalizing Core...' : 'Download Full Sync Bundle (ZIP)'}</button></div>
               </div>
 
               <div className="bg-white p-12 rounded-[4rem] border border-rose-200 shadow-xl max-w-4xl mx-auto space-y-8 animate-pulse">
                   <div className="flex items-center gap-6 text-rose-600">
                      <AlertTriangle className="w-12 h-12 shrink-0" />
                      <div>
-                        <h3 className="text-2xl font-black italic tracking-tight uppercase">Fix Test Results Loading Issue</h3>
-                        <p className="text-slate-500 font-medium italic">Your existing PHP backend is missing the logic to return test history.</p>
+                        <h3 className="text-2xl font-black italic tracking-tight uppercase">Fix Sync Issues (Tests & Timetable)</h3>
+                        <p className="text-slate-500 font-medium italic">If your tests or schedules aren't saving, your backend logic is outdated.</p>
                      </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                      <div className="p-8 bg-slate-50 rounded-3xl space-y-4 border border-slate-100">
                         <div className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center font-black text-xs">01</div>
-                        <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest">Refresh All PHP Files</h4>
-                        <p className="text-xs text-slate-500 leading-relaxed italic">The ZIP above contains upgraded <b>sync_progress.php</b> and <b>get_dashboard.php</b>. Delete your old ones and upload these.</p>
+                        <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest">Full ZIP Update</h4>
+                        <p className="text-xs text-slate-500 leading-relaxed italic">The ZIP above contains overhauled <b>get_dashboard.php</b>, <b>manage_routine.php</b>, and <b>manage_timetable.php</b>. Delete your old API files and replace them.</p>
                      </div>
                      <div className="p-8 bg-slate-50 rounded-3xl space-y-4 border border-slate-100">
                         <div className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center font-black text-xs">02</div>
-                        <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest">SQL Auto-Increment</h4>
-                        <p className="text-xs text-slate-500 leading-relaxed italic">Ensure your <b>test_results</b> table has an 'id' column with <b>AUTO_INCREMENT</b>. The new SQL file handles this.</p>
+                        <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest">Database Schema v22</h4>
+                        <p className="text-xs text-slate-500 leading-relaxed italic">Ensure your <b>routines</b> and <b>timetables</b> tables use the <b>JSON</b> data type for the data columns as specified in the new SQL file.</p>
                      </div>
                   </div>
               </div>
