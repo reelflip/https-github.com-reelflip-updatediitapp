@@ -4,8 +4,9 @@ import { StudentData, Subject, Chapter, MockTest, ChapterStatus, TestResult } fr
 import { 
   Search, ChevronRight, BookOpen, ArrowLeft, Target, 
   Video, History, Award, Clock, Layers, X, PlayCircle,
-  CheckCircle, ChevronDown
+  CheckCircle, ChevronDown, BarChart3, Timer, PieChart as PieIcon, Activity, TrendingUp, Zap
 } from 'lucide-react';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as ReTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import TestsView from './TestsView';
 
 interface LearnModuleProps {
@@ -19,7 +20,7 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
   const [takingTest, setTakingTest] = useState<MockTest | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedUnits, setExpandedUnits] = useState<string[]>([]);
-  const [activeContentTab, setActiveContentTab] = useState<'notes' | 'video' | 'practice' | 'history'>('notes');
+  const [activeContentTab, setActiveContentTab] = useState<'notes' | 'video' | 'practice' | 'history' | 'analytics'>('notes');
   
   const handleFinish = () => {
     if (!activeChapter) return;
@@ -49,7 +50,7 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
     const questions = data.questions || [];
     const history = data.testHistory || [];
     const chapterQuestions = questions.filter(q => q.topicId === activeChapter.id);
-    const chapterHistory = history.filter(t => t.category === 'PRACTICE' && (t.chapterIds || []).includes(activeChapter.id));
+    const chapterHistory = history.filter(t => (t.chapterIds || []).includes(activeChapter.id));
     const videoEmbed = getEmbedUrl(activeChapter.videoUrl || '');
 
     const startChapterPractice = () => {
@@ -65,6 +66,19 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
         chapterIds: [activeChapter.id]
       });
     };
+
+    // Calculate Chapter Specific Analytics
+    const timeData = [
+      { name: 'Theory', value: activeChapter.timeSpentNotes || 0, color: '#6366f1' },
+      { name: 'Video', value: activeChapter.timeSpentVideos || 0, color: '#f59e0b' },
+      { name: 'Practice', value: activeChapter.timeSpentPractice || 0, color: '#10b981' },
+      { name: 'Tests', value: activeChapter.timeSpentTests || 0, color: '#ef4444' }
+    ].filter(d => d.value > 0);
+
+    const totalChapterTime = (activeChapter.timeSpent || 0) / 60; // in minutes
+    const stabilityIndex = activeChapter.accuracy > 0 
+      ? Math.round((activeChapter.accuracy * 0.8) + (activeChapter.progress * 0.2)) 
+      : 0;
 
     return (
       <div className="space-y-8 animate-in fade-in duration-500 pb-20">
@@ -82,7 +96,8 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
               { id: 'notes', label: 'Theory', icon: BookOpen },
               { id: 'video', label: 'Lecture', icon: Video },
               { id: 'practice', label: 'Drills', icon: Target },
-              { id: 'history', label: 'History', icon: History }
+              { id: 'history', label: 'History', icon: History },
+              { id: 'analytics', label: 'Telemetry', icon: BarChart3 }
             ].map((tab: any) => (
               <button 
                 key={tab.id}
@@ -139,6 +154,93 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
                   </div>
                   <div className="mt-8 text-center">
                     <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em]">System has synced {chapterQuestions.length} questions for this unit.</p>
+                  </div>
+               </div>
+            </div>
+          ) : activeContentTab === 'analytics' ? (
+            <div className="p-8 md:p-16 animate-in slide-in-from-bottom-4 space-y-12">
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 flex flex-col justify-between group">
+                     <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm mb-6"><Timer className="w-6 h-6" /></div>
+                     <div>
+                        <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1">Total Effort Log</div>
+                        <div className="text-3xl font-black text-slate-800 italic">{Math.round(totalChapterTime)} <span className="text-xs text-slate-400">Minutes</span></div>
+                     </div>
+                  </div>
+                  <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 flex flex-col justify-between">
+                     <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-emerald-500 shadow-sm mb-6"><Activity className="w-6 h-6" /></div>
+                     <div>
+                        <div className="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-1">Stability Index</div>
+                        <div className="text-3xl font-black text-slate-800 italic">{stabilityIndex}%</div>
+                     </div>
+                  </div>
+                  <div className="bg-[#0a1128] p-8 rounded-[2.5rem] text-white flex flex-col justify-between relative overflow-hidden">
+                     <div className="absolute top-0 right-0 p-4 opacity-10"><Zap className="w-20 h-20 text-indigo-400" /></div>
+                     <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-indigo-300 border border-white/10 mb-6"><TrendingUp className="w-6 h-6" /></div>
+                     <div>
+                        <div className="text-[9px] font-black uppercase text-indigo-400 tracking-widest mb-1">Status Protocol</div>
+                        <div className="text-2xl font-black italic uppercase tracking-tighter">{activeChapter.status}</div>
+                     </div>
+                  </div>
+               </div>
+
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                  <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm space-y-6">
+                     <h4 className="text-sm font-black uppercase text-slate-800 italic tracking-tight">Time Distribution Analysis</h4>
+                     <div className="h-64 relative">
+                        {timeData.length > 0 ? (
+                           <ResponsiveContainer width="100%" height="100%">
+                              <PieChart>
+                                 <Pie data={timeData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value">
+                                    {timeData.map((entry, index) => (
+                                       <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                                    ))}
+                                 </Pie>
+                                 <ReTooltip 
+                                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}
+                                    formatter={(v: any) => `${Math.round(v/60)}m`}
+                                 />
+                              </PieChart>
+                           </ResponsiveContainer>
+                        ) : (
+                           <div className="h-full flex items-center justify-center text-slate-300 text-[10px] font-black uppercase tracking-widest border-2 border-dashed border-slate-50 rounded-3xl">No Telemetry Recorded</div>
+                        )}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                           <span className="text-2xl font-black italic text-slate-800">{Math.round(totalChapterTime)}m</span>
+                           <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Total</span>
+                        </div>
+                     </div>
+                     <div className="grid grid-cols-2 gap-4">
+                        {timeData.map((d, i) => (
+                           <div key={i} className="flex items-center gap-3">
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }}></div>
+                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{d.name}: {Math.round(d.value/60)}m</span>
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+
+                  <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm space-y-8 flex flex-col justify-center">
+                     <div className="space-y-2">
+                        <h4 className="text-sm font-black uppercase text-slate-800 italic tracking-tight">Unit Insights</h4>
+                        <p className="text-xs text-slate-500 font-medium italic leading-relaxed">Systematic analysis of your learning pattern for this unit.</p>
+                     </div>
+                     <div className="space-y-6">
+                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                           <div className="text-[8px] font-black uppercase text-indigo-600 tracking-widest">Efficiency Diagnostic</div>
+                           <p className="text-xs font-bold text-slate-700 italic">
+                              {activeChapter.accuracy > 70 
+                                 ? "Superior conceptual retention detected. Unit is ready for high-difficulty JEE Advanced drills."
+                                 : activeChapter.timeSpentPractice > activeChapter.timeSpentNotes
+                                    ? "Execution-heavy learning detected. Spend more time on derivations to improve theory stability."
+                                    : "Theory saturation detected. Divert upcoming effort to intensive problem-solving sessions."}
+                           </p>
+                        </div>
+                        <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                           <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center"><CheckCircle className="w-4 h-4" /></div>
+                           Confidence Level: {stabilityIndex > 75 ? 'Superior' : stabilityIndex > 50 ? 'Stabilizing' : 'Vulnerable'}
+                        </div>
+                     </div>
                   </div>
                </div>
             </div>
@@ -249,7 +351,13 @@ const LearnModule: React.FC<LearnModuleProps> = ({ data, setData }) => {
                                  </div>
                               </div>
                            </div>
-                           <ChevronRight className="w-6 h-6 text-slate-200 group-hover/item:text-indigo-600 transition-all" />
+                           <div className="flex items-center gap-4">
+                              <div className="text-right hidden sm:block">
+                                 <div className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Total Study</div>
+                                 <div className="text-xs font-black text-slate-500">{Math.round((c.timeSpent || 0) / 60)}m</div>
+                              </div>
+                              <ChevronRight className="w-6 h-6 text-slate-200 group-hover/item:text-indigo-600 transition-all" />
+                           </div>
                         </div>
                       ))}
                     </div>

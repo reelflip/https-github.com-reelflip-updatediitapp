@@ -94,8 +94,8 @@ const getGenericNotes = (name: string, subject: string, unit: string) => `
 
 const MOCK_CHAPTERS: Chapter[] = [
   // --- PHYSICS (20 Units) ---
-  { id: 'p-units', subject: 'Physics', unit: 'UNIT 1: Units and Measurements', name: 'Units and Measurements', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED', notes: PHYSICS_UNITS_NOTES },
-  { id: 'p-kinematics', subject: 'Physics', unit: 'UNIT 2: Kinematics', name: 'Kinematics', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED', notes: getGenericNotes('Kinematics', 'Physics', 'Kinematics') },
+  { id: 'p-units', subject: 'Physics', unit: 'UNIT 1: Units and Measurements', name: 'Units and Measurements', progress: 85, accuracy: 72, timeSpent: 12600, timeSpentNotes: 3600, timeSpentVideos: 5400, timeSpentPractice: 3600, timeSpentTests: 0, status: 'LEARNING', notes: PHYSICS_UNITS_NOTES },
+  { id: 'p-kinematics', subject: 'Physics', unit: 'UNIT 2: Kinematics', name: 'Kinematics', progress: 40, accuracy: 65, timeSpent: 7200, timeSpentNotes: 2400, timeSpentVideos: 3600, timeSpentPractice: 1200, timeSpentTests: 0, status: 'LEARNING', notes: getGenericNotes('Kinematics', 'Physics', 'Kinematics') },
   { id: 'p-lom', subject: 'Physics', unit: 'UNIT 3: Laws of Motion', name: 'Laws of Motion', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED', notes: getGenericNotes('Laws of Motion', 'Physics', 'Mechanics') },
   { id: 'p-wep', subject: 'Physics', unit: 'UNIT 4: Work, Energy and Power', name: 'Work, Energy and Power', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED', notes: getGenericNotes('Work, Energy and Power', 'Physics', 'Mechanics') },
   { id: 'p-rotational', subject: 'Physics', unit: 'UNIT 5: Rotational Motion', name: 'Rotational Motion', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED', notes: getGenericNotes('Rotational Motion', 'Physics', 'Mechanics') },
@@ -116,8 +116,8 @@ const MOCK_CHAPTERS: Chapter[] = [
   { id: 'p-experimental-skills', subject: 'Physics', unit: 'UNIT 20: Experimental Skills', name: 'Experimental Skills', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED', notes: getGenericNotes('Experimental Skills', 'Physics', 'Lab') },
 
   // --- CHEMISTRY (20 Units) ---
-  { id: 'c-basic', subject: 'Chemistry', unit: 'UNIT 1: Some Basic Concepts in Chemistry', name: 'Basic Concepts of Chemistry', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED', notes: CHEMISTRY_BASIC_NOTES },
-  { id: 'c-atomic-structure', subject: 'Chemistry', unit: 'UNIT 2: Atomic Structure', name: 'Atomic Structure', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, notes: getGenericNotes('Atomic Structure', 'Chemistry', 'General') },
+  { id: 'c-basic', subject: 'Chemistry', unit: 'UNIT 1: Some Basic Concepts in Chemistry', name: 'Basic Concepts of Chemistry', progress: 100, accuracy: 88, timeSpent: 18000, timeSpentNotes: 3600, timeSpentVideos: 7200, timeSpentPractice: 3600, timeSpentTests: 3600, status: 'COMPLETED', notes: CHEMISTRY_BASIC_NOTES },
+  { id: 'c-atomic-structure', subject: 'Chemistry', unit: 'UNIT 2: Atomic Structure', name: 'Atomic Structure', progress: 15, accuracy: 50, status: 'LEARNING', timeSpent: 3600, timeSpentNotes: 1200, timeSpentVideos: 2400, timeSpentPractice: 0, timeSpentTests: 0, notes: getGenericNotes('Atomic Structure', 'Chemistry', 'General') },
   { id: 'c-bonding', subject: 'Chemistry', unit: 'UNIT 3: Chemical Bonding and Molecular Structure', name: 'Chemical Bonding', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, notes: getGenericNotes('Chemical Bonding', 'Chemistry', 'General') },
   { id: 'c-thermo', subject: 'Chemistry', unit: 'UNIT 4: Chemical Thermodynamics', name: 'Chemical Thermodynamics', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, notes: getGenericNotes('Thermodynamics', 'Chemistry', 'Physical') },
   { id: 'c-solutions', subject: 'Chemistry', unit: 'UNIT 5: Solutions', name: 'Solutions', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, notes: getGenericNotes('Solutions', 'Chemistry', 'Physical') },
@@ -138,7 +138,7 @@ const MOCK_CHAPTERS: Chapter[] = [
   { id: 'c-practical', subject: 'Chemistry', unit: 'UNIT 20: Principles Related to Practical Chemistry', name: 'Practical Chemistry Principles', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, notes: getGenericNotes('Practical Chemistry', 'Chemistry', 'Practical') },
 
   // --- MATHEMATICS (14 Units) ---
-  { id: 'm-sets-relations', subject: 'Mathematics', unit: 'UNIT 1: Sets, Relations and Functions', name: 'Sets, Relations and Functions', progress: 0, accuracy: 0, timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, status: 'NOT_STARTED', notes: MATHS_SETS_NOTES },
+  { id: 'm-sets-relations', subject: 'Mathematics', unit: 'UNIT 1: Sets, Relations and Functions', name: 'Sets, Relations and Functions', progress: 100, accuracy: 92, timeSpent: 14400, timeSpentNotes: 3600, timeSpentVideos: 3600, timeSpentPractice: 7200, timeSpentTests: 0, status: 'COMPLETED', notes: MATHS_SETS_NOTES },
   { id: 'm-complex', subject: 'Mathematics', unit: 'UNIT 2: Complex Numbers and Quadratic Equations', name: 'Complex Numbers and Quadratic Equations', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, notes: getGenericNotes('Complex Numbers', 'Mathematics', 'Algebra') },
   { id: 'm-matrices', subject: 'Mathematics', unit: 'UNIT 3: Matrices and Determinants', name: 'Matrices and Determinants', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, notes: getGenericNotes('Matrices', 'Mathematics', 'Algebra') },
   { id: 'm-pnc', subject: 'Mathematics', unit: 'UNIT 4: Permutations and Combinations', name: 'Permutations and Combinations', progress: 0, accuracy: 0, status: 'NOT_STARTED', timeSpent: 0, timeSpentNotes: 0, timeSpentVideos: 0, timeSpentPractice: 0, timeSpentTests: 0, notes: getGenericNotes('P&C', 'Mathematics', 'Algebra') },
@@ -248,7 +248,10 @@ export const INITIAL_STUDENT_DATA: StudentData = {
   email: 'ishu@gmail.com',
   timeSummary: { notes: 0, videos: 0, practice: 0, tests: 0 },
   psychometricHistory: [],
-  testHistory: [],
+  testHistory: [
+     { testId: 't1', testName: 'Diagnostic: Sets & Relations', score: 28, totalMarks: 40, accuracy: 70, date: '2024-06-01', chapterIds: ['m-sets-relations'], category: 'PRACTICE' },
+     { testId: 't2', testName: 'Unit Drill: Units & Dimensions', score: 32, totalMarks: 40, accuracy: 80, date: '2024-06-05', chapterIds: ['p-units'], category: 'PRACTICE' }
+  ],
   backlogs: [],
   flashcards: [
     { id: 'fc-1', question: "Dimensional formula of Planck's Constant (h)", answer: "ML²T⁻¹", subject: 'Physics', difficulty: 'EASY', type: 'Formula' },

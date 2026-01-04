@@ -324,6 +324,14 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
       sqlDump += `COMMIT;`;
       zip.file("api/master_schema_v22_3.sql", sqlDump);
 
+      // Added sample accounts to the ZIP bundle
+      let sampleSql = `-- IITGEEPREP Master Sample Accounts v22.0\n-- Import this after master_schema_v22.sql\n\n`;
+      sampleSql += `INSERT INTO users (id, name, email, role, institute, targetExam, targetYear, birthDate, gender, password_hash) VALUES \n`;
+      sampleSql += `('163110', 'Aryan Sharma', 'ishu@gmail.com', 'STUDENT', 'Allen Career Institute', 'JEE Main & Advanced', 2025, '2007-05-15', 'Male', 'password'),\n`;
+      sampleSql += `('USER-cGFyZW50QGR', 'Guardian One', 'parent@demo.in', 'PARENT', NULL, NULL, NULL, '1980-01-01', 'Female', 'password'),\n`;
+      sampleSql += `('USER-YWRtaW5AZGV', 'System Admin', 'admin@demo.in', 'ADMIN', NULL, NULL, NULL, '1990-01-01', 'Male', 'password');\n`;
+      zip.file("api/sample_accounts.sql", sampleSql);
+
       zip.file("api/database.php", `<?php
 session_start();
 define('DB_HOST', 'localhost');
@@ -506,13 +514,22 @@ class Response {
                      <AlertTriangle className="w-12 h-12 shrink-0" />
                      <div>
                         <h3 className="text-2xl font-black italic tracking-tight uppercase">Critical Persistence Patch</h3>
-                        <p className="text-slate-500 font-medium italic leading-relaxed">If you see #1054 error or data isn't saving across logins, copy and run this SQL command in your phpMyAdmin SQL tab <b>IMMEDIATELY:</b></p>
+                        <p className="text-slate-500 font-medium italic leading-relaxed">If you see #1054 error or analytics isn't saving, copy and run this SQL command in your phpMyAdmin SQL tab <b>IMMEDIATELY:</b></p>
                      </div>
                   </div>
                   <div className="bg-slate-950 p-8 rounded-3xl border border-slate-800">
                      <pre className="text-emerald-400 text-[10px] font-mono whitespace-pre-wrap leading-relaxed">
 {`-- RUN THIS IN PHPMYADMIN SQL TAB
+-- 1. Fix missing chapter_ids in test history
 ALTER TABLE test_results ADD COLUMN IF NOT EXISTS chapter_ids LONGTEXT AFTER category;
+
+-- 2. ADD GRANULAR ANALYTICS COLUMNS
+ALTER TABLE student_progress ADD COLUMN IF NOT EXISTS time_spent_notes INT DEFAULT 0;
+ALTER TABLE student_progress ADD COLUMN IF NOT EXISTS time_spent_videos INT DEFAULT 0;
+ALTER TABLE student_progress ADD COLUMN IF NOT EXISTS time_spent_practice INT DEFAULT 0;
+ALTER TABLE student_progress ADD COLUMN IF NOT EXISTS time_spent_tests INT DEFAULT 0;
+
+-- 3. Upgrade all data columns to handle high-density JSON data
 ALTER TABLE test_results MODIFY taken_at VARCHAR(100);
 ALTER TABLE users MODIFY connected_parent LONGTEXT;
 ALTER TABLE users MODIFY pending_invitations LONGTEXT;

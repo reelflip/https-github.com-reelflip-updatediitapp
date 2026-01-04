@@ -203,6 +203,7 @@ export const api = {
   },
 
   async register(data: any) {
+    const email = data.email.toLowerCase();
     if (this.getMode() === 'LIVE') {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}auth_register.php`, {
@@ -213,9 +214,16 @@ export const api = {
         return await safeJson(res);
       } catch(e) { return { success: false, error: "HANDSHAKE ERROR" }; }
     }
-    const id = generateStableId(data.email);
-    const newUser = { ...data, id, createdAt: new Date().toISOString() };
+
+    // Mock Mode Duplicate Check
     const registry = JSON.parse(localStorage.getItem(API_CONFIG.GLOBAL_USERS_KEY) || '[]');
+    const existing = registry.find((u: UserAccount) => u.email.toLowerCase() === email);
+    if (existing) {
+      return { success: false, error: "IDENTITY CONFLICT: This email is already registered in the Solaris vault." };
+    }
+
+    const id = generateStableId(email);
+    const newUser = { ...data, id, email, createdAt: new Date().toISOString() };
     registry.push(newUser);
     localStorage.setItem(API_CONFIG.GLOBAL_USERS_KEY, JSON.stringify(registry));
     localStorage.setItem(`jeepro_data_${id}`, JSON.stringify(getZeroStateStudentData(id, data.name)));
