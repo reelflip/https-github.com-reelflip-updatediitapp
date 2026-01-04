@@ -15,11 +15,12 @@
         
         // --- SOLARIS CORE CONFIGURATION ---
         // Edit 'dataSourceMode' below to switch between development and production.
+        // NOTE: The system will AUTOMATICALLY force 'LIVE' mode on any non-localhost domain.
         // Options: 
-        // 'MOCK' -> Sandbox Mode (Local Storage only, no database required)
+        // 'MOCK' -> Sandbox Mode (Local Storage only, works only on localhost)
         // 'LIVE' -> Production Mode (Connects to PHP/MySQL backend in 'api/' folder)
         window.SOLARIS_CONFIG = {
-            dataSourceMode: 'MOCK' 
+            dataSourceMode: 'LIVE' 
         };
     </script>
     <style>

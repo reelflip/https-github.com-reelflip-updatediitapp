@@ -63,7 +63,7 @@ const safeJson = async (response: Response) => {
     if (data.error === "Core Handshake Failed") {
       return {
         success: false,
-        error: "Database Connection Error: The PHP backend cannot connect to MySQL. Please edit 'api/config/database.php' with your correct database credentials."
+        error: "Database Connection Error: The PHP backend cannot connect to MySQL. Please edit 'api/database.php' (now in flat folder) with your correct database credentials."
       };
     }
     return data;
@@ -71,7 +71,7 @@ const safeJson = async (response: Response) => {
     if (text.includes('<!DOCTYPE html>') || text.includes('<html>')) {
       return { 
         success: false, 
-        error: "Server Route Fault: The server returned an HTML page (likely a 404 or 500 error) instead of JSON. Ensure the 'api/' folder is in your web root." 
+        error: "Server Route Fault: The server returned an HTML page instead of JSON. Ensure the 'api/' folder is in your web root." 
       };
     }
     return { success: false, error: "Protocol Mismatch: Backend returned invalid data stream." };
@@ -80,7 +80,14 @@ const safeJson = async (response: Response) => {
 
 export const api = {
   getMode: (): 'MOCK' | 'LIVE' => {
-    // Priority 1: Direct configuration in index.html
+    // HARD LINE: Force LIVE mode if not on localhost
+    const isLocal = window.location.hostname === 'localhost' || 
+                    window.location.hostname === '127.0.0.1' || 
+                    window.location.hostname.startsWith('192.168.');
+    
+    if (!isLocal) return 'LIVE';
+
+    // Priority 1: Direct configuration in index.html (for local testing)
     if (window.SOLARIS_CONFIG && window.SOLARIS_CONFIG.dataSourceMode) {
       return window.SOLARIS_CONFIG.dataSourceMode;
     }
