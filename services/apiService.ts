@@ -58,12 +58,17 @@ const getZeroStateStudentData = (id: string, name: string): StudentData => ({
 const safeJson = async (response: Response) => {
   const text = await response.text();
   try {
-    if (!response.ok) {
-      return { success: false, error: `HTTP ${response.status}: Ensure the 'api/' folder is uploaded correctly.` };
+    const data = JSON.parse(text);
+    // If response is not ok but returned valid JSON (e.g. 409 Conflict), use the error from JSON
+    if (!response.ok && data.error) {
+        return { success: false, error: data.error };
     }
-    return JSON.parse(text);
+    return data;
   } catch (e) {
-    return { success: false, error: "DATA ERROR: The server returned an invalid response. Run the SQL Patch." };
+    if (!response.ok) {
+        return { success: false, error: `UPLINK FAULT (${response.status}): Ensure the 'api/' folder and PHP scripts are deployed.` };
+    }
+    return { success: false, error: "PROTOCOL MISMATCH: The server returned an invalid response. Run the Critical Persistence Patch in Admin Hub." };
   }
 };
 
@@ -212,7 +217,7 @@ export const api = {
           body: JSON.stringify(data)
         });
         return await safeJson(res);
-      } catch(e) { return { success: false, error: "HANDSHAKE ERROR" }; }
+      } catch(e) { return { success: false, error: "HANDSHAKE ERROR: Communication failure." }; }
     }
 
     // Mock Mode Duplicate Check

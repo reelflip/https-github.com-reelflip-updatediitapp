@@ -316,6 +316,8 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
       sqlDump += `SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";\nSTART TRANSACTION;\nSET time_zone = "+00:00";\n\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS users (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255) UNIQUE, role VARCHAR(50), institute VARCHAR(255), targetExam VARCHAR(255), targetYear INT, birthDate DATE, gender VARCHAR(20), password_hash VARCHAR(255), connected_parent LONGTEXT DEFAULT NULL, pending_invitations LONGTEXT DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS chapters (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), subject VARCHAR(50), unit VARCHAR(255), notes LONGTEXT, videoUrl VARCHAR(512)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
+      sqlDump += `CREATE TABLE IF NOT EXISTS questions (id VARCHAR(100) PRIMARY KEY, topicId VARCHAR(100), subject VARCHAR(50), text TEXT, options LONGTEXT, correctAnswer INT, explanation TEXT, difficulty VARCHAR(50)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
+      sqlDump += `CREATE TABLE IF NOT EXISTS mock_tests (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), duration INT, totalMarks INT, category VARCHAR(50), difficulty VARCHAR(50), questionIds LONGTEXT, chapterIds LONGTEXT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS student_progress (student_id VARCHAR(100), chapter_id VARCHAR(100), progress INT DEFAULT 0, accuracy INT DEFAULT 0, status VARCHAR(50), time_spent INT DEFAULT 0, time_spent_notes INT DEFAULT 0, time_spent_videos INT DEFAULT 0, time_spent_practice INT DEFAULT 0, time_spent_tests INT DEFAULT 0, PRIMARY KEY (student_id, chapter_id), FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS test_results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(100), test_id VARCHAR(100), test_name VARCHAR(255), score INT, total_marks INT, accuracy INT, category VARCHAR(50), chapter_ids LONGTEXT DEFAULT NULL, taken_at VARCHAR(100), FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS messages (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255), subject VARCHAR(255), message TEXT, date VARCHAR(100), is_read BOOLEAN DEFAULT FALSE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
@@ -371,6 +373,22 @@ class Response {
 } ?>`);
 
       const endpoints = [
+          { name: "auth_register.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$in = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO();
+          try {
+            \$id = 'USER-' . substr(base64_encode(strtolower(\$in['email'])), 0, 10);
+            \$st = \$pdo->prepare("INSERT INTO users (id, name, email, role, institute, targetExam, targetYear, birthDate, gender, password_hash) VALUES (?,?,?,?,?,?,?,?,?,?)");
+            \$st->execute([\$id, \$in['name'], strtolower(\$in['email']), \$in['role'], \$in['institute'] ?? null, \$in['targetExam'] ?? null, \$in['targetYear'] ?? null, \$in['birthDate'] ?? null, \$in['gender'] ?? null, \$in['password']]);
+            Response::success(['user' => ['id' => \$id, 'name' => \$in['name'], 'email' => \$in['email'], 'role' => \$in['role']]]);
+          } catch(PDOException \$e) {
+            if(\$e->errorInfo[1] == 1062) Response::json(['success' => false, 'error' => 'IDENTITY CONFLICT: This email is already registered in the Solaris vault.'], 409);
+            Response::json(['success' => false, 'error' => 'DATABASE ERROR: ' . \$e->getMessage()], 500);
+          } ?>` },
+          { name: "auth_login.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$in = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO();
+          \$u = \$pdo->prepare("SELECT * FROM users WHERE email = ? AND password_hash = ?");
+          \$u->execute([strtolower(\$in['email']), \$in['password']]);
+          \$user = \$u->fetch();
+          if(\$user) Response::success(['user' => \$user]);
+          Response::json(['success' => false, 'error' => 'INVALID CREDENTIALS: Key handshake failed.'], 401); ?>` },
           { name: "get_dashboard.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$id = \$_GET['id'] ?? ''; \$pdo = getPDO(); 
           \$u = \$pdo->prepare("SELECT * FROM users WHERE id = ?"); \$u->execute([\$id]); \$user = \$u->fetch(); 
           if(!\$user) Response::json(['success'=>false, 'error'=>'User not found']);
@@ -520,16 +538,20 @@ class Response {
                   <div className="bg-slate-950 p-8 rounded-3xl border border-slate-800">
                      <pre className="text-emerald-400 text-[10px] font-mono whitespace-pre-wrap leading-relaxed">
 {`-- RUN THIS IN PHPMYADMIN SQL TAB
--- 1. Fix missing chapter_ids in test history
+-- 1. Fix missing content tables
+CREATE TABLE IF NOT EXISTS questions (id VARCHAR(100) PRIMARY KEY, topicId VARCHAR(100), subject VARCHAR(50), text TEXT, options LONGTEXT, correctAnswer INT, explanation TEXT, difficulty VARCHAR(50)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE IF NOT EXISTS mock_tests (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), duration INT, totalMarks INT, category VARCHAR(50), difficulty VARCHAR(50), questionIds LONGTEXT, chapterIds LONGTEXT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 2. Fix missing chapter_ids in test history
 ALTER TABLE test_results ADD COLUMN IF NOT EXISTS chapter_ids LONGTEXT AFTER category;
 
--- 2. ADD GRANULAR ANALYTICS COLUMNS
+-- 3. ADD GRANULAR ANALYTICS COLUMNS
 ALTER TABLE student_progress ADD COLUMN IF NOT EXISTS time_spent_notes INT DEFAULT 0;
 ALTER TABLE student_progress ADD COLUMN IF NOT EXISTS time_spent_videos INT DEFAULT 0;
 ALTER TABLE student_progress ADD COLUMN IF NOT EXISTS time_spent_practice INT DEFAULT 0;
 ALTER TABLE student_progress ADD COLUMN IF NOT EXISTS time_spent_tests INT DEFAULT 0;
 
--- 3. Upgrade all data columns to handle high-density JSON data
+-- 4. Upgrade all data columns to handle high-density JSON data
 ALTER TABLE test_results MODIFY taken_at VARCHAR(100);
 ALTER TABLE users MODIFY connected_parent LONGTEXT;
 ALTER TABLE users MODIFY pending_invitations LONGTEXT;
