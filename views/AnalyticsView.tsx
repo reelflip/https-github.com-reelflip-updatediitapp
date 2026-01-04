@@ -14,24 +14,27 @@ import {
 
 const AnalyticsView: React.FC<{ data: StudentData }> = ({ data }) => {
   const subjects: Subject[] = ['Physics', 'Chemistry', 'Mathematics'];
-  const chapters = data.chapters || [];
-  const testHistory = data.testHistory || [];
+  const chapters = data?.chapters || [];
+  const testHistory = data?.testHistory || [];
   
   // 1. Subject Mastery Data
   const subjectMastery = useMemo(() => subjects.map(s => {
-    const sChapters = chapters.filter(c => c.subject === s);
+    const sChapters = chapters.filter(c => c && c.subject === s);
     const avgProgress = sChapters.length > 0 ? Math.round(sChapters.reduce((acc, c) => acc + (c.progress || 0), 0) / sChapters.length) : 0;
     const avgAccuracy = sChapters.length > 0 ? Math.round(sChapters.reduce((acc, c) => acc + (c.accuracy || 0), 0) / sChapters.length) : 0;
     
-    // Filter test results for this subject (assuming results link to chapters)
-    const subjectTests = testHistory.filter(t => t.chapterIds.some(id => chapters.find(ch => ch.id === id)?.subject === s));
-    const mockAccuracy = subjectTests.length > 0 ? Math.round(subjectTests.reduce((acc, t) => acc + t.accuracy, 0) / subjectTests.length) : 0;
+    // Safety check on chapterIds and find results
+    const subjectTests = testHistory.filter(t => (t.chapterIds || []).some(id => {
+        const found = chapters.find(ch => ch.id === id);
+        return found && found.subject === s;
+    }));
+    const mockAccuracy = subjectTests.length > 0 ? Math.round(subjectTests.reduce((acc, t) => acc + (t.accuracy || 0), 0) / subjectTests.length) : 0;
 
     return { 
       subject: s, 
       progress: avgProgress, 
       accuracy: avgAccuracy,
-      mockAccuracy: mockAccuracy || avgAccuracy - 5, // Fallback logic for demo
+      mockAccuracy: mockAccuracy || (avgAccuracy > 5 ? avgAccuracy - 5 : 0),
       chapterCount: sChapters.length,
       masteredCount: sChapters.filter(c => c.status === 'COMPLETED').length
     };
@@ -40,14 +43,14 @@ const AnalyticsView: React.FC<{ data: StudentData }> = ({ data }) => {
   // 2. Efficiency Index (Return on Time)
   const efficiencyData = useMemo(() => {
     return chapters
-      .filter(c => c.timeSpent > 0)
+      .filter(c => c && (c.timeSpent || 0) > 0)
       .map(c => {
-        const hours = c.timeSpent / 3600;
-        const rot = hours > 0 ? (c.accuracy / hours).toFixed(1) : '0'; // Accuracy points per hour
+        const hours = (c.timeSpent || 0) / 3600;
+        const rot = hours > 0 ? ((c.accuracy || 0) / hours).toFixed(1) : '0';
         return {
-          name: c.name,
+          name: c.name || 'Unknown',
           subject: c.subject,
-          accuracy: c.accuracy,
+          accuracy: c.accuracy || 0,
           time: hours.toFixed(1),
           rot: parseFloat(rot)
         };
@@ -58,13 +61,18 @@ const AnalyticsView: React.FC<{ data: StudentData }> = ({ data }) => {
 
   // 3. Performance Velocity (Test History Trend)
   const velocityData = useMemo(() => {
+    if (!testHistory || testHistory.length === 0) return [];
     return [...testHistory]
       .reverse()
-      .map((t, i) => ({
-        index: i + 1,
-        score: Math.round((t.score / t.totalMarks) * 100),
-        name: t.testName
-      }));
+      .map((t, i) => {
+        const total = t.totalMarks || 1; // Prevent div by 0
+        const score = t.score || 0;
+        return {
+            index: i + 1,
+            score: Math.round((score / total) * 100),
+            name: t.testName || 'Test'
+        };
+      });
   }, [testHistory]);
 
   // 4. Activity Breakdown
@@ -74,12 +82,14 @@ const AnalyticsView: React.FC<{ data: StudentData }> = ({ data }) => {
     const totalPracticeTime = chapters.reduce((acc, c) => acc + (c.timeSpentPractice || 0), 0);
     const totalTestTime = chapters.reduce((acc, c) => acc + (c.timeSpentTests || 0), 0);
 
-    return [
+    const dataArr = [
       { name: 'Theory (Notes)', value: totalNotesTime, color: '#6366f1' },
       { name: 'Lectures (Video)', value: totalVideoTime, color: '#f59e0b' },
       { name: 'Drills (Practice)', value: totalPracticeTime, color: '#10b981' },
       { name: 'Mock Exams', value: totalTestTime, color: '#ef4444' }
     ].filter(a => a.value > 0);
+
+    return dataArr.length > 0 ? dataArr : [{ name: 'No Activity', value: 1, color: '#f1f5f9' }];
   }, [chapters]);
 
   const totalEffort = chapters.reduce((a,c) => a + (c.timeSpent || 0), 0);
@@ -118,24 +128,30 @@ const AnalyticsView: React.FC<{ data: StudentData }> = ({ data }) => {
              </div>
           </div>
           <div className="h-80 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={velocityData}>
-                <defs>
-                  <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="index" hide />
-                <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'bold', fill: '#94a3b8'}} />
-                <Tooltip 
-                  contentStyle={{borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)'}}
-                  labelStyle={{display: 'none'}}
-                />
-                <Area type="monotone" dataKey="score" stroke="#6366f1" strokeWidth={4} fillOpacity={1} fill="url(#colorScore)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {velocityData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={velocityData}>
+                  <defs>
+                    <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1}/>
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="index" hide />
+                  <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 'bold', fill: '#94a3b8'}} />
+                  <Tooltip 
+                    contentStyle={{borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)'}}
+                    labelStyle={{display: 'none'}}
+                  />
+                  <Area type="monotone" dataKey="score" stroke="#6366f1" strokeWidth={4} fillOpacity={1} fill="url(#colorScore)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-slate-300 font-black uppercase text-[10px] tracking-widest border-2 border-dashed border-slate-50 rounded-3xl">
+                 Awaiting Test Data Stream
+              </div>
+            )}
           </div>
         </div>
 
@@ -197,7 +213,7 @@ const AnalyticsView: React.FC<{ data: StudentData }> = ({ data }) => {
         </div>
 
         {/* --- EFFICIENCY INDEX --- */}
-        <div className="lg:col-span-5 bg-white p-10 md:p-14 rounded-[4rem] border border-slate-200 shadow-sm flex flex-col space-y-10">
+        <div className="lg:col-span-5 bg-white p-10 md:p-14 rounded-[4rem] border border-slate-200 shadow-sm space-y-10">
            <div className="space-y-2">
               <h3 className="text-2xl font-black text-slate-900 tracking-tight italic uppercase">High-Yield Assets.</h3>
               <p className="text-slate-400 text-sm font-medium italic">Chapters ranked by Return-on-Time (ROT) Index.</p>
@@ -255,15 +271,17 @@ const AnalyticsView: React.FC<{ data: StudentData }> = ({ data }) => {
            </div>
 
            <div className="grid grid-cols-2 gap-4">
-              {activityDistribution.map((d, i) => (
+              {activityDistribution.length > 1 ? activityDistribution.map((d, i) => (
                 <div key={i} className="p-4 bg-white/5 border border-white/10 rounded-2xl">
                    <div className="flex items-center gap-3 mb-1.5">
                       <div className="w-2 h-2 rounded-full" style={{backgroundColor: d.color}}></div>
                       <span className="text-[8px] font-black uppercase tracking-widest text-slate-500 truncate">{d.name.split(' ')[0]}</span>
                    </div>
-                   <div className="text-xl font-black italic">{Math.round(d.value / 3600)}h</div>
+                   <div className="text-xl font-black italic">{Math.round((d.value || 0) / 3600)}h</div>
                 </div>
-              ))}
+              )) : (
+                <div className="col-span-2 text-center text-slate-500 text-[10px] font-bold uppercase py-4">No Time Logs Recorded</div>
+              )}
            </div>
         </div>
 
@@ -294,7 +312,7 @@ const AnalyticsView: React.FC<{ data: StudentData }> = ({ data }) => {
                     <p className="text-xs text-slate-500 font-medium leading-relaxed">System identifies <b>Mathematics</b> as the primary stability risk. Focus on 'Limits & Continuity' integration.</p>
                  </div>
               </div>
-              <button className="px-8 py-3.5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-indigo-600 transition-all flex items-center gap-3">
+              <button onClick={() => window.dispatchEvent(new CustomEvent('changeTab', { detail: 'mistakes' }))} className="px-8 py-3.5 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-indigo-600 transition-all flex items-center gap-3">
                  View Detailed Mistakes <ChevronRight className="w-4 h-4" />
               </button>
            </div>
