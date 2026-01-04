@@ -3,14 +3,13 @@ import React, { useState } from 'react';
 import { UserRole, UserAccount } from '../types';
 import { api } from '../services/apiService';
 import { 
-  Mail, Lock, Loader2, User, KeyRound, CheckCircle2, Eye, EyeOff, ShieldCheck, 
-  Target, Bookmark, Award, Building, Calendar, Users, Briefcase, Info, Heart, Cpu,
-  Layers, Sparkles, MonitorCheck, Zap, ChevronRight, AlertCircle
+  Mail, Lock, Loader2, User, KeyRound, CheckCircle2, Eye, EyeOff, MonitorCheck, 
+  Building, Calendar, Users, ChevronRight, AlertCircle, Zap, Target, Layers, Cpu
 } from 'lucide-react';
 
 declare global {
   interface Window {
-    HIDE_DEMO_SIGNIN?: boolean;
+    HIDE_DEMO_SIGNIN?: boolean | string;
   }
 }
 
@@ -61,7 +60,7 @@ const SelectField = ({ icon: Icon, label, options, value, onChange }: any) => (
   </div>
 );
 
-const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) => {
+const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess }) => {
   const [isAuthMode, setIsAuthMode] = useState<'login' | 'register'>('login');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
@@ -114,19 +113,6 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
     }
   };
 
-  const loginAsDemo = async (email: string) => {
-    setIsProcessing(true);
-    setAuthError(null);
-    const result = await api.login({ email, password: 'password' }); 
-    if (result.success && result.user) {
-      setIsVerified(true);
-      setTimeout(() => onLoginSuccess(result.user), 1200);
-    } else {
-      setAuthError("Demo entry restricted.");
-      setIsProcessing(false);
-    }
-  };
-
   if (isVerified) {
     return (
       <div className="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center space-y-6 animate-in fade-in duration-500">
@@ -140,8 +126,6 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
       </div>
     );
   }
-
-  const showDemoControls = !window.HIDE_DEMO_SIGNIN;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#fcfdfe] relative selection:bg-indigo-100 overflow-hidden font-sans animate-in fade-in duration-1000">
@@ -157,7 +141,7 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
                 Analytical <br /><span className="text-indigo-600">Preparation.</span>
               </h1>
               <p className="text-slate-500 text-xl font-medium max-w-lg italic leading-relaxed">
-                Log in to access your syllabus performance metrics and structured study environment.
+                Log in to access your performance metrics, syllabus heatmaps, and structured study environment.
               </p>
            </div>
 
@@ -210,11 +194,6 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
                   <div className="flex items-center gap-3">
                     <AlertCircle className="w-4 h-4 shrink-0" /> {authError}
                   </div>
-                  {(authError.includes("Server Configuration") || authError.includes("returned HTML") || authError.includes("PROTOCOL MISMATCH")) && (
-                    <div className="text-[9px] font-black uppercase text-rose-400 pl-7">
-                      Hint: Database conflict detected. Ensure you are using a unique email address or run the persistence patch.
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -285,19 +264,6 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
                   </p>
                 </div>
               </div>
-
-              {showDemoControls && (
-                <div className="pt-8 border-t border-slate-100 space-y-4">
-                   <div className="text-center text-[9px] font-black uppercase text-slate-300 tracking-[0.3em]">Access Simulation Points</div>
-                   <div className="flex gap-2">
-                      {[{ role: UserRole.STUDENT, email: 'ishu@gmail.com', label: 'Student' }, { role: UserRole.PARENT, email: 'parent@demo.in', label: 'Parent' }, { role: UserRole.ADMIN, email: 'admin@demo.in', label: 'Admin' }].map(demo => (
-                        <button key={demo.label} onClick={() => loginAsDemo(demo.email)} className="flex-1 py-3 bg-slate-50 rounded-xl text-[9px] font-black uppercase tracking-widest text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
-                           {demo.label}
-                        </button>
-                      ))}
-                   </div>
-                </div>
-              )}
            </div>
         </div>
       </main>

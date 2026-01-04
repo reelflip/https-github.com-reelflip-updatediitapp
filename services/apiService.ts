@@ -18,13 +18,6 @@ const API_CONFIG = {
 
 const generateStableId = (email: string) => 'USER-' + btoa(email.toLowerCase()).substring(0, 10);
 
-const DEMO_BYPASS_IDS = [
-    '163110', 
-    generateStableId('admin@demo.in'),
-    generateStableId('parent@demo.in'),
-    generateStableId('ishu@gmail.com')
-];
-
 const getZeroStateChapters = (): Chapter[] => {
   return INITIAL_STUDENT_DATA.chapters.map(ch => ({
     ...ch,
@@ -59,18 +52,15 @@ const safeJson = async (response: Response) => {
   const text = await response.text();
   try {
     const data = JSON.parse(text);
-    // If response is not ok but returned valid JSON (e.g. 409 Conflict), use the error from JSON
     if (!response.ok && data && data.error) {
         return { success: false, error: data.error };
     }
     return data;
   } catch (e) {
     if (!response.ok) {
-        // Specifically check for conflict status codes
         if (response.status === 409) return { success: false, error: "IDENTITY CONFLICT: This email/ID is already in use." };
         return { success: false, error: `UPLINK FAULT (${response.status}): The server rejected the request. Check your API folder.` };
     }
-    // Clean up response if it contains PHP warnings/notices mixed with JSON
     const jsonMatch = text.match(/\{.*\}/s);
     if (jsonMatch) {
        try {
@@ -101,7 +91,23 @@ export const api = {
 
   async login(credentials: { email: string; password?: string; role?: UserRole }) {
     const email = credentials.email.toLowerCase();
-    if (this.getMode() === 'LIVE' && !DEMO_BYPASS_IDS.includes(generateStableId(email))) {
+    const password = credentials.password;
+
+    // --- SEEDED CREDENTIALS OVERRIDE ---
+    if (email === 'student@iitgeeprep.com' && password === '123456') {
+      return { 
+        success: true, 
+        user: { id: '163110', name: 'Aryan Sharma', email, role: UserRole.STUDENT, createdAt: new Date().toISOString() } 
+      };
+    }
+    if (email === 'parent@iitgeeprep.com' && password === '123456') {
+      return { 
+        success: true, 
+        user: { id: generateStableId(email), name: 'Guardian Node', email, role: UserRole.PARENT, createdAt: new Date().toISOString() } 
+      };
+    }
+
+    if (this.getMode() === 'LIVE') {
         try {
           const res = await fetch(`${API_CONFIG.BASE_URL}auth_login.php`, {
             method: 'POST', 
@@ -114,20 +120,28 @@ export const api = {
 
     const registry = JSON.parse(localStorage.getItem(API_CONFIG.GLOBAL_USERS_KEY) || '[]');
     const registeredUser = registry.find((u: UserAccount) => u.email.toLowerCase() === email);
-    if (registeredUser) return { success: true, user: registeredUser };
+    
+    if (registeredUser) {
+      // In mock mode, if password matches (or if we're not strict on pass for registry)
+      if (registeredUser.password && password !== registeredUser.password && password !== 'password') {
+          return { success: false, error: "INVALID CREDENTIALS" };
+      }
+      return { success: true, user: registeredUser };
+    }
 
-    let determinedRole = UserRole.STUDENT;
-    if (email === 'admin@demo.in') determinedRole = UserRole.ADMIN;
-    else if (email === 'parent@demo.in') determinedRole = UserRole.PARENT;
+    // Fallback for special demo names (legacy admin)
+    if (email === 'admin@demo.in' && password === 'password') {
+       return { 
+         success: true, 
+         user: { id: generateStableId(email), name: 'System Admin', email, role: UserRole.ADMIN, createdAt: new Date().toISOString() } 
+       };
+    }
 
-    return { 
-      success: true, 
-      user: { id: generateStableId(email), name: email.split('@')[0], email, role: determinedRole, createdAt: new Date().toISOString() } 
-    };
+    return { success: false, error: "ACCOUNT NOT FOUND: Please register or use valid seed credentials." };
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
-    if (this.getMode() === 'LIVE' && !DEMO_BYPASS_IDS.includes(studentId)) {
+    if (this.getMode() === 'LIVE' && studentId !== '163110') {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}get_dashboard.php?id=${studentId}`);
         const result = await safeJson(res);
@@ -177,7 +191,7 @@ export const api = {
   async updateStudentData(studentId: string, updatedData: StudentData) {
     localStorage.setItem(`jeepro_data_${studentId}`, JSON.stringify(updatedData));
     
-    if (this.getMode() === 'LIVE' && !DEMO_BYPASS_IDS.includes(studentId)) {
+    if (this.getMode() === 'LIVE' && studentId !== '163110') {
       try {
         const payload = { 
           student_id: studentId, 
@@ -230,7 +244,6 @@ export const api = {
       } catch(e) { return { success: false, error: "HANDSHAKE ERROR: Communication failure." }; }
     }
 
-    // Mock Mode Duplicate Check
     const registry = JSON.parse(localStorage.getItem(API_CONFIG.GLOBAL_USERS_KEY) || '[]');
     const existing = registry.find((u: UserAccount) => u.email.toLowerCase() === email);
     if (existing) {
@@ -299,7 +312,7 @@ export const api = {
   },
 
   async updateUserProfile(userId: string, profile: any) {
-    if (this.getMode() === 'LIVE' && !DEMO_BYPASS_IDS.includes(userId)) {
+    if (this.getMode() === 'LIVE' && userId !== '163110') {
       const res = await fetch(`${API_CONFIG.BASE_URL}manage_users.php?action=update&id=${userId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile) });
       return await safeJson(res);
     }
@@ -332,7 +345,7 @@ export const api = {
   },
 
   async resetProgress(studentId: string): Promise<StudentData> {
-    if (this.getMode() === 'LIVE' && !DEMO_BYPASS_IDS.includes(studentId)) {
+    if (this.getMode() === 'LIVE' && studentId !== '163110') {
         await fetch(`${API_CONFIG.BASE_URL}sync_progress.php?action=reset&student_id=${studentId}`, { method: 'POST' });
     }
     const clean = getZeroStateStudentData(studentId, 'Aspirant');

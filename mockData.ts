@@ -238,14 +238,13 @@ const generateAcademicBatch = (topicId: string, subject: Subject, baseTopic: str
 
 const ALL_QUESTIONS: Question[] = [...REAL_QUESTIONS];
 MOCK_CHAPTERS.forEach(ch => {
-    // Fill up the rest with contextual academic questions
     ALL_QUESTIONS.push(...generateAcademicBatch(ch.id, ch.subject, ch.name, ALL_QUESTIONS.length));
 });
 
 export const INITIAL_STUDENT_DATA: StudentData = {
   id: '163110',
   name: 'Aryan Sharma',
-  email: 'ishu@gmail.com',
+  email: 'student@iitgeeprep.com',
   timeSummary: { notes: 0, videos: 0, practice: 0, tests: 0 },
   psychometricHistory: [],
   testHistory: [

@@ -1,8 +1,9 @@
 
 import React from 'react';
 import { 
-  Target, Brain, Activity, RotateCw, Layers, ShieldCheck, Zap, Sparkles, Users, 
-  Clock, TrendingUp, ShieldAlert, BookOpen, GraduationCap, ArrowRight, Cpu, FileBarChart, MonitorCheck
+  Target, Brain, Activity, Layers, ShieldCheck, Zap, 
+  Clock, TrendingUp, ShieldAlert, BookOpen, GraduationCap, 
+  ArrowRight, Cpu, FileBarChart, MonitorCheck
 } from 'lucide-react';
 
 const FeaturesModule: React.FC = () => {
@@ -12,14 +13,14 @@ const FeaturesModule: React.FC = () => {
       <section className="py-20 md:py-28 px-6 md:px-12 border-b border-slate-100 text-center">
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="inline-flex items-center gap-3 px-5 py-1.5 bg-indigo-50 border border-indigo-100 rounded-full text-[10px] font-black uppercase tracking-[0.3em] text-indigo-600">
-             <MonitorCheck className="w-4 h-4" /> Comprehensive preparation Toolkit
+             <MonitorCheck className="w-4 h-4" /> Professional Academic Toolkit
           </div>
           <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter uppercase italic font-space">
             Advanced <br />
-            <span className="text-indigo-600">Tracking Features.</span>
+            <span className="text-indigo-600">Preparation Features.</span>
           </h1>
           <p className="text-slate-500 text-lg max-w-2xl mx-auto italic font-medium">
-            Everything you need to monitor, analyze, and optimize your preparation for IIT-JEE and national engineering entrances.
+            A comprehensive suite of tools designed to monitor, analyze, and optimize your preparation for IIT-JEE, NEET, and national engineering entrances.
           </p>
         </div>
       </section>
@@ -30,38 +31,38 @@ const FeaturesModule: React.FC = () => {
           {[
             { 
               icon: Layers, 
-              label: 'Interactive Syllabus Tracker', 
-              desc: 'Manage over 96 units in Physics, Chemistry, and Math. Real-time progress bars provide a high-level view of your current coverage depth.',
+              label: 'Smart Syllabus Tracker', 
+              desc: 'Manage over 100 high-yield chapters in Physics, Chemistry, and Math. Real-time progress indicators track your journey from basics to mastery.',
               color: 'indigo'
             },
             { 
               icon: ShieldAlert, 
               label: 'Mistake Diagnostics', 
-              desc: 'Go beyond the score. Log every error from mock tests to distinguish between calculation slips and fundamental conceptual gaps.',
+              desc: 'Identify recurring patterns in your errors. Distinguish between calculation slips, conceptual gaps, and time-pressure failures.',
               color: 'rose'
             },
             { 
               icon: Activity, 
               label: 'Accuracy Stability Index', 
-              desc: 'A unique metric that correlates your study effort with performance accuracy to determine which topics are "stable" or "drifting".',
+              desc: 'A unique performance metric that correlates study time with accuracy to determine which topics are "stable" versus "drifting".',
               color: 'emerald'
             },
             { 
               icon: Clock, 
-              label: 'Timed Practice Drills', 
-              desc: 'Build solving speed for JEE Main and BITSAT. Our engine tracks time-per-question to identify where your efficiency lags.',
+              label: 'Timed Practice Engine', 
+              desc: 'Build solving speed for JEE Main and BITSAT with integrated timers that track your seconds-per-question metrics.',
               color: 'blue'
             },
             { 
               icon: Brain, 
-              label: 'Cognitive Wellness Audit', 
-              desc: 'Track mental fatigue, focus stamina, and exam anxiety through psychometric pulses to maintain peak performance during the long prep season.',
+              label: 'Mindset Calibration', 
+              desc: 'Track exam anxiety, focus stamina, and motivation levels through psychometric pulses to maintain peak psychological performance.',
               color: 'amber'
             },
             { 
               icon: ShieldCheck, 
-              label: 'Parent-Student Sync', 
-              desc: 'Secure visibility for guardians to monitor progress milestones and performance trends through a private handshake protocol.',
+              label: 'Parent HANDSHAKE', 
+              desc: 'Establish a secure uplink for guardians to monitor progress milestones and performance trajectories through private analytics.',
               color: 'slate'
             },
           ].map((f, i) => (
@@ -73,7 +74,7 @@ const FeaturesModule: React.FC = () => {
               <p className="text-slate-500 text-sm leading-relaxed italic mb-8">"{f.desc}"</p>
               <div className="h-px bg-slate-50 w-full mb-6"></div>
               <div className="text-[9px] font-black uppercase text-indigo-600 tracking-widest flex items-center gap-2">
-                Operational Intelligence <ArrowRight className="w-3 h-3" />
+                Operational Tech <ArrowRight className="w-3 h-3" />
               </div>
             </article>
           ))}
@@ -84,9 +85,9 @@ const FeaturesModule: React.FC = () => {
       <section className="py-20 px-6 md:px-12 bg-slate-50 border-y border-slate-100">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16">
           <div className="lg:w-1/2 space-y-8">
-            <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-tight">Data-Driven <br /><span className="text-indigo-600">Decision Making.</span></h2>
+            <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-tight">Data-Driven <br /><span className="text-indigo-600">Excellence.</span></h2>
             <p className="text-slate-600 text-lg leading-relaxed italic font-medium">
-              Eliminate guesswork. Our platform converts your study history into visual heatmaps and performance deltas, enabling you to pivot your strategy based on evidence.
+              Eliminate guesswork from your preparation. Our platform converts your study history into visual heatmaps and performance deltas, allowing you to pivot your strategy based on evidence.
             </p>
             <div className="grid grid-cols-2 gap-4">
                {['Syllabus Velocity', 'Accuracy Deltas', 'Retention Grids', 'Stress Buffer Logs'].map(tag => (
@@ -102,9 +103,9 @@ const FeaturesModule: React.FC = () => {
                 </div>
                 <div className="space-y-6">
                    {[
-                     { label: 'Syllabus Stability', val: 72, color: 'bg-indigo-600' },
-                     { label: 'Numerical Precision', val: 85, color: 'bg-emerald-500' },
-                     { label: 'Time Management', val: 58, color: 'bg-amber-500' }
+                     { label: 'Syllabus Stability', val: 78, color: 'bg-indigo-600' },
+                     { label: 'Problem Precision', val: 84, color: 'bg-emerald-500' },
+                     { label: 'Time Management', val: 62, color: 'bg-amber-500' }
                    ].map(bar => (
                      <div key={bar.label} className="space-y-2">
                         <div className="flex justify-between text-[10px] font-black uppercase text-slate-500 tracking-widest"><span>{bar.label}</span><span>{bar.val}%</span></div>
