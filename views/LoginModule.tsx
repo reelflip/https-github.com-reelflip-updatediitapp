@@ -8,6 +8,12 @@ import {
   Layers, Sparkles, MonitorCheck, Zap, ChevronRight, AlertCircle
 } from 'lucide-react';
 
+declare global {
+  interface Window {
+    HIDE_DEMO_SIGNIN?: boolean;
+  }
+}
+
 interface LoginModuleProps {
   onLoginSuccess: (user: UserAccount) => void;
   onCancel: () => void;
@@ -111,7 +117,6 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
   const loginAsDemo = async (email: string) => {
     setIsProcessing(true);
     setAuthError(null);
-    // loginAsDemo now prioritized in apiService.ts to always work
     const result = await api.login({ email, password: 'password' }); 
     if (result.success && result.user) {
       setIsVerified(true);
@@ -135,6 +140,8 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
       </div>
     );
   }
+
+  const showDemoControls = !window.HIDE_DEMO_SIGNIN;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#fcfdfe] relative selection:bg-indigo-100 overflow-hidden font-sans animate-in fade-in duration-1000">
@@ -203,9 +210,9 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
                   <div className="flex items-center gap-3">
                     <AlertCircle className="w-4 h-4 shrink-0" /> {authError}
                   </div>
-                  {(authError.includes("Server Configuration") || authError.includes("returned HTML")) && (
+                  {(authError.includes("Server Configuration") || authError.includes("returned HTML") || authError.includes("PROTOCOL MISMATCH")) && (
                     <div className="text-[9px] font-black uppercase text-rose-400 pl-7">
-                      Hint: Check Admin Panel → System Hub → Mode. Switch to 'Sandbox' if database is not set up.
+                      Hint: Database conflict detected. Ensure you are using a unique email address or run the persistence patch.
                     </div>
                   )}
                 </div>
@@ -279,16 +286,18 @@ const LoginModule: React.FC<LoginModuleProps> = ({ onLoginSuccess, onCancel }) =
                 </div>
               </div>
 
-              <div className="pt-8 border-t border-slate-100 space-y-4">
-                 <div className="text-center text-[9px] font-black uppercase text-slate-300 tracking-[0.3em]">Access Simulation Points</div>
-                 <div className="flex gap-2">
-                    {[{ role: UserRole.STUDENT, email: 'ishu@gmail.com', label: 'Student' }, { role: UserRole.PARENT, email: 'parent@demo.in', label: 'Parent' }, { role: UserRole.ADMIN, email: 'admin@demo.in', label: 'Admin' }].map(demo => (
-                      <button key={demo.label} onClick={() => loginAsDemo(demo.email)} className="flex-1 py-3 bg-slate-50 rounded-xl text-[9px] font-black uppercase tracking-widest text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
-                         {demo.label}
-                      </button>
-                    ))}
-                 </div>
-              </div>
+              {showDemoControls && (
+                <div className="pt-8 border-t border-slate-100 space-y-4">
+                   <div className="text-center text-[9px] font-black uppercase text-slate-300 tracking-[0.3em]">Access Simulation Points</div>
+                   <div className="flex gap-2">
+                      {[{ role: UserRole.STUDENT, email: 'ishu@gmail.com', label: 'Student' }, { role: UserRole.PARENT, email: 'parent@demo.in', label: 'Parent' }, { role: UserRole.ADMIN, email: 'admin@demo.in', label: 'Admin' }].map(demo => (
+                        <button key={demo.label} onClick={() => loginAsDemo(demo.email)} className="flex-1 py-3 bg-slate-50 rounded-xl text-[9px] font-black uppercase tracking-widest text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
+                           {demo.label}
+                        </button>
+                      ))}
+                   </div>
+                </div>
+              )}
            </div>
         </div>
       </main>

@@ -8,9 +8,9 @@ const ExamGuideModule: React.FC = () => {
       name: 'JEE Advanced', 
       difficulty: 'High Concept Rigor', 
       focus: 'Multi-concept integration', 
-      requirement: 'Requires deep stability metrics in over 85% of the syllabus. Focused on application of multiple concepts in a single problem.',
-      target: 'IIT Institutions', 
-      cycle: 'Annual: May/June',
+      requirement: 'Targeting top IITs. Requires deep stability metrics in over 85% of the syllabus. Success depends on the application of multiple fundamental principles within single complex problems.',
+      target: 'Indian Institutes of Technology', 
+      cycle: 'Annual Window: May - June',
       icon: Target,
       tag: 'Conceptual Depth'
     },
@@ -18,9 +18,9 @@ const ExamGuideModule: React.FC = () => {
       name: 'JEE Main', 
       difficulty: 'Moderate Speed-Accuracy', 
       focus: 'Syllabus breadth & coverage', 
-      requirement: 'Requires high execution speed and 100% syllabus visibility. Accuracy in repetitive NCERT-based patterns is key.',
-      target: 'NIT, IIIT, GFTI', 
-      cycle: 'Dual: Jan & April',
+      requirement: 'Targeting NITs, IIITs, and GFTIs. Demands high execution speed and 100% syllabus visibility. Consistent accuracy in NCERT-aligned patterns is the primary differentiator.',
+      target: 'NIT, IIIT, GFTI System', 
+      cycle: 'Dual Window: January & April',
       icon: Layers,
       tag: 'Speed & Precision'
     },
@@ -28,9 +28,9 @@ const ExamGuideModule: React.FC = () => {
       name: 'BITSAT', 
       difficulty: 'High Efficiency Surge', 
       focus: 'Logical reasoning & Velocity', 
-      requirement: 'Focus on time management. Requires tracking of "Solved per Minute" metrics. Accuracy must be maintained under tight constraints.',
-      target: 'BITS Pilani / Goa', 
-      cycle: 'Annual: May/June',
+      requirement: 'Targeting BITS Pilani campuses. Extreme focus on time management. Requires strict tracking of "Solved per Minute" metrics. Mastery under tight constraints is essential.',
+      target: 'BITS Pilani / Goa / Hyderabad', 
+      cycle: 'Annual Window: May - June',
       icon: Zap,
       tag: 'Process Efficiency'
     }
@@ -42,22 +42,26 @@ const ExamGuideModule: React.FC = () => {
       <section className="py-20 md:py-32 px-6 md:px-12 text-center border-b border-slate-100">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="inline-flex items-center gap-3 px-5 py-1.5 bg-slate-50 border border-slate-200 rounded-full text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
-             <ClipboardCheck className="w-4 h-4" /> Exam Matrix Alignment
+             <ClipboardCheck className="w-4 h-4" /> Preparation Matrix Alignment
           </div>
           <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter uppercase italic font-space">
-            Exam <br /><span className="text-indigo-600">Pattern.</span>
+            Target <br /><span className="text-indigo-600">Exam Patterns.</span>
           </h1>
           <p className="text-slate-500 text-lg md:text-xl font-medium italic max-w-2xl mx-auto leading-relaxed">
-            Success in entrance exams is a function of aligning your tracking methodology with the specific patterns of your target exam.
+            Successful preparation requires aligning your daily tracking with the specific logical patterns of your target engineering entrance examination.
           </p>
         </div>
       </section>
 
-      {/* --- EXAM CARDS --- */}
+      {/* --- EXAM ANALYSIS SECTION --- */}
       <section className="py-20 px-6 md:px-12 max-w-7xl mx-auto">
+        <div className="text-center mb-16 space-y-2">
+           <h2 className="text-3xl font-black text-slate-800 uppercase italic">Detailed Exam Analysis</h2>
+           <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Syllabus & Pattern Breakdown</p>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {exams.map((exam, i) => (
-            <div key={i} className="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm hover:border-indigo-400 transition-all flex flex-col justify-between space-y-10 relative overflow-hidden">
+            <article key={i} className="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm hover:border-indigo-400 transition-all flex flex-col justify-between space-y-10 relative overflow-hidden">
                <div className="space-y-8 relative z-10">
                   <div className="flex justify-between items-start">
                     <div className="w-12 h-12 bg-slate-900 text-white rounded-xl flex items-center justify-center shadow-lg">
@@ -67,25 +71,25 @@ const ExamGuideModule: React.FC = () => {
                   </div>
                   <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">{exam.name}</h3>
                   <div className="space-y-4">
-                     <div className="text-[10px] font-black uppercase text-indigo-600 tracking-widest flex items-center gap-2">Operational Requirement <ArrowUpRight className="w-3 h-3" /></div>
+                     <div className="text-[10px] font-black uppercase text-indigo-600 tracking-widest flex items-center gap-2">Success Requirement <ArrowUpRight className="w-3 h-3" /></div>
                      <p className="text-slate-500 leading-relaxed italic text-sm font-medium">"{exam.requirement}"</p>
                   </div>
                </div>
                
                <div className="pt-8 border-t border-slate-50 space-y-4 relative z-10">
                   <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                     <Building className="w-4 h-4 text-indigo-500" /> Target: <span className="text-slate-800">{exam.target}</span>
+                     <Building className="w-4 h-4 text-indigo-500" /> Institution: <span className="text-slate-800 font-bold">{exam.target}</span>
                   </div>
                   <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                     <Calendar className="w-4 h-4 text-emerald-500" /> Cycle: <span className="text-slate-800">{exam.cycle}</span>
+                     <Calendar className="w-4 h-4 text-emerald-500" /> Exam Cycle: <span className="text-slate-800 font-bold">{exam.cycle}</span>
                   </div>
                </div>
-            </div>
+            </article>
           ))}
         </div>
       </section>
 
-      {/* --- PREPARATION MATRIX --- */}
+      {/* --- VECTORS SECTION --- */}
       <section className="py-20 px-6 md:px-12 bg-slate-900">
          <div className="max-w-7xl mx-auto bg-white p-12 md:p-24 rounded-[3.5rem] shadow-2xl flex flex-col lg:flex-row items-center gap-16 relative overflow-hidden">
             <div className="w-24 h-24 bg-indigo-50 rounded-[2rem] flex items-center justify-center shrink-0 border border-indigo-100">
@@ -93,14 +97,14 @@ const ExamGuideModule: React.FC = () => {
             </div>
             <div className="space-y-8 relative z-10 text-center lg:text-left">
                <div className="space-y-4">
-                  <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Operational <br /><span className="text-indigo-600">Metric Matrix.</span></h2>
+                  <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Operational <br /><span className="text-indigo-600">Metric Framework.</span></h2>
                   <p className="text-slate-500 text-lg max-w-xl font-medium leading-relaxed italic">
-                    The platform tracks these 5 vital vectors to ensure your preparation matches historical success patterns.
+                    Success in national engineering entrances is achieved through the optimization of 5 vital preparation vectors.
                   </p>
                </div>
                <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
                   {[
-                    "Conceptual Stability", "Calculation Precision", "Syllabus Coverage", "Revision Frequency", "Stress Threshold"
+                    "Conceptual Stability", "Calculation Precision", "Syllabus Coverage Depth", "Active Revision Frequency", "Mental Stress Threshold"
                   ].map(skill => (
                     <span key={skill} className="px-4 py-2 bg-slate-50 border border-slate-200 text-slate-500 rounded-lg text-[9px] font-black uppercase tracking-widest">{skill}</span>
                   ))}
@@ -109,7 +113,7 @@ const ExamGuideModule: React.FC = () => {
                  onClick={() => window.dispatchEvent(new CustomEvent('changeTab', { detail: 'login' }))}
                  className="flex items-center gap-3 text-indigo-600 font-black text-[10px] uppercase tracking-[0.3em] hover:gap-6 transition-all group mx-auto lg:mx-0"
                >
-                 Establish Performance Sync <ChevronRight className="w-4 h-4" />
+                 Start Performance Synchronization <ChevronRight className="w-4 h-4" />
                </button>
             </div>
          </div>

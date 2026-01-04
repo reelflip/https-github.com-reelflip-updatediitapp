@@ -60,15 +60,25 @@ const safeJson = async (response: Response) => {
   try {
     const data = JSON.parse(text);
     // If response is not ok but returned valid JSON (e.g. 409 Conflict), use the error from JSON
-    if (!response.ok && data.error) {
+    if (!response.ok && data && data.error) {
         return { success: false, error: data.error };
     }
     return data;
   } catch (e) {
     if (!response.ok) {
-        return { success: false, error: `UPLINK FAULT (${response.status}): Ensure the 'api/' folder and PHP scripts are deployed.` };
+        // Specifically check for conflict status codes
+        if (response.status === 409) return { success: false, error: "IDENTITY CONFLICT: This email/ID is already in use." };
+        return { success: false, error: `UPLINK FAULT (${response.status}): The server rejected the request. Check your API folder.` };
     }
-    return { success: false, error: "PROTOCOL MISMATCH: The server returned an invalid response. Run the Critical Persistence Patch in Admin Hub." };
+    // Clean up response if it contains PHP warnings/notices mixed with JSON
+    const jsonMatch = text.match(/\{.*\}/s);
+    if (jsonMatch) {
+       try {
+          const cleanedData = JSON.parse(jsonMatch[0]);
+          return cleanedData;
+       } catch(innerE) {}
+    }
+    return { success: false, error: "PROTOCOL MISMATCH: The server returned an invalid response. Run the Persistence Patch in Admin." };
   }
 };
 
