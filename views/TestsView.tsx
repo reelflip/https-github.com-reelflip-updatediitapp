@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { StudentData, MockTest, Question, TestResult, Chapter } from '../types';
 import { api } from '../services/apiService';
-import { calculateConfidenceLevel } from '../services/intelligenceService';
 import { 
   Clock, Target, Trophy, ArrowLeft, Award, Zap, 
   ListFilter, History, X, BookOpen, BarChart, 
@@ -18,7 +17,7 @@ interface TestsViewProps {
 }
 
 const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null, onExit }) => {
-  const [activeTab, setActiveTab] = useState<'library' | 'history' | 'analytics'>('library');
+  const [activeTab, setActiveTab] = useState<'library' | 'history'>('library');
   const [activeTest, setActiveTest] = useState<MockTest | null>(initialTest);
   const [testMode, setTestMode] = useState(!!initialTest);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -178,20 +177,101 @@ const TestsView: React.FC<TestsViewProps> = ({ data, setData, initialTest = null
     )
   }
 
-  // Filter history to ONLY show Mock Exams (ADMIN category), keeping PRACTICE tests localized to chapters
+  // Filter library and history to strictly only show Mock Exams (ADMIN category)
+  // This ensures chapter drill history stays only in the chapter detail view
   const mockTestHistory = (data?.testHistory || []).filter(res => res.category === 'ADMIN');
   const mockTestsLibrary = (data?.mockTests || []).filter(t => t.category === 'ADMIN');
 
   return (
     <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in duration-500 pb-20 px-4">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-10"><div><div className="text-[11px] font-black uppercase text-indigo-600 tracking-[0.5em] mb-4 flex items-center gap-3"><Target className="w-5 h-5" /> Standardized Exams</div><h2 className="text-7xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">TEST <br /><span className="text-indigo-600">CENTRE.</span></h2></div><nav className="flex bg-white p-2 rounded-[2.5rem] border border-slate-200 shadow-2xl overflow-hidden shrink-0">{[{ id: 'library', label: 'Library', icon: BookOpen }, { id: 'history', label: 'History', icon: History }, { id: 'analytics', label: 'Tracking', icon: BarChart }].map(tab => (<button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`px-10 py-3.5 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${activeTab === tab.id ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-700'}`}><tab.icon className="w-4 h-4" /> {tab.label}</button>))}</nav></div>
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-10">
+        <div>
+          <div className="text-[11px] font-black uppercase text-indigo-600 tracking-[0.5em] mb-4 flex items-center gap-3">
+            <Target className="w-5 h-5" /> Standardized Exams
+          </div>
+          <h2 className="text-7xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">TEST <br /><span className="text-indigo-600">CENTRE.</span></h2>
+        </div>
+        <nav className="flex bg-white p-2 rounded-[2.5rem] border border-slate-200 shadow-2xl overflow-hidden shrink-0">
+          {[
+            { id: 'library', label: 'Library', icon: BookOpen }, 
+            { id: 'history', label: 'History', icon: History }
+          ].map(tab => (
+            <button 
+              key={tab.id} 
+              onClick={() => setActiveTab(tab.id as any)} 
+              className={`px-10 py-3.5 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3 ${activeTab === tab.id ? 'bg-slate-900 text-white shadow-xl' : 'text-slate-400 hover:text-slate-700'}`}
+            >
+              <tab.icon className="w-4 h-4" /> {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+      
       <main className="animate-in slide-in-from-bottom-4 duration-700">
         {activeTab === 'library' ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">{mockTestsLibrary.length === 0 ? (<div className="col-span-full py-40 text-center bg-white rounded-[4rem] border-4 border-dashed border-slate-100 flex flex-col items-center gap-6"><Target className="w-12 h-12 text-slate-200" /><p className="text-xs font-black uppercase text-slate-400 tracking-[0.4em] italic">No active exams synchronized from the server.</p></div>) : (mockTestsLibrary.map(test => (<div key={test.id} className="bg-white p-6 rounded-3xl border border-slate-200 hover:border-indigo-400 hover:shadow-xl transition-all flex flex-col justify-between group h-64 relative overflow-hidden"><div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-125 transition-transform"><Zap className="w-24 h-24 text-indigo-600" /></div><div className="relative z-10 space-y-4"><div className="flex justify-between items-center"><span className="px-3 py-1 bg-slate-900 text-white rounded-full text-[8px] font-black tracking-widest uppercase">{test.difficulty}</span><Clock className="w-3.5 h-3.5 text-slate-300" /></div><h4 className="text-lg font-black text-slate-800 italic leading-tight group-hover:text-indigo-600 transition-colors line-clamp-2 tracking-tight">{test.name}</h4><div className="flex gap-4"><div className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1.5"><Clock className="w-3 h-3 text-indigo-400" /> {test.duration}m</div><div className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1.5"><Target className="w-3 h-3 text-rose-400" /> {(test.questionIds || []).length} Qs</div></div></div><button onClick={() => startTest(test)} className="w-full py-3.5 bg-slate-50 text-slate-900 rounded-2xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm">Take Test</button></div>)))}</div>
-        ) : activeTab === 'history' ? (
-          <div className="bg-white rounded-[3rem] border border-slate-200 shadow-sm overflow-hidden animate-in slide-in-from-right duration-500"><table className="w-full text-left"><thead className="bg-slate-50 border-b border-slate-100"><tr className="text-[9px] font-black uppercase text-slate-400 tracking-[0.4em]"><th className="p-8">Mock Exam Identity</th><th className="p-8 text-center">Date Taken</th><th className="p-8 text-center">Score Delta</th><th className="p-8 text-center">Precision</th><th className="p-8 text-right">Review</th></tr></thead><tbody className="divide-y divide-slate-50">{mockTestHistory.length === 0 ? (<tr><td colSpan={5} className="p-32 text-center text-slate-300 font-black uppercase text-xs tracking-widest italic">No historical Mock Exam sessions synchronized.</td></tr>) : (mockTestHistory.map((res, i) => (<tr key={i} className="hover:bg-slate-50/80 transition-colors group"><td className="p-8 font-black text-slate-800 italic text-lg group-hover:text-indigo-600 transition-colors tracking-tight">{res.testName}</td><td className="p-8 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">{res.date}</td><td className="p-8 text-center font-black text-2xl text-slate-900">{res.score}<span className="text-xs opacity-20 mx-1">/</span>{res.totalMarks}</td><td className="p-8 text-center"><span className={`px-5 py-1.5 rounded-full text-[9px] font-black tracking-widest border ${res.accuracy > 70 ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : res.accuracy > 40 ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>{res.accuracy}% ACC</span></td><td className="p-8 text-right"><button onClick={() => setViewingResult(res)} className="p-4 bg-white border border-slate-100 text-indigo-600 rounded-2xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm group-hover:scale-105"><Eye className="w-5 h-5" /></button></td></tr>)))}</tbody></table></div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {mockTestsLibrary.length === 0 ? (
+              <div className="col-span-full py-40 text-center bg-white rounded-[4rem] border-4 border-dashed border-slate-100 flex flex-col items-center gap-6">
+                <Target className="w-12 h-12 text-slate-200" />
+                <p className="text-xs font-black uppercase text-slate-400 tracking-[0.4em] italic">No active exams synchronized from the server.</p>
+              </div>
+            ) : (
+              mockTestsLibrary.map(test => (
+                <div key={test.id} className="bg-white p-6 rounded-3xl border border-slate-200 hover:border-indigo-400 hover:shadow-xl transition-all flex flex-col justify-between group h-64 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-125 transition-transform"><Zap className="w-24 h-24 text-indigo-600" /></div>
+                  <div className="relative z-10 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="px-3 py-1 bg-slate-900 text-white rounded-full text-[8px] font-black tracking-widest uppercase">{test.difficulty}</span>
+                      <Clock className="w-3.5 h-3.5 text-slate-300" />
+                    </div>
+                    <h4 className="text-lg font-black text-slate-800 italic leading-tight group-hover:text-indigo-600 transition-colors line-clamp-2 tracking-tight">{test.name}</h4>
+                    <div className="flex gap-4">
+                      <div className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1.5"><Clock className="w-3 h-3 text-indigo-400" /> {test.duration}m</div>
+                      <div className="text-[9px] font-black text-slate-400 uppercase flex items-center gap-1.5"><Target className="w-3 h-3 text-rose-400" /> {(test.questionIds || []).length} Qs</div>
+                    </div>
+                  </div>
+                  <button onClick={() => startTest(test)} className="w-full py-3.5 bg-slate-50 text-slate-900 rounded-2xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm">Take Test</button>
+                </div>
+              ))
+            )}
+          </div>
         ) : (
-          <div className="space-y-10"><div className="bg-indigo-900 p-12 rounded-[4rem] text-white shadow-2xl flex flex-col md:flex-row justify-between items-center gap-10 relative overflow-hidden group"><div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-[3s]"><TrendingUp className="w-80 h-80" /></div><div className="space-y-4 relative z-10"><h3 className="text-3xl font-black italic tracking-tighter uppercase leading-none">Intelligence Tracking.</h3><p className="text-indigo-200 text-sm max-w-lg font-medium">Drill down into every chapter to identify time-sink areas and confidence gaps. Precision is your only edge.</p></div><div className="flex gap-6 relative z-10"><div className="bg-white/10 backdrop-blur-md px-8 py-4 rounded-[2rem] border border-white/10 text-center"><div className="text-[10px] font-black uppercase text-indigo-400 tracking-widest">Active Units</div><div className="text-3xl font-black">{(data?.chapters || []).filter(c => c.status !== 'NOT_STARTED').length}</div></div></div></div><div className="grid grid-cols-1 gap-8">{(data?.chapters || []).map(c => { const conf = calculateConfidenceLevel(c.progress || 0, c.accuracy || 0); return (<div key={c.id} className="p-10 bg-white rounded-[3rem] border border-slate-200 flex flex-col xl:flex-row items-center gap-12 group hover:border-indigo-400 hover:shadow-2xl transition-all duration-500 relative overflow-hidden"><div className="flex-1 space-y-6 w-full relative z-10"><div className="flex flex-wrap items-center gap-5"><div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 border shadow-inner ${c.subject === 'Physics' ? 'bg-blue-50 text-blue-600 border-blue-100' : c.subject === 'Chemistry' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}><BookOpen className="w-6 h-6" /></div><div><h4 className="text-2xl font-black text-slate-800 italic tracking-tighter leading-none">{c.name}</h4><div className="flex items-center gap-3 mt-2"><span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">{c.subject}</span><div className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${conf.bg} ${conf.color} ${conf.border}`}>{conf.label} Confidence</div></div></div></div><div className="space-y-3"><div className="flex justify-between text-[10px] font-black uppercase text-slate-400"><span>Mastery Progress</span><span className="text-slate-800">{c.progress || 0}%</span></div><div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden shadow-inner"><div className={`h-full transition-all duration-1000 ${(c.accuracy || 0) > 70 ? 'bg-emerald-500' : 'bg-indigo-600'}`} style={{ width: `${c.progress || 0}%` }}></div></div></div></div><div className="grid grid-cols-2 md:grid-cols-4 gap-12 shrink-0 xl:border-l xl:pl-12 border-slate-100 w-full xl:w-auto relative z-10">{[{ icon: BookOpen, label: 'Theory', val: c.timeSpentNotes, color: 'indigo' }, { icon: Eye, label: 'Lectures', val: c.timeSpentVideos, color: 'amber' }, { icon: Target, label: 'Drills', val: c.timeSpentPractice, color: 'emerald' }, { icon: History, label: 'Exams', val: c.timeSpentTests, color: 'rose' }].map((stat, si) => (<div key={si} className="flex flex-col items-center gap-2 group/stat"><div className="w-10 h-10 bg-slate-50 text-slate-300 rounded-xl flex items-center justify-center group-hover/stat:bg-indigo-600 group-hover/stat:text-white transition-all shadow-sm"><stat.icon className="w-4 h-4" /></div><div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</div><div className="text-lg font-black text-slate-900 tabular-nums">{Math.round((stat.val || 0) / 60)}m</div></div>))}</div><div className="absolute top-1/2 -translate-y-1/2 -right-10 opacity-0 group-hover:opacity-10 transition-opacity pointer-events-none"><Activity className="w-40 h-40 text-indigo-600" /></div></div>) })}</div></div>
+          <div className="bg-white rounded-[3rem] border border-slate-200 shadow-sm overflow-hidden animate-in slide-in-from-right duration-500">
+            <table className="w-full text-left">
+              <thead className="bg-slate-50 border-b border-slate-100">
+                <tr className="text-[9px] font-black uppercase text-slate-400 tracking-[0.4em]">
+                  <th className="p-8">Mock Exam Identity</th>
+                  <th className="p-8 text-center">Date Taken</th>
+                  <th className="p-8 text-center">Score Delta</th>
+                  <th className="p-8 text-center">Precision</th>
+                  <th className="p-8 text-right">Review</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {mockTestHistory.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="p-32 text-center text-slate-300 font-black uppercase text-xs tracking-widest italic">No historical Mock Exam sessions synchronized.</td>
+                  </tr>
+                ) : (
+                  mockTestHistory.map((res, i) => (
+                    <tr key={i} className="hover:bg-slate-50/80 transition-colors group">
+                      <td className="p-8 font-black text-slate-800 italic text-lg group-hover:text-indigo-600 transition-colors tracking-tight">{res.testName}</td>
+                      <td className="p-8 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">{res.date}</td>
+                      <td className="p-8 text-center font-black text-2xl text-slate-900">{res.score}<span className="text-xs opacity-20 mx-1">/</span>{res.totalMarks}</td>
+                      <td className="p-8 text-center">
+                        <span className={`px-5 py-1.5 rounded-full text-[9px] font-black tracking-widest border ${res.accuracy > 70 ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : res.accuracy > 40 ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>{res.accuracy}% ACC</span>
+                      </td>
+                      <td className="p-8 text-right">
+                        <button onClick={() => setViewingResult(res)} className="p-4 bg-white border border-slate-100 text-indigo-600 rounded-2xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm group-hover:scale-105">
+                          <Eye className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </main>
     </div>
