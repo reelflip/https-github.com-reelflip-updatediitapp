@@ -7,12 +7,16 @@ import {
   Newspaper, Bookmark
 } from 'lucide-react';
 
+interface CategorizedBlog extends Blog {
+  category: 'EXAM' | 'STRATEGY' | 'TECH';
+}
+
 interface BlogModuleProps {
   data: StudentData;
 }
 
 const BlogModule: React.FC<BlogModuleProps> = ({ data }) => {
-  const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
+  const [selectedBlog, setSelectedBlog] = useState<CategorizedBlog | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<'ALL' | 'EXAM' | 'STRATEGY' | 'TECH'>('ALL');
 
@@ -23,7 +27,7 @@ const BlogModule: React.FC<BlogModuleProps> = ({ data }) => {
         const titleLow = b.title.toLowerCase();
         if (titleLow.includes('exam') || titleLow.includes('jee')) cat = 'EXAM';
         if (titleLow.includes('system') || titleLow.includes('sync')) cat = 'TECH';
-        return { ...b, category: cat };
+        return { ...b, category: cat } as CategorizedBlog;
     })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [data.blogs]);
 

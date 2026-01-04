@@ -108,6 +108,7 @@ export interface Blog {
   author: string;
   date: string;
   status: 'DRAFT' | 'PUBLISHED';
+  category?: 'EXAM' | 'STRATEGY' | 'TECH' | 'ALL';
   coverImage?: string;
 }
 
