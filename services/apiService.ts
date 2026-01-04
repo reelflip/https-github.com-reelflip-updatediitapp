@@ -45,11 +45,6 @@ const getZeroStateStudentData = (id: string, name: string): StudentData => ({
   id,
   name,
   chapters: getZeroStateChapters(),
-  flashcards: INITIAL_STUDENT_DATA.flashcards || [],
-  memoryHacks: INITIAL_STUDENT_DATA.memoryHacks || [],
-  questions: INITIAL_STUDENT_DATA.questions || [],
-  mockTests: INITIAL_STUDENT_DATA.mockTests || [],
-  blogs: INITIAL_STUDENT_DATA.blogs || [],
   testHistory: [], 
   psychometricHistory: [],
   backlogs: [],
@@ -64,11 +59,11 @@ const safeJson = async (response: Response) => {
   const text = await response.text();
   try {
     if (!response.ok) {
-      return { success: false, error: `HTTP ${response.status}` };
+      return { success: false, error: `HTTP ${response.status}: Ensure the 'api/' folder is uploaded correctly.` };
     }
     return JSON.parse(text);
   } catch (e) {
-    return { success: false, error: "Corrupted Server Response" };
+    return { success: false, error: "DATA ERROR: The server returned an invalid response. Run the SQL Patch." };
   }
 };
 
@@ -148,11 +143,14 @@ export const api = {
                 ...zeroState,
                 ...serverData,
                 chapters: mergedChapters,
-                testHistory: serverData.testHistory || [],
+                testHistory: (serverData.testHistory || []).map((t: any) => ({
+                    ...t,
+                    score: Number(t.score),
+                    totalMarks: Number(t.totalMarks),
+                    accuracy: Number(t.accuracy)
+                })),
                 routine: serverData.routine || undefined,
-                smartPlan: serverData.smartPlan || undefined,
-                connectedParent: serverData.connectedParent || null,
-                pendingInvitations: serverData.pendingInvitations || []
+                smartPlan: serverData.smartPlan || undefined
             };
         }
       } catch(e) { console.error("Sync Error", e); }
@@ -187,7 +185,7 @@ export const api = {
              accuracy: t.accuracy,
              category: t.category,
              chapterIds: t.chapterIds || [],
-             date: t.date // Crucial: send exactly as string
+             date: String(t.date) 
           })),
           routine: updatedData.routine || null,
           smartPlan: updatedData.smartPlan || null,
@@ -260,17 +258,11 @@ export const api = {
     return JSON.parse(localStorage.getItem(API_CONFIG.GLOBAL_USERS_KEY) || '[]');
   },
 
-  // Added missing searchStudent method for Parent Dashboard
   async searchStudent(query: string): Promise<UserAccount | null> {
     const accounts = await this.getAccounts();
-    const student = accounts.find(u => 
-      (u.id === query || u.name.toLowerCase().includes(query.toLowerCase())) && 
-      u.role === UserRole.STUDENT
-    );
-    return student || null;
+    return accounts.find(u => (u.id === query || u.name.toLowerCase().includes(query.toLowerCase())) && u.role === UserRole.STUDENT) || null;
   },
 
-  // Added missing sendInvite method for Parent Dashboard
   async sendInvite(studentId: string, invitation: ParentInvitation) {
     const studentData = await this.getStudentData(studentId);
     if (studentData) {
@@ -280,7 +272,7 @@ export const api = {
       };
       return await this.updateStudentData(studentId, updatedData);
     }
-    return { success: false, error: "Student data context not found" };
+    return { success: false, error: "Student not found" };
   },
 
   async updateUserProfile(userId: string, profile: any) {

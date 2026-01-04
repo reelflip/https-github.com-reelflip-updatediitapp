@@ -312,7 +312,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     try {
       const zip = new JSZip();
       
-      let sqlDump = `-- IITGEEPREP Master Schema v22.2 (Max Persistence Patch)\n\n`;
+      let sqlDump = `-- IITGEEPREP Master Schema v22.3 (Final Persistence Patch)\n\n`;
       sqlDump += `SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";\nSTART TRANSACTION;\nSET time_zone = "+00:00";\n\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS users (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255) UNIQUE, role VARCHAR(50), institute VARCHAR(255), targetExam VARCHAR(255), targetYear INT, birthDate DATE, gender VARCHAR(20), password_hash VARCHAR(255), connected_parent LONGTEXT DEFAULT NULL, pending_invitations LONGTEXT DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS chapters (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), subject VARCHAR(50), unit VARCHAR(255), notes LONGTEXT, videoUrl VARCHAR(512)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
@@ -322,7 +322,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
       sqlDump += `CREATE TABLE IF NOT EXISTS routines (student_id VARCHAR(100) PRIMARY KEY, routine_data LONGTEXT, FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS timetables (student_id VARCHAR(100) PRIMARY KEY, schedule LONGTEXT, roadmap LONGTEXT, FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       sqlDump += `COMMIT;`;
-      zip.file("api/master_schema_v22_2.sql", sqlDump);
+      zip.file("api/master_schema_v22_3.sql", sqlDump);
 
       zip.file("api/database.php", `<?php
 session_start();
@@ -378,7 +378,7 @@ class Response {
           
           \$testHistory = \$tests->fetchAll();
           foreach(\$testHistory as &\$t) {
-              \$t['chapterIds'] = json_decode(\$t['chapterIds'], true) ?: [];
+              \$t['chapterIds'] = json_decode(\$t['chapterIds'] ?? '[]', true) ?: [];
               \$t['score'] = (int)\$t['score'];
               \$t['totalMarks'] = (int)\$t['totalMarks'];
               \$t['accuracy'] = (int)\$t['accuracy'];
@@ -387,10 +387,10 @@ class Response {
           Response::success(['data' => array_merge(\$user, [
              'individual_progress' => \$prog->fetchAll(), 
              'testHistory' => \$testHistory,
-             'routine' => \$r_raw ? json_decode(\$r_raw['routine_data'], true) : null,
-             'smartPlan' => \$t_raw ? ['schedule' => json_decode(\$t_raw['schedule'], true), 'roadmap' => json_decode(\$t_raw['roadmap'], true)] : null,
-             'connectedParent' => json_decode(\$user['connected_parent'], true),
-             'pendingInvitations' => json_decode(\$user['pending_invitations'], true)
+             'routine' => \$r_raw ? json_decode(\$r_raw['routine_data'] ?? '{}', true) : null,
+             'smartPlan' => \$t_raw ? ['schedule' => json_decode(\$t_raw['schedule'] ?? '[]', true), 'roadmap' => json_decode(\$t_raw['roadmap'] ?? '[]', true)] : null,
+             'connectedParent' => json_decode(\$user['connected_parent'] ?? 'null', true),
+             'pendingInvitations' => json_decode(\$user['pending_invitations'] ?? '[]', true)
           ])]); ?>` },
           { name: "sync_progress.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$in = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO(); 
           try {
@@ -401,10 +401,10 @@ class Response {
             }
             foreach((\$in['testHistory'] ?? []) as \$t) {
               \$check = \$pdo->prepare("SELECT id FROM test_results WHERE student_id = ? AND test_id = ? AND taken_at = ?");
-              \$check->execute([\$in['student_id'], \$t['testId'], \$t['date']]);
+              \$check->execute([\$in['student_id'], \$t['testId'], (string)\$t['date']]);
               if(!\$check->fetch()) {
                 \$st = \$pdo->prepare("INSERT INTO test_results (student_id, test_id, test_name, score, total_marks, accuracy, category, chapter_ids, taken_at) VALUES (?,?,?,?,?,?,?,?,?)");
-                \$st->execute([\$in['student_id'], \$t['testId'], \$t['testName'], \$t['score'], \$t['totalMarks'], \$t['accuracy'], \$t['category'], json_encode(\$t['chapterIds'] ?? []), \$t['date']]);
+                \$st->execute([\$in['student_id'], \$t['testId'], \$t['testName'], \$t['score'], \$t['totalMarks'], \$t['accuracy'], \$t['category'], json_encode(\$t['chapterIds'] ?? []), (string)\$t['date']]);
               }
             }
             if(isset(\$in['routine'])) {
@@ -430,7 +430,7 @@ class Response {
 
       endpoints.forEach(e => zip.file(`api/${e.name}`, e.content));
       const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, "solaris_v22_CORE_PATCH_v2.zip");
+      saveAs(content, "solaris_v22_FINAL_PATCH.zip");
     } catch (e) { alert("Bundle generation error."); } finally { setIsDownloading(false); }
   };
 
@@ -498,28 +498,32 @@ class Response {
                         <div className="text-right"><div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">System Status</div><div className={`text-xs font-black uppercase tracking-widest ${mode === 'LIVE' ? 'text-emerald-400' : 'text-amber-400'}`}>{mode === 'LIVE' ? 'Production (Live)' : 'Sandbox Mode'}</div></div>
                      </div>
                   </div>
-                  <div className="pt-10 border-t border-white/10 text-center"><button onClick={handleDownloadProduction} disabled={isDownloading} className="bg-indigo-600 px-12 py-5 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:scale-105 transition-all disabled:opacity-50 mx-auto">{isDownloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />} {isDownloading ? 'Finalizing Core...' : 'Download Critical Fix ZIP'}</button></div>
+                  <div className="pt-10 border-t border-white/10 text-center"><button onClick={handleDownloadProduction} disabled={isDownloading} className="bg-indigo-600 px-12 py-5 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:scale-105 transition-all disabled:opacity-50 mx-auto">{isDownloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />} {isDownloading ? 'Finalizing Core...' : 'Download Final Patch ZIP'}</button></div>
               </div>
 
-              <div className="bg-white p-12 rounded-[4rem] border border-rose-200 shadow-xl max-w-4xl mx-auto space-y-8 animate-pulse">
+              <div className="bg-white p-12 rounded-[4rem] border border-rose-200 shadow-xl max-w-4xl mx-auto space-y-8">
                   <div className="flex items-center gap-6 text-rose-600">
                      <AlertTriangle className="w-12 h-12 shrink-0" />
                      <div>
-                        <h3 className="text-2xl font-black italic tracking-tight uppercase">Database Integrity Required</h3>
-                        <p className="text-slate-500 font-medium italic">Data is vanishing because your SQL columns are too small for JSON blobs.</p>
+                        <h3 className="text-2xl font-black italic tracking-tight uppercase">Critical Persistence Patch</h3>
+                        <p className="text-slate-500 font-medium italic leading-relaxed">If you see #1054 error or data isn't saving across logins, copy and run this SQL command in your phpMyAdmin SQL tab <b>IMMEDIATELY:</b></p>
                      </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                     <div className="p-8 bg-slate-50 rounded-3xl space-y-4 border border-slate-100">
-                        <div className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center font-black text-xs">01</div>
-                        <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest">Patch SQL Now</h4>
-                        <p className="text-xs text-slate-500 leading-relaxed italic">Run the <b>master_schema_v22_2.sql</b> in the ZIP above. It changes <code>JSON</code>/<code>VARCHAR</code> columns to <code>LONGTEXT</code>.</p>
-                     </div>
-                     <div className="p-8 bg-slate-50 rounded-3xl space-y-4 border border-slate-100">
-                        <div className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center font-black text-xs">02</div>
-                        <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest">Update API Files</h4>
-                        <p className="text-xs text-slate-500 leading-relaxed italic">Replace <b>get_dashboard.php</b> and <b>sync_progress.php</b> from the ZIP. They contain the fix for timeSpent mapping.</p>
-                     </div>
+                  <div className="bg-slate-950 p-8 rounded-3xl border border-slate-800">
+                     <pre className="text-emerald-400 text-[10px] font-mono whitespace-pre-wrap leading-relaxed">
+{`-- RUN THIS IN PHPMYADMIN SQL TAB
+ALTER TABLE test_results ADD COLUMN IF NOT EXISTS chapter_ids LONGTEXT AFTER category;
+ALTER TABLE test_results MODIFY taken_at VARCHAR(100);
+ALTER TABLE users MODIFY connected_parent LONGTEXT;
+ALTER TABLE users MODIFY pending_invitations LONGTEXT;
+ALTER TABLE routines MODIFY routine_data LONGTEXT;
+ALTER TABLE timetables MODIFY schedule LONGTEXT;
+ALTER TABLE timetables MODIFY roadmap LONGTEXT;`}
+                     </pre>
+                  </div>
+                  <div className="p-8 bg-indigo-50 border border-indigo-100 rounded-3xl">
+                     <h4 className="font-black text-indigo-900 uppercase text-xs tracking-widest mb-2 flex items-center gap-2"><CheckCircle className="w-4 h-4" /> Why this is needed</h4>
+                     <p className="text-xs text-indigo-700 leading-relaxed italic">Standard <b>TIMESTAMP</b> and <b>JSON</b> columns in MySQL can be restrictive depending on your hosting provider. <b>LONGTEXT</b> and <b>VARCHAR(100)</b> ensure no data truncation occurs for large study roadmaps or specific JS date strings.</p>
                   </div>
               </div>
            </div>
