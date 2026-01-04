@@ -316,32 +316,32 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
       let sqlDump = `-- IITGEEPREP Solaris v22.0 Production Master Schema\n\n`;
       sqlDump += `SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";\nSTART TRANSACTION;\nSET time_zone = "+00:00";\n\n`;
       
-      sqlDump += `-- CORE TABLE: IDENTITY MANAGEMENT\n`;
+      sqlDump += `-- IDENTITY MANAGEMENT\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS users (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255) UNIQUE, role VARCHAR(50), institute VARCHAR(255), targetExam VARCHAR(255), targetYear INT, birthDate DATE, gender VARCHAR(20), password_hash VARCHAR(255), connected_parent JSON DEFAULT NULL, pending_invitations JSON DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       
-      sqlDump += `-- CORE TABLE: ACADEMIC CURRICULUM\n`;
+      sqlDump += `-- ACADEMIC CURRICULUM\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS chapters (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), subject VARCHAR(50), unit VARCHAR(255), notes LONGTEXT, videoUrl VARCHAR(512)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       
-      sqlDump += `-- CORE TABLE: STUDENT PROGRESS LEDGER\n`;
+      sqlDump += `-- STUDENT PROGRESS LEDGER\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS student_progress (student_id VARCHAR(100), chapter_id VARCHAR(100), progress INT DEFAULT 0, accuracy INT DEFAULT 0, status VARCHAR(50), time_spent INT DEFAULT 0, time_spent_notes INT DEFAULT 0, time_spent_videos INT DEFAULT 0, time_spent_practice INT DEFAULT 0, time_spent_tests INT DEFAULT 0, PRIMARY KEY (student_id, chapter_id), FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       
-      sqlDump += `-- CORE TABLE: STANDARDIZED QUESTIONS\n`;
+      sqlDump += `-- STANDARDIZED QUESTIONS\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS questions (id VARCHAR(100) PRIMARY KEY, topicId VARCHAR(100), text TEXT, options JSON, correctAnswer INT, difficulty VARCHAR(20), subject VARCHAR(50)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       
-      sqlDump += `-- CORE TABLE: MOCK EXAM CENTER\n`;
+      sqlDump += `-- MOCK EXAM CENTER\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS mock_tests (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), duration INT, totalMarks INT, category VARCHAR(50), difficulty VARCHAR(50), questionIds JSON, chapterIds JSON) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       
-      sqlDump += `-- CORE TABLE: EXAMINATION LOGS\n`;
+      sqlDump += `-- EXAMINATION LOGS\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS test_results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(100), test_id VARCHAR(100), test_name VARCHAR(255), score INT, total_marks INT, accuracy INT, category VARCHAR(50), taken_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       
-      sqlDump += `-- CORE TABLE: UPLINK COMMUNICATIONS\n`;
+      sqlDump += `-- UPLINK COMMUNICATIONS\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS messages (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255), subject VARCHAR(255), message TEXT, date DATE, is_read BOOLEAN DEFAULT FALSE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       
-      sqlDump += `-- CORE TABLE: STRATEGIC PLANNING\n`;
+      sqlDump += `-- STRATEGIC PLANNING\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS routines (student_id VARCHAR(100) PRIMARY KEY, routine_data JSON, FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS timetables (student_id VARCHAR(100) PRIMARY KEY, schedule JSON, roadmap JSON, FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       
-      sqlDump += `-- CORE TABLE: WELLNESS & PSYCHOMETRICS\n`;
+      sqlDump += `-- WELLNESS & PSYCHOMETRICS\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS wellness_metrics (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(100), stress INT, focus INT, motivation INT, exam_fear INT, summary TEXT, recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
 
       INITIAL_STUDENT_DATA.chapters.forEach(ch => {
@@ -351,28 +351,13 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
       sqlDump += `\nCOMMIT;`;
       zip.file("api/master_schema_v22.sql", sqlDump);
 
-      // 2. FRESH FLAT PHP INFRASTRUCTURE (All in api/ root)
+      // 2. FRESH FLAT PHP INFRASTRUCTURE
       zip.file("api/database.php", `<?php
-/** 
- * SOLARIS CORE DATABASE CONFIGURATION
- * 
- * ACTION REQUIRED: 
- * If you see 'Core Handshake Failed' in the frontend, it means the settings below
- * do not match your Live Server environment. Update them now.
- * 
- * Host: Usually 'localhost'
- * User: Provided by your Hosting Control Panel (Shared hosting rarely uses 'root')
- * Pass: Your MySQL user password
- * Name: The database you created (default 'iitjeeprep_v22')
- */
 session_start();
-
-// --- EDIT THESE THREE LINES ---
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'iitjeeprep_v22');
 define('DB_USER', 'root');   
 define('DB_PASS', '');       
-// -----------------------------
 
 function getPDO() {
     try {
@@ -383,8 +368,6 @@ function getPDO() {
         ]);
         return \$pdo;
     } catch (PDOException \$e) {
-        // ERROR: Handshake Failed. 
-        // This means the DB_USER or DB_PASS above are incorrect for your server.
         header('Content-Type: application/json');
         echo json_encode(['success' => false, 'error' => 'Core Handshake Failed']);
         exit;
@@ -415,24 +398,39 @@ class Response {
       const endpoints = [
           { name: "auth_login.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$input = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO(); \$st = \$pdo->prepare("SELECT * FROM users WHERE email = ?"); \$st->execute([\$input['email']]); \$u = \$st->fetch(); if(\$u && password_verify(\$input['password'], \$u['password_hash'])) { \$_SESSION['user_id'] = \$u['id']; unset(\$u['password_hash']); Response::success(['user' => \$u]); } Response::error('Invalid Credentials'); ?>` },
           { name: "auth_register.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$input = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO(); \$hash = password_hash(\$input['password'], PASSWORD_DEFAULT); \$id = 'USER-'.substr(md5(strtolower(\$input['email'])), 0, 8); \$st = \$pdo->prepare("INSERT INTO users (id, name, email, role, password_hash) VALUES (?,?,?,?,?)"); \$st->execute([\$id, \$input['name'], strtolower(\$input['email']), \$input['role'], \$hash]); Response::success(['user' => ['id'=>\$id, 'role'=>\$input['role']]]); ?>` },
-          { name: "get_dashboard.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$id = \$_GET['id'] ?? ''; \$pdo = getPDO(); \$u = \$pdo->prepare("SELECT * FROM users WHERE id = ?"); \$u->execute([\$id]); \$user = \$u->fetch(); \$prog = \$pdo->prepare("SELECT chapter_id as id, progress, accuracy, status FROM student_progress WHERE student_id = ?"); \$prog->execute([\$id]); Response::success(['data' => array_merge(\$user ?: [], ['individual_progress' => \$prog->fetchAll()])]); ?>` },
-          { name: "sync_progress.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$in = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO(); foreach((\$in['chapters'] ?? []) as \$c) { \$st = \$pdo->prepare("INSERT INTO student_progress (student_id, chapter_id, progress, accuracy, status) VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE progress=VALUES(progress), accuracy=VALUES(accuracy), status=VALUES(status)"); \$st->execute([\$in['student_id'], \$c['id'], \$c['progress'], \$c['accuracy'], \$c['status']]); } Response::success(); ?>` },
+          { name: "get_dashboard.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$id = \$_GET['id'] ?? ''; \$pdo = getPDO(); 
+          \$u = \$pdo->prepare("SELECT * FROM users WHERE id = ?"); \$u->execute([\$id]); \$user = \$u->fetch(); 
+          \$prog = \$pdo->prepare("SELECT chapter_id as id, progress, accuracy, status, time_spent as timeSpent, time_spent_notes as timeSpentNotes, time_spent_videos as timeSpentVideos, time_spent_practice as timeSpentPractice, time_spent_tests as timeSpentTests FROM student_progress WHERE student_id = ?"); \$prog->execute([\$id]);
+          \$tests = \$pdo->prepare("SELECT test_id as testId, test_name as testName, score, total_marks as totalMarks, accuracy, category, DATE_FORMAT(taken_at, '%Y-%m-%d %H:%i:%s') as date FROM test_results WHERE student_id = ? ORDER BY taken_at DESC"); \$tests->execute([\$id]);
+          Response::success(['data' => array_merge(\$user ?: [], ['individual_progress' => \$prog->fetchAll(), 'testHistory' => \$tests->fetchAll()])]); ?>` },
+          { name: "sync_progress.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$in = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO(); 
+          try {
+            \$pdo->beginTransaction();
+            foreach((\$in['chapters'] ?? []) as \$c) { 
+              \$st = \$pdo->prepare("INSERT INTO student_progress (student_id, chapter_id, progress, accuracy, status, time_spent, time_spent_notes, time_spent_videos, time_spent_practice, time_spent_tests) VALUES (?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE progress=VALUES(progress), accuracy=VALUES(accuracy), status=VALUES(status), time_spent=VALUES(time_spent), time_spent_notes=VALUES(time_spent_notes), time_spent_videos=VALUES(time_spent_videos), time_spent_practice=VALUES(time_spent_practice), time_spent_tests=VALUES(time_spent_tests)"); 
+              \$st->execute([\$in['student_id'], \$c['id'], \$c['progress'], \$c['accuracy'], \$c['status'], \$c['timeSpent'] ?? 0, \$c['timeSpentNotes'] ?? 0, \$c['timeSpentVideos'] ?? 0, \$c['timeSpentPractice'] ?? 0, \$c['timeSpentTests'] ?? 0]); 
+            }
+            foreach((\$in['testHistory'] ?? []) as \$t) {
+              \$check = \$pdo->prepare("SELECT id FROM test_results WHERE student_id = ? AND test_id = ? AND taken_at = ?");
+              \$check->execute([\$in['student_id'], \$t['testId'], \$t['date']]);
+              if(!\$check->fetch()) {
+                \$st = \$pdo->prepare("INSERT INTO test_results (student_id, test_id, test_name, score, total_marks, accuracy, category, taken_at) VALUES (?,?,?,?,?,?,?,?)");
+                \$st->execute([\$in['student_id'], \$t['testId'], \$t['testName'], \$t['score'], \$t['totalMarks'], \$t['accuracy'], \$t['category'], \$t['date']]);
+              }
+            }
+            \$pdo->commit();
+            Response::success();
+          } catch(Exception \$e) { \$pdo->rollBack(); Response::error(\$e->getMessage()); } ?>` },
           { name: "manage_users.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$action = \$_GET['action'] ?? ''; \$pdo = getPDO(); if(\$action == 'list') Response::success(['users' => \$pdo->query("SELECT id, name, email, role FROM users")->fetchAll()]); ?>` },
           { name: "manage_messages.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$pdo = getPDO(); Response::success(['messages' => \$pdo->query("SELECT * FROM messages")->fetchAll()]); ?>` },
           { name: "manage_entity.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$type = \$_GET['type'] ?? ''; \$in = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO(); if(\$type == 'Psychometric') { \$st = \$pdo->prepare("INSERT INTO wellness_metrics (student_id, stress, focus, motivation, exam_fear, summary) VALUES (?,?,?,?,?,?)"); \$st->execute([\$in['student_id'], \$in['stress'], \$in['focus'], \$in['motivation'], \$in['examFear'], \$in['studentSummary']]); } Response::success(['status' => 'acknowledged']); ?>` },
           { name: "manage_routine.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$in = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO(); \$st = \$pdo->prepare("INSERT INTO routines (student_id, routine_data) VALUES (?, ?) ON DUPLICATE KEY UPDATE routine_data = VALUES(routine_data)"); \$st->execute([\$in['student_id'], json_encode(\$in['routine'])]); Response::success(); ?>` },
-          { name: "manage_timetable.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$in = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO(); \$st = \$pdo->prepare("INSERT INTO timetables (student_id, schedule, roadmap) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE schedule=VALUES(schedule), roadmap=VALUES(roadmap)"); \$st->execute([\$in['student_id'], json_encode(\$in['schedule']), json_encode(\$in['roadmap'])]); Response::success(); ?>` },
-          { name: "manage_wellness.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; Response::success(['status' => 'synced']); ?>` },
-          { name: "manage_blogs.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; Response::success(['blogs' => []]); ?>` }
+          { name: "manage_timetable.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$in = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO(); \$st = \$pdo->prepare("INSERT INTO timetables (student_id, schedule, roadmap) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE schedule=VALUES(schedule), roadmap=VALUES(roadmap)"); \$st->execute([\$in['student_id'], json_encode(\$in['schedule']), json_encode(\$in['roadmap'])]); Response::success(); ?>` }
       ];
 
       endpoints.forEach(e => zip.file(`api/${e.name}`, e.content));
-
-      const extraApis = ["api/api_tutor_relay.php", "api/api_error_logger.php", "api/api_analytics_nexus.php", "api/api_file_upload.php", "api/api_parent_handshake.php", "api/api_invite_student.php", "api/api_reset_node.php", "api/api_system_status.php"];
-      extraApis.forEach(ea => zip.file(ea, `<?php require_once 'database.php'; require_once 'Response.php'; Response::success(['status' => 'operational']); ?>`));
-
       const content = await zip.generateAsync({ type: "blob" });
-      saveAs(content, "solaris_v22_FRESH_BACKEND.zip");
+      saveAs(content, "solaris_v22_CORE_SYNC_BUILD.zip");
     } catch (e) { alert("Bundle generation error."); } finally { setIsDownloading(false); }
   };
 
@@ -495,32 +493,32 @@ class Response {
               <div className="bg-slate-900 p-12 rounded-[4rem] text-white shadow-2xl space-y-10 max-w-4xl mx-auto overflow-hidden relative">
                   <div className="absolute top-0 right-0 p-8 opacity-5"><Database className="w-64 h-64" /></div>
                   <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-10">
-                     <div className="space-y-4 md:text-left"><h3 className="text-3xl font-black italic tracking-tighter uppercase leading-none text-indigo-400">Environment Node</h3><p className="text-slate-400 text-sm max-w-md italic">System mode is now globally controlled via the index.html configuration.</p></div>
+                     <div className="space-y-4 md:text-left"><h3 className="text-3xl font-black italic tracking-tighter uppercase leading-none text-indigo-400">Environment Node</h3><p className="text-slate-400 text-sm max-w-md italic">System mode is forced to LIVE on non-localhost domains for integrity.</p></div>
                      <div className="flex items-center gap-6 bg-white/5 p-8 rounded-[2.5rem] border border-white/10">
                         <div className="text-right"><div className="text-[8px] font-black text-slate-400 uppercase tracking-widest">System Status</div><div className={`text-xs font-black uppercase tracking-widest ${mode === 'LIVE' ? 'text-emerald-400' : 'text-amber-400'}`}>{mode === 'LIVE' ? 'Production (Live)' : 'Sandbox Mode'}</div></div>
                      </div>
                   </div>
-                  <div className="pt-10 border-t border-white/10 text-center"><button onClick={handleDownloadProduction} disabled={isDownloading} className="bg-indigo-600 px-12 py-5 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:scale-105 transition-all disabled:opacity-50 mx-auto">{isDownloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />} {isDownloading ? 'Building Deployment Stack...' : 'Download Production ZIP (Consolidated v22.0)'}</button></div>
+                  <div className="pt-10 border-t border-white/10 text-center"><button onClick={handleDownloadProduction} disabled={isDownloading} className="bg-indigo-600 px-12 py-5 rounded-[2rem] font-black text-[10px] uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:scale-105 transition-all disabled:opacity-50 mx-auto">{isDownloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />} {isDownloading ? 'Finalizing Core...' : 'Download Fresh Deploy Bundle (ZIP)'}</button></div>
               </div>
 
               <div className="bg-white p-12 rounded-[4rem] border border-rose-200 shadow-xl max-w-4xl mx-auto space-y-8 animate-pulse">
                   <div className="flex items-center gap-6 text-rose-600">
                      <AlertTriangle className="w-12 h-12 shrink-0" />
                      <div>
-                        <h3 className="text-2xl font-black italic tracking-tight uppercase">Fix "Core Handshake Failed"</h3>
-                        <p className="text-slate-500 font-medium italic">Your PHP scripts must be configured correctly for your hosting.</p>
+                        <h3 className="text-2xl font-black italic tracking-tight uppercase">Fix Test Results Loading Issue</h3>
+                        <p className="text-slate-500 font-medium italic">Your existing PHP backend is missing the logic to return test history.</p>
                      </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                      <div className="p-8 bg-slate-50 rounded-3xl space-y-4 border border-slate-100">
                         <div className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center font-black text-xs">01</div>
-                        <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest">Import Fresh SQL</h4>
-                        <p className="text-xs text-slate-500 leading-relaxed italic">The SQL in this ZIP is overhauled. Delete old tables and import this one into your DB.</p>
+                        <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest">Refresh All PHP Files</h4>
+                        <p className="text-xs text-slate-500 leading-relaxed italic">The ZIP above contains upgraded <b>sync_progress.php</b> and <b>get_dashboard.php</b>. Delete your old ones and upload these.</p>
                      </div>
                      <div className="p-8 bg-slate-50 rounded-3xl space-y-4 border border-slate-100">
                         <div className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center font-black text-xs">02</div>
-                        <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest">Edit api/database.php</h4>
-                        <p className="text-xs text-slate-500 leading-relaxed italic">All files are now in <b>ONE FOLDER</b>. Update the credentials in database.php and upload everything to /api/.</p>
+                        <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest">SQL Auto-Increment</h4>
+                        <p className="text-xs text-slate-500 leading-relaxed italic">Ensure your <b>test_results</b> table has an 'id' column with <b>AUTO_INCREMENT</b>. The new SQL file handles this.</p>
                      </div>
                   </div>
               </div>
