@@ -312,12 +312,12 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
     try {
       const zip = new JSZip();
       
-      // 1. FRESH COMPREHENSIVE SQL SCHEMA
+      // 1. FRESH COMPREHENSIVE SQL SCHEMA (Updated for max persistence reliability)
       let sqlDump = `-- IITGEEPREP Solaris v22.0 Production Master Schema\n\n`;
       sqlDump += `SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";\nSTART TRANSACTION;\nSET time_zone = "+00:00";\n\n`;
       
       sqlDump += `-- IDENTITY MANAGEMENT\n`;
-      sqlDump += `CREATE TABLE IF NOT EXISTS users (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255) UNIQUE, role VARCHAR(50), institute VARCHAR(255), targetExam VARCHAR(255), targetYear INT, birthDate DATE, gender VARCHAR(20), password_hash VARCHAR(255), connected_parent JSON DEFAULT NULL, pending_invitations JSON DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
+      sqlDump += `CREATE TABLE IF NOT EXISTS users (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255) UNIQUE, role VARCHAR(50), institute VARCHAR(255), targetExam VARCHAR(255), targetYear INT, birthDate DATE, gender VARCHAR(20), password_hash VARCHAR(255), connected_parent LONGTEXT DEFAULT NULL, pending_invitations LONGTEXT DEFAULT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       
       sqlDump += `-- ACADEMIC CURRICULUM\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS chapters (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), subject VARCHAR(50), unit VARCHAR(255), notes LONGTEXT, videoUrl VARCHAR(512)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
@@ -326,20 +326,20 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
       sqlDump += `CREATE TABLE IF NOT EXISTS student_progress (student_id VARCHAR(100), chapter_id VARCHAR(100), progress INT DEFAULT 0, accuracy INT DEFAULT 0, status VARCHAR(50), time_spent INT DEFAULT 0, time_spent_notes INT DEFAULT 0, time_spent_videos INT DEFAULT 0, time_spent_practice INT DEFAULT 0, time_spent_tests INT DEFAULT 0, PRIMARY KEY (student_id, chapter_id), FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       
       sqlDump += `-- STANDARDIZED QUESTIONS\n`;
-      sqlDump += `CREATE TABLE IF NOT EXISTS questions (id VARCHAR(100) PRIMARY KEY, topicId VARCHAR(100), text TEXT, options JSON, correctAnswer INT, difficulty VARCHAR(20), subject VARCHAR(50)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
+      sqlDump += `CREATE TABLE IF NOT EXISTS questions (id VARCHAR(100) PRIMARY KEY, topicId VARCHAR(100), text TEXT, options LONGTEXT, correctAnswer INT, difficulty VARCHAR(20), subject VARCHAR(50)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       
       sqlDump += `-- MOCK EXAM CENTER\n`;
-      sqlDump += `CREATE TABLE IF NOT EXISTS mock_tests (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), duration INT, totalMarks INT, category VARCHAR(50), difficulty VARCHAR(50), questionIds JSON, chapterIds JSON) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
+      sqlDump += `CREATE TABLE IF NOT EXISTS mock_tests (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), duration INT, totalMarks INT, category VARCHAR(50), difficulty VARCHAR(50), questionIds LONGTEXT, chapterIds LONGTEXT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       
-      sqlDump += `-- EXAMINATION LOGS (Updated with chapter_ids for individual tracking)\n`;
-      sqlDump += `CREATE TABLE IF NOT EXISTS test_results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(100), test_id VARCHAR(100), test_name VARCHAR(255), score INT, total_marks INT, accuracy INT, category VARCHAR(50), chapter_ids JSON DEFAULT NULL, taken_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
+      sqlDump += `-- EXAMINATION LOGS (Updated with chapter_ids and string-based taken_at for exact matching)\n`;
+      sqlDump += `CREATE TABLE IF NOT EXISTS test_results (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(100), test_id VARCHAR(100), test_name VARCHAR(255), score INT, total_marks INT, accuracy INT, category VARCHAR(50), chapter_ids LONGTEXT DEFAULT NULL, taken_at VARCHAR(100), FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       
       sqlDump += `-- UPLINK COMMUNICATIONS\n`;
-      sqlDump += `CREATE TABLE IF NOT EXISTS messages (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255), subject VARCHAR(255), message TEXT, date DATE, is_read BOOLEAN DEFAULT FALSE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
+      sqlDump += `CREATE TABLE IF NOT EXISTS messages (id VARCHAR(100) PRIMARY KEY, name VARCHAR(255), email VARCHAR(255), subject VARCHAR(255), message TEXT, date VARCHAR(100), is_read BOOLEAN DEFAULT FALSE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       
       sqlDump += `-- STRATEGIC PLANNING\n`;
-      sqlDump += `CREATE TABLE IF NOT EXISTS routines (student_id VARCHAR(100) PRIMARY KEY, routine_data JSON, FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n`;
-      sqlDump += `CREATE TABLE IF NOT EXISTS timetables (student_id VARCHAR(100) PRIMARY KEY, schedule JSON, roadmap JSON, FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
+      sqlDump += `CREATE TABLE IF NOT EXISTS routines (student_id VARCHAR(100) PRIMARY KEY, routine_data LONGTEXT, FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n`;
+      sqlDump += `CREATE TABLE IF NOT EXISTS timetables (student_id VARCHAR(100) PRIMARY KEY, schedule LONGTEXT, roadmap LONGTEXT, FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
       
       sqlDump += `-- WELLNESS & PSYCHOMETRICS\n`;
       sqlDump += `CREATE TABLE IF NOT EXISTS wellness_metrics (id INT AUTO_INCREMENT PRIMARY KEY, student_id VARCHAR(100), stress INT, focus INT, motivation INT, exam_fear INT, summary TEXT, recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n\n`;
@@ -351,7 +351,7 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
       sqlDump += `\nCOMMIT;`;
       zip.file("api/master_schema_v22.sql", sqlDump);
 
-      // 2. FRESH FLAT PHP INFRASTRUCTURE
+      // 2. BACKEND INFRASTRUCTURE
       zip.file("api/database.php", `<?php
 session_start();
 define('DB_HOST', 'localhost');
@@ -401,7 +401,7 @@ class Response {
           { name: "get_dashboard.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$id = \$_GET['id'] ?? ''; \$pdo = getPDO(); 
           \$u = \$pdo->prepare("SELECT * FROM users WHERE id = ?"); \$u->execute([\$id]); \$user = \$u->fetch(); 
           \$prog = \$pdo->prepare("SELECT chapter_id as id, progress, accuracy, status, time_spent as timeSpent, time_spent_notes as timeSpentNotes, time_spent_videos as timeSpentVideos, time_spent_practice as timeSpentPractice, time_spent_tests as timeSpentTests FROM student_progress WHERE student_id = ?"); \$prog->execute([\$id]);
-          \$tests = \$pdo->prepare("SELECT test_id as testId, test_name as testName, score, total_marks as totalMarks, accuracy, category, chapter_ids as chapterIds, DATE_FORMAT(taken_at, '%Y-%m-%d %H:%i:%s') as date FROM test_results WHERE student_id = ? ORDER BY taken_at DESC"); \$tests->execute([\$id]);
+          \$tests = \$pdo->prepare("SELECT test_id as testId, test_name as testName, score, total_marks as totalMarks, accuracy, category, chapter_ids as chapterIds, taken_at as date FROM test_results WHERE student_id = ? ORDER BY taken_at DESC"); \$tests->execute([\$id]);
           
           \$r_st = \$pdo->prepare("SELECT routine_data FROM routines WHERE student_id = ?"); \$r_st->execute([\$id]); \$r_raw = \$r_st->fetch();
           \$t_st = \$pdo->prepare("SELECT schedule, roadmap FROM timetables WHERE student_id = ?"); \$t_st->execute([\$id]); \$t_raw = \$t_st->fetch();
@@ -409,6 +409,9 @@ class Response {
           \$rawTests = \$tests->fetchAll();
           foreach(\$rawTests as &\$rt) {
               \$rt['chapterIds'] = \$rt['chapterIds'] ? json_decode(\$rt['chapterIds'], true) : [];
+              \$rt['score'] = (int)\$rt['score'];
+              \$rt['totalMarks'] = (int)\$rt['totalMarks'];
+              \$rt['accuracy'] = (int)\$rt['accuracy'];
           }
           
           \$extra = [
@@ -442,14 +445,20 @@ class Response {
               \$st = \$pdo->prepare("INSERT INTO timetables (student_id, schedule, roadmap) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE schedule=VALUES(schedule), roadmap=VALUES(roadmap)");
               \$st->execute([\$in['student_id'], json_encode(\$in['smartPlan']['schedule'] ?? []), json_encode(\$in['smartPlan']['roadmap'] ?? [])]);
             }
+            if(isset(\$in['connectedParent'])) {
+              \$st = \$pdo->prepare("UPDATE users SET connected_parent = ? WHERE id = ?");
+              \$st->execute([json_encode(\$in['connectedParent']), \$in['student_id']]);
+            }
+            if(isset(\$in['pendingInvitations'])) {
+              \$st = \$pdo->prepare("UPDATE users SET pending_invitations = ? WHERE id = ?");
+              \$st->execute([json_encode(\$in['pendingInvitations']), \$in['student_id']]);
+            }
             \$pdo->commit();
             Response::success();
           } catch(Exception \$e) { \$pdo->rollBack(); Response::error(\$e->getMessage()); } ?>` },
           { name: "manage_users.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$action = \$_GET['action'] ?? ''; \$pdo = getPDO(); if(\$action == 'list') Response::success(['users' => \$pdo->query("SELECT id, name, email, role FROM users")->fetchAll()]); ?>` },
           { name: "manage_messages.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$action = \$_GET['action'] ?? ''; \$pdo = getPDO(); if(\$action == 'read') { \$st = \$pdo->prepare("UPDATE messages SET is_read = 1 WHERE id = ?"); \$st->execute([\$_GET['id']]); Response::success(); } Response::success(['messages' => \$pdo->query("SELECT * FROM messages ORDER BY date DESC")->fetchAll()]); ?>` },
-          { name: "manage_entity.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$type = \$_GET['type'] ?? ''; \$in = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO(); if(\$type == 'Psychometric') { \$st = \$pdo->prepare("INSERT INTO wellness_metrics (student_id, stress, focus, motivation, exam_fear, summary) VALUES (?,?,?,?,?,?)"); \$st->execute([\$in['student_id'], \$in['stress'], \$in['focus'], \$in['motivation'], \$in['examFear'], \$in['studentSummary']]); } elseif(\$type == 'Message') { \$st = \$pdo->prepare("INSERT INTO messages (id, name, email, subject, message, date) VALUES (?,?,?,?,?,?)"); \$st->execute([\$in['id'], \$in['name'], \$in['email'], \$in['subject'], \$in['message'], \$in['date']]); } Response::success(['status' => 'acknowledged']); ?>` },
-          { name: "manage_routine.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$in = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO(); \$st = \$pdo->prepare("INSERT INTO routines (student_id, routine_data) VALUES (?, ?) ON DUPLICATE KEY UPDATE routine_data = VALUES(routine_data)"); \$st->execute([\$in['student_id'], json_encode(\$in['routine'])]); Response::success(); ?>` },
-          { name: "manage_timetable.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$in = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO(); \$st = \$pdo->prepare("INSERT INTO timetables (student_id, schedule, roadmap) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE schedule=VALUES(schedule), roadmap=VALUES(roadmap)"); \$st->execute([\$in['student_id'], json_encode(\$in['schedule']), json_encode(\$in['roadmap'])]); Response::success(); ?>` }
+          { name: "manage_entity.php", content: `<?php require_once 'database.php'; require_once 'Response.php'; \$type = \$_GET['type'] ?? ''; \$in = json_decode(file_get_contents('php://input'), true); \$pdo = getPDO(); if(\$type == 'Psychometric') { \$st = \$pdo->prepare("INSERT INTO wellness_metrics (student_id, stress, focus, motivation, exam_fear, summary) VALUES (?,?,?,?,?,?)"); \$st->execute([\$in['student_id'], \$in['stress'], \$in['focus'], \$in['motivation'], \$in['examFear'], \$in['studentSummary']]); } elseif(\$type == 'Message') { \$st = \$pdo->prepare("INSERT INTO messages (id, name, email, subject, message, date) VALUES (?,?,?,?,?,?)"); \$st->execute([\$in['id'], \$in['name'], \$in['email'], \$in['subject'], \$in['message'], \$in['date']]); } Response::success(['status' => 'acknowledged']); ?>` }
       ];
 
       endpoints.forEach(e => zip.file(`api/${e.name}`, e.content));
@@ -537,12 +546,12 @@ class Response {
                      <div className="p-8 bg-slate-50 rounded-3xl space-y-4 border border-slate-100">
                         <div className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center font-black text-xs">01</div>
                         <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest">Full ZIP Update</h4>
-                        <p className="text-xs text-slate-500 leading-relaxed italic">The ZIP above contains overhauled <b>get_dashboard.php</b>, <b>manage_routine.php</b>, and <b>manage_timetable.php</b>. Delete your old API files and replace them.</p>
+                        <p className="text-xs text-slate-500 leading-relaxed italic">The ZIP above contains overhauled <b>get_dashboard.php</b> and <b>sync_progress.php</b> which now handle LONGTEXT payloads for maximum persistence.</p>
                      </div>
                      <div className="p-8 bg-slate-50 rounded-3xl space-y-4 border border-slate-100">
                         <div className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center font-black text-xs">02</div>
-                        <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest">Database Schema v22</h4>
-                        <p className="text-xs text-slate-500 leading-relaxed italic">Ensure your <b>routines</b> and <b>timetables</b> tables use the <b>JSON</b> data type for the data columns as specified in the new SQL file.</p>
+                        <h4 className="font-black text-slate-800 uppercase text-xs tracking-widest">Database Schema v22.1</h4>
+                        <p className="text-xs text-slate-500 leading-relaxed italic">Ensure you run the new <b>master_schema_v22.sql</b>. It upgrades JSON columns to LONGTEXT to prevent data truncation errors.</p>
                      </div>
                   </div>
               </div>

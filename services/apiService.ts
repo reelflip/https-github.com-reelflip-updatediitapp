@@ -66,25 +66,19 @@ const safeJson = async (response: Response) => {
     if (!response.ok) {
       return { 
         success: false, 
-        error: `CRITICAL: Path Error. The API route '${response.url}' returned HTTP ${response.status}. Ensure the 'api/' folder exists in your web root.` 
+        error: `CRITICAL: Path Error. The API route '${response.url}' returned HTTP ${response.status}.` 
       };
     }
     const data = JSON.parse(text);
     if (data.error === "Core Handshake Failed") {
       return {
         success: false,
-        error: "FATAL: Database Handshake Failed. Open 'api/database.php' and replace 'root' and empty password with your actual live database credentials from your hosting cPanel."
+        error: "FATAL: Database Handshake Failed. Verify 'api/database.php' credentials."
       };
     }
     return data;
   } catch (e) {
-    if (text.includes('<!DOCTYPE html>') || text.includes('<html>')) {
-      return { 
-        success: false, 
-        error: "CONFIG FAULT: The server returned an HTML error page instead of JSON. Ensure PHP is enabled on your host and the 'api/' folder contains the fresh PHP files." 
-      };
-    }
-    return { success: false, error: "DATA FAULT: Handshake completed but returned corrupted stream." };
+    return { success: false, error: "DATA FAULT: Corrupted stream from server." };
   }
 };
 
@@ -93,9 +87,7 @@ export const api = {
     const isLocal = window.location.hostname === 'localhost' || 
                     window.location.hostname === '127.0.0.1' || 
                     window.location.hostname.startsWith('192.168.');
-    
     if (!isLocal) return 'LIVE';
-
     if (window.SOLARIS_CONFIG && window.SOLARIS_CONFIG.dataSourceMode) {
       return window.SOLARIS_CONFIG.dataSourceMode;
     }
@@ -120,7 +112,7 @@ export const api = {
             body: JSON.stringify(credentials)
           });
           return await safeJson(res);
-        } catch(e) { return { success: false, error: "UPLINK FAILURE: Request timed out. Ensure the api/ folder is uploaded." }; }
+        } catch(e) { return { success: false, error: "UPLINK FAILURE" }; }
     }
 
     const registry = JSON.parse(localStorage.getItem(API_CONFIG.GLOBAL_USERS_KEY) || '[]');
@@ -146,12 +138,11 @@ export const api = {
           body: JSON.stringify(data)
         });
         return await safeJson(res);
-      } catch(e) { return { success: false, error: "HANDSHAKE ERROR: Verify folder permissions on server." }; }
+      } catch(e) { return { success: false, error: "HANDSHAKE ERROR" }; }
     }
     
     const id = generateStableId(data.email);
     const newUser: UserAccount = { ...data, id, createdAt: new Date().toISOString() };
-    
     const registry = JSON.parse(localStorage.getItem(API_CONFIG.GLOBAL_USERS_KEY) || '[]');
     if (!registry.some((u: UserAccount) => u.email.toLowerCase() === data.email.toLowerCase())) {
         registry.push(newUser);
@@ -181,10 +172,14 @@ export const api = {
                 if (s) {
                   return { 
                     ...t, 
-                    ...s, 
                     progress: Number(s.progress || 0),
                     accuracy: Number(s.accuracy || 0),
-                    timeSpent: Number(s.timeSpent || 0)
+                    status: s.status || 'NOT_STARTED',
+                    timeSpent: Number(s.timeSpent || 0),
+                    timeSpentNotes: Number(s.timeSpentNotes || 0),
+                    timeSpentVideos: Number(s.timeSpentVideos || 0),
+                    timeSpentPractice: Number(s.timeSpentPractice || 0),
+                    timeSpentTests: Number(s.timeSpentTests || 0)
                   };
                 }
                 return t;
@@ -194,13 +189,9 @@ export const api = {
                 ...zeroState,
                 ...serverData,
                 chapters: mergedChapters,
-                questions: zeroState.questions, 
-                mockTests: zeroState.mockTests, 
                 testHistory: serverData.testHistory || [],
-                connectedParent: serverData.connectedParent || null,
-                pendingInvitations: serverData.pendingInvitations || [],
-                routine: serverData.routine || null,
-                smartPlan: serverData.smartPlan || null
+                routine: serverData.routine || undefined,
+                smartPlan: serverData.smartPlan || undefined
             };
         }
       } catch(e) { console.error("Sync Error", e); }
@@ -241,11 +232,14 @@ export const api = {
             timeSpentPractice: c.timeSpentPractice || 0,
             timeSpentTests: c.timeSpentTests || 0
           })),
-          testHistory: updatedData.testHistory || [],
-          connectedParent: updatedData.connectedParent || null,
-          pendingInvitations: updatedData.pendingInvitations || [],
+          testHistory: (updatedData.testHistory || []).map(t => ({
+             ...t,
+             chapterIds: t.chapterIds || []
+          })),
           routine: updatedData.routine || null,
-          smartPlan: updatedData.smartPlan || null
+          smartPlan: updatedData.smartPlan || null,
+          connectedParent: updatedData.connectedParent || null,
+          pendingInvitations: updatedData.pendingInvitations || []
         };
         await fetch(`${API_CONFIG.BASE_URL}sync_progress.php`, {
           method: 'POST',
@@ -331,37 +325,15 @@ export const api = {
   },
 
   async saveRoutine(studentId: string, routine: RoutineConfig) {
-    const isDemo = DEMO_BYPASS_IDS.includes(studentId);
-    if (this.getMode() === 'LIVE' && !isDemo) {
-      try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}manage_routine.php`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ student_id: studentId, routine })
-        });
-        return await safeJson(res);
-      } catch(e) { return { success: false, error: "HANDSHAKE ERROR" }; }
-    }
     const studentData = await this.getStudentData(studentId);
     if (studentData) {
       studentData.routine = routine;
-      localStorage.setItem(`jeepro_data_${studentId}`, JSON.stringify(studentData));
+      return await this.updateStudentData(studentId, studentData);
     }
-    return { success: true };
+    return { success: false };
   },
 
   async saveTimetable(studentId: string, timetable: { schedule: any[], roadmap: any[] }) {
-    const isDemo = DEMO_BYPASS_IDS.includes(studentId);
-    if (this.getMode() === 'LIVE' && !isDemo) {
-      try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}manage_timetable.php`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ student_id: studentId, ...timetable })
-        });
-        return await safeJson(res);
-      } catch(e) { return { success: false, error: "HANDSHAKE ERROR" }; }
-    }
     const studentData = await this.getStudentData(studentId);
     if (studentData) {
       studentData.smartPlan = { 
@@ -369,9 +341,9 @@ export const api = {
         schedule: timetable.schedule, 
         roadmap: timetable.roadmap 
       };
-      localStorage.setItem(`jeepro_data_${studentId}`, JSON.stringify(studentData));
+      return await this.updateStudentData(studentId, studentData);
     }
-    return { success: true };
+    return { success: false };
   },
 
   async resetProgress(studentId: string): Promise<StudentData> {
