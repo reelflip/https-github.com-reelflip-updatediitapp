@@ -18,6 +18,13 @@ const API_CONFIG = {
 
 const generateStableId = (email: string) => 'USER-' + btoa(email.toLowerCase()).substring(0, 10);
 
+const DEMO_BYPASS_IDS = [
+    '163110', 
+    generateStableId('admin@demo.in'),
+    generateStableId('parent@demo.in'),
+    generateStableId('ishu@gmail.com')
+];
+
 const getZeroStateChapters = (): Chapter[] => {
   return INITIAL_STUDENT_DATA.chapters.map(ch => ({
     ...ch,
@@ -56,14 +63,14 @@ const safeJson = async (response: Response) => {
     if (!response.ok) {
       return { 
         success: false, 
-        error: `HTTP ${response.status}: Path '${response.url}' unreachable.` 
+        error: `CRITICAL: Path Error. The API route '${response.url}' returned HTTP ${response.status}. Ensure the 'api/' folder exists in your web root.` 
       };
     }
     const data = JSON.parse(text);
     if (data.error === "Core Handshake Failed") {
       return {
         success: false,
-        error: "Database Connection Error: The PHP backend cannot connect to MySQL. Please edit 'api/database.php' (now in flat folder) with your correct database credentials."
+        error: "FATAL: Database Handshake Failed. Open 'api/database.php' and replace 'root' and empty password with your actual live database credentials from your hosting cPanel."
       };
     }
     return data;
@@ -71,27 +78,24 @@ const safeJson = async (response: Response) => {
     if (text.includes('<!DOCTYPE html>') || text.includes('<html>')) {
       return { 
         success: false, 
-        error: "Server Route Fault: The server returned an HTML page instead of JSON. Ensure the 'api/' folder is in your web root." 
+        error: "CONFIG FAULT: The server returned an HTML error page instead of JSON. Ensure PHP is enabled on your host and the 'api/' folder contains the fresh PHP files." 
       };
     }
-    return { success: false, error: "Protocol Mismatch: Backend returned invalid data stream." };
+    return { success: false, error: "DATA FAULT: Handshake completed but returned corrupted stream." };
   }
 };
 
 export const api = {
   getMode: (): 'MOCK' | 'LIVE' => {
-    // HARD LINE: Force LIVE mode if not on localhost
     const isLocal = window.location.hostname === 'localhost' || 
                     window.location.hostname === '127.0.0.1' || 
                     window.location.hostname.startsWith('192.168.');
     
     if (!isLocal) return 'LIVE';
 
-    // Priority 1: Direct configuration in index.html (for local testing)
     if (window.SOLARIS_CONFIG && window.SOLARIS_CONFIG.dataSourceMode) {
       return window.SOLARIS_CONFIG.dataSourceMode;
     }
-    // Priority 2: Persistent user choice (legacy support)
     return (localStorage.getItem(API_CONFIG.MODE_KEY) as 'MOCK' | 'LIVE') || 'MOCK';
   },
   
@@ -113,7 +117,7 @@ export const api = {
             body: JSON.stringify(credentials)
           });
           return await safeJson(res);
-        } catch(e) { return { success: false, error: "Uplink Failure: Connection to PHP node refused." }; }
+        } catch(e) { return { success: false, error: "UPLINK FAILURE: Request timed out. Ensure the api/ folder is uploaded." }; }
     }
 
     const registry = JSON.parse(localStorage.getItem(API_CONFIG.GLOBAL_USERS_KEY) || '[]');
@@ -139,7 +143,7 @@ export const api = {
           body: JSON.stringify(data)
         });
         return await safeJson(res);
-      } catch(e) { return { success: false, error: "Handshake Timeout: Verify API deployment." }; }
+      } catch(e) { return { success: false, error: "HANDSHAKE ERROR: Verify folder permissions on server." }; }
     }
     
     const id = generateStableId(data.email);
@@ -158,7 +162,9 @@ export const api = {
   },
 
   async getStudentData(studentId: string): Promise<StudentData> {
-    if (this.getMode() === 'LIVE') {
+    const isDemo = DEMO_BYPASS_IDS.includes(studentId);
+
+    if (this.getMode() === 'LIVE' && !isDemo) {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}get_dashboard.php?id=${studentId}`);
         const result = await safeJson(res);
@@ -211,8 +217,10 @@ export const api = {
   },
 
   async updateStudentData(studentId: string, updatedData: StudentData) {
+    const isDemo = DEMO_BYPASS_IDS.includes(studentId);
     localStorage.setItem(`jeepro_data_${studentId}`, JSON.stringify(updatedData));
-    if (this.getMode() === 'LIVE') {
+    
+    if (this.getMode() === 'LIVE' && !isDemo) {
       try {
         const payload = { 
           student_id: studentId, 
@@ -250,7 +258,7 @@ export const api = {
           body: JSON.stringify(data)
         });
         return await safeJson(res);
-      } catch(e) { return { success: false, error: "Uplink Failed" }; }
+      } catch(e) { return { success: false, error: "DATABASE SYNC FAILED" }; }
     }
     return { success: true };
   },
@@ -278,7 +286,8 @@ export const api = {
   },
 
   async updateUserProfile(userId: string, profile: any) {
-    if (this.getMode() === 'LIVE') {
+    const isDemo = DEMO_BYPASS_IDS.includes(userId);
+    if (this.getMode() === 'LIVE' && !isDemo) {
       const res = await fetch(`${API_CONFIG.BASE_URL}manage_users.php?action=update&id=${userId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(profile) });
       return await safeJson(res);
     }
@@ -308,13 +317,14 @@ export const api = {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}manage_messages.php?action=read&id=${messageId}`);
         return await safeJson(res);
-      } catch(e) { return { success: false, error: "Sync failed" }; }
+      } catch(e) { return { success: false, error: "Handshake fail" }; }
     }
     return { success: true };
   },
 
   async saveRoutine(studentId: string, routine: RoutineConfig) {
-    if (this.getMode() === 'LIVE') {
+    const isDemo = DEMO_BYPASS_IDS.includes(studentId);
+    if (this.getMode() === 'LIVE' && !isDemo) {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}manage_routine.php`, {
           method: 'POST',
@@ -322,7 +332,7 @@ export const api = {
           body: JSON.stringify({ student_id: studentId, routine })
         });
         return await safeJson(res);
-      } catch(e) { return { success: false, error: "Sync failed" }; }
+      } catch(e) { return { success: false, error: "HANDSHAKE ERROR" }; }
     }
     const studentData = await this.getStudentData(studentId);
     if (studentData) {
@@ -333,7 +343,8 @@ export const api = {
   },
 
   async saveTimetable(studentId: string, timetable: { schedule: any[], roadmap: any[] }) {
-    if (this.getMode() === 'LIVE') {
+    const isDemo = DEMO_BYPASS_IDS.includes(studentId);
+    if (this.getMode() === 'LIVE' && !isDemo) {
       try {
         const res = await fetch(`${API_CONFIG.BASE_URL}manage_timetable.php`, {
           method: 'POST',
@@ -341,7 +352,7 @@ export const api = {
           body: JSON.stringify({ student_id: studentId, ...timetable })
         });
         return await safeJson(res);
-      } catch(e) { return { success: false, error: "Sync failed" }; }
+      } catch(e) { return { success: false, error: "HANDSHAKE ERROR" }; }
     }
     const studentData = await this.getStudentData(studentId);
     if (studentData) {
@@ -356,7 +367,8 @@ export const api = {
   },
 
   async resetProgress(studentId: string): Promise<StudentData> {
-    if (this.getMode() === 'LIVE') await fetch(`${API_CONFIG.BASE_URL}sync_progress.php?action=reset&student_id=${studentId}`, { method: 'POST' });
+    const isDemo = DEMO_BYPASS_IDS.includes(studentId);
+    if (this.getMode() === 'LIVE' && !isDemo) await fetch(`${API_CONFIG.BASE_URL}sync_progress.php?action=reset&student_id=${studentId}`, { method: 'POST' });
     const cleanData = getZeroStateStudentData(studentId, 'Aspirant');
     localStorage.setItem(`jeepro_data_${studentId}`, JSON.stringify(cleanData));
     return cleanData;
