@@ -329,8 +329,8 @@ const AdminCMS: React.FC<AdminCMSProps> = ({ activeTab, data, setData }) => {
       // Added sample accounts to the ZIP bundle
       let sampleSql = `-- IITGEEPREP Master Sample Accounts v22.0\n-- Import this after master_schema_v22.sql\n\n`;
       sampleSql += `INSERT INTO users (id, name, email, role, institute, targetExam, targetYear, birthDate, gender, password_hash) VALUES \n`;
-      sampleSql += `('163110', 'Aryan Sharma', 'ishu@gmail.com', 'STUDENT', 'Allen Career Institute', 'JEE Main & Advanced', 2025, '2007-05-15', 'Male', 'password'),\n`;
-      sampleSql += `('USER-cGFyZW50QGR', 'Guardian One', 'parent@demo.in', 'PARENT', NULL, NULL, NULL, '1980-01-01', 'Female', 'password'),\n`;
+      sampleSql += `('163110', 'Aryan Sharma', 'student@iitgeeprep.com', 'STUDENT', 'Allen Career Institute', 'JEE Main & Advanced', 2025, '2007-05-15', 'Male', '123456'),\n`;
+      sampleSql += `('USER-cGFyZW50QG', 'Guardian Node', 'parent@iitgeeprep.com', 'PARENT', NULL, NULL, NULL, '1980-01-01', 'Female', '123456'),\n`;
       sampleSql += `('USER-YWRtaW5AZGV', 'System Admin', 'admin@demo.in', 'ADMIN', NULL, NULL, NULL, '1990-01-01', 'Male', 'password');\n`;
       zip.file("api/sample_accounts.sql", sampleSql);
 

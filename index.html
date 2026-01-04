@@ -12,13 +12,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
     <script>
         window.HIDE_DEMO_SIGNIN = false;
-        
-        // --- SOLARIS CORE CONFIGURATION ---
-        // Edit 'dataSourceMode' below to switch between development and production.
-        // NOTE: The system will AUTOMATICALLY force 'LIVE' mode on any non-localhost domain.
-        // Options: 
-        // 'MOCK' -> Sandbox Mode (Local Storage only, works only on localhost)
-        // 'LIVE' -> Production Mode (Connects to PHP/MySQL backend in 'api/' folder)
         window.SOLARIS_CONFIG = {
             dataSourceMode: 'LIVE' 
         };
@@ -30,13 +23,16 @@
             --porcelain: #ffffff;
             --shadow-lux: 0 20px 50px -12px rgba(10, 17, 40, 0.08);
         }
+        html, body { 
+            height: 100%;
+            overscroll-behavior-y: none;
+        }
         body { 
             font-family: 'Plus Jakarta Sans', sans-serif; 
             background-color: var(--porcelain); 
             margin: 0; 
             padding: 0; 
             color: #1e293b;
-            scroll-behavior: smooth;
             -webkit-tap-highlight-color: transparent;
             overflow-x: hidden;
         }
@@ -54,7 +50,6 @@
             letter-spacing: 0.5em;
         }
 
-        /* Responsive Safe Area Padding for iOS */
         .safe-pb {
             padding-bottom: env(safe-area-inset-bottom);
         }
@@ -65,10 +60,14 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        
+        /* Utility for mobile app scroll areas */
+        .app-height { height: 100dvh; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 <script type="importmap">
 {

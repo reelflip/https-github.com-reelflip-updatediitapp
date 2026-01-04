@@ -8,7 +8,6 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import { LayoutDashboard, BookOpen, Bot, FileText, Menu, Settings, Loader2 } from 'lucide-react';
 
-// Lazy loading views to maintain 1:1 mapping in build output
 const AboutModule = lazy(() => import('./views/AboutModule'));
 const FeaturesModule = lazy(() => import('./views/FeaturesModule'));
 const ExamGuideModule = lazy(() => import('./views/ExamGuideModule'));
@@ -54,7 +53,6 @@ const App: React.FC = () => {
           if (parsedUser && parsedUser.id) {
             setUser(parsedUser);
             setRole(parsedUser.role);
-            // Crucial: Always fetch fresh data on initialization to avoid reset bug
             await loadUserData(parsedUser);
           }
         }
@@ -70,9 +68,7 @@ const App: React.FC = () => {
     try {
       const data = await api.getStudentData(currentUser.id);
       setStudentData(data);
-      // Persist the specific user data to its local key
       localStorage.setItem(`jeepro_data_${currentUser.id}`, JSON.stringify(data));
-      // Also update the active buffer
       localStorage.setItem('jeepro_student_data', JSON.stringify(data));
     } catch (err) {
       console.error("Failed to load ecosystem context", err);
@@ -80,16 +76,11 @@ const App: React.FC = () => {
   };
 
   const onLoginSuccess = (authenticatedUser: UserAccount) => {
-    // Wipe active buffer to clear previous user residue
     localStorage.removeItem('jeepro_student_data');
-    
     setUser(authenticatedUser);
     setRole(authenticatedUser.role);
     localStorage.setItem('jeepro_user', JSON.stringify(authenticatedUser));
-    
-    // Perform initial data fetch
     loadUserData(authenticatedUser);
-    
     const targetTab = authenticatedUser.role === UserRole.ADMIN ? 'admin-overview' : 
                       authenticatedUser.role === UserRole.PARENT ? 'parent-status' : 'dashboard';
     setActiveTab(targetTab);
@@ -113,7 +104,7 @@ const App: React.FC = () => {
   };
 
   const BottomNav = () => (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-100 px-2 py-3 flex justify-around items-center z-[100] safe-pb shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 px-2 py-3 pb-safe flex justify-around items-center z-[100] shadow-[0_-10px_30px_rgba(0,0,0,0.08)]">
       {[
         { id: role === UserRole.ADMIN ? 'admin-overview' : role === UserRole.PARENT ? 'parent-status' : 'dashboard', label: 'Home', icon: LayoutDashboard },
         { id: role === UserRole.ADMIN ? 'admin-syllabus' : role === UserRole.PARENT ? 'parent-syllabus' : 'learn', label: 'Learn', icon: BookOpen },
@@ -124,7 +115,7 @@ const App: React.FC = () => {
         <button
           key={item.id}
           onClick={() => setActiveTab(item.id)}
-          className={`flex flex-col items-center gap-1 transition-all px-4 py-1 rounded-xl ${activeTab === item.id ? 'text-indigo-600' : 'text-slate-400'}`}
+          className={`flex flex-col items-center gap-1 transition-all px-4 py-1 rounded-xl active:scale-90 ${activeTab === item.id ? 'text-indigo-600' : 'text-slate-400'}`}
         >
           <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} />
           <span className="text-[10px] font-black uppercase tracking-tighter">{item.label}</span>
@@ -158,11 +149,11 @@ const App: React.FC = () => {
     };
 
     return (
-      <div className="flex h-screen overflow-hidden bg-[#fcfdfe] font-sans">
+      <div className="flex h-screen overflow-hidden bg-[#fcfdfe] font-sans app-height">
         <Sidebar role={role} activeTab={activeTab} setActiveTab={setActiveTab} setRole={setRole} handleLogout={handleLogout} />
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
           <Header role={role} studentName={user.name} />
-          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10 pb-24 lg:pb-10 custom-scrollbar">
+          <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-10 pb-24 lg:pb-10 custom-scrollbar overscroll-contain">
             <Suspense fallback={<LoadingFallback />}>
               {renderPrivateContent()}
             </Suspense>
