@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { UserRole, StudentData, UserAccount } from './types';
 import { INITIAL_STUDENT_DATA } from './mockData';
@@ -6,7 +5,12 @@ import { api } from './services/apiService';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import { LayoutDashboard, BookOpen, Bot, FileText, Menu, Settings, Loader2 } from 'lucide-react';
+import { 
+  LayoutDashboard, BookOpen, Bot, FileText, Menu, Settings, 
+  Loader2, X, LogOut, Brain, Timer, BarChart3, Calendar, 
+  RefreshCw, AlertCircle, Layers, ListChecks, Lightbulb, 
+  Heart, User, UserPlus, Target, FileCode, Inbox, Users, PenTool
+} from 'lucide-react';
 
 const AboutModule = lazy(() => import('./views/AboutModule'));
 const FeaturesModule = lazy(() => import('./views/FeaturesModule'));
@@ -43,6 +47,7 @@ const App: React.FC = () => {
   const [role, setRole] = useState<UserRole>(UserRole.STUDENT);
   const [studentData, setStudentData] = useState<StudentData>(INITIAL_STUDENT_DATA);
   const [activeTab, setActiveTab] = useState<string>('about');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const initializeApp = async () => {
@@ -91,6 +96,7 @@ const App: React.FC = () => {
     localStorage.removeItem('jeepro_student_data');
     setUser(null);
     setActiveTab('about');
+    setIsMobileMenuOpen(false);
   };
 
   const syncStudentData = async (newData: StudentData) => {
@@ -103,6 +109,89 @@ const App: React.FC = () => {
     }
   };
 
+  const MobileMenuOverlay = () => {
+    if (!isMobileMenuOpen) return null;
+
+    const studentLinks = [
+      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { id: 'learn', label: 'My Syllabus', icon: BookOpen },
+      { id: 'aitutor', label: 'AI Tutor', icon: Bot },
+      { id: 'tests', label: 'Tests & Exams', icon: FileText },
+      { id: 'psychometric', label: 'Mindset Test', icon: Brain },
+      { id: 'focus', label: 'Focus Timer', icon: Timer },
+      { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+      { id: 'timetable', label: 'Schedule', icon: Calendar },
+      { id: 'revision', label: 'Revision', icon: RefreshCw },
+      { id: 'mistakes', label: 'My Mistakes', icon: AlertCircle },
+      { id: 'flashcards', label: 'Memory Cards', icon: Layers },
+      { id: 'backlogs', label: 'Backlogs', icon: ListChecks },
+      { id: 'hacks', label: 'Study Hacks', icon: Lightbulb },
+      { id: 'wellness', label: 'Wellness', icon: Heart },
+      { id: 'profile', label: 'Profile Settings', icon: User },
+    ];
+
+    const adminLinks = [
+      { id: 'admin-overview', label: 'Admin Overview', icon: LayoutDashboard },
+      { id: 'admin-users', label: 'User Management', icon: Users },
+      { id: 'admin-messages', label: 'Admin Inbox', icon: Inbox },
+      { id: 'admin-syllabus', label: 'Syllabus Editor', icon: BookOpen },
+      { id: 'admin-questions', label: 'Question Bank', icon: FileCode },
+      { id: 'admin-tests', label: 'Mock Test Admin', icon: FileText },
+      { id: 'admin-flashcards', label: 'Card Manager', icon: Layers },
+      { id: 'admin-hacks', label: 'Hack Manager', icon: Lightbulb },
+      { id: 'admin-blogs', label: 'Blog Manager', icon: PenTool },
+      { id: 'admin-system', label: 'System Settings', icon: Settings },
+    ];
+
+    const parentLinks = [
+      { id: 'parent-status', label: 'Student Pulse', icon: Target },
+      { id: 'parent-analytics', label: 'Performance', icon: BarChart3 },
+      { id: 'parent-syllabus', label: 'Syllabus', icon: BookOpen },
+      { id: 'parent-psychometric', label: 'Mental State', icon: Brain },
+      { id: 'parent-connect', label: 'Connect Student', icon: UserPlus },
+    ];
+
+    const currentLinks = role === UserRole.ADMIN ? adminLinks : role === UserRole.PARENT ? parentLinks : studentLinks;
+
+    return (
+      <div className="fixed inset-0 z-[150] bg-[#0a1128] text-white flex flex-col animate-in slide-in-from-bottom duration-300">
+        <div className="p-6 border-b border-white/10 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
+                <Menu className="w-5 h-5 text-white" />
+             </div>
+             <span className="font-black uppercase tracking-tighter text-lg italic font-space">Menu Control</span>
+          </div>
+          <button onClick={() => setIsMobileMenuOpen(false)} className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-all border border-white/10">
+            <X className="w-6 h-6 text-white" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-2 custom-scrollbar">
+          {currentLinks.map((link) => (
+            <button
+              key={link.id}
+              onClick={() => { setActiveTab(link.id); setIsMobileMenuOpen(false); }}
+              className={`w-full flex items-center gap-5 p-5 rounded-2xl text-sm font-black italic tracking-tight transition-all border ${
+                activeTab === link.id 
+                ? 'bg-indigo-600 border-indigo-500 shadow-xl'
+                : 'bg-white/5 border-white/5 hover:bg-white/10'
+              }`}
+            >
+              <link.icon className={`w-5 h-5 ${activeTab === link.id ? 'text-white' : 'text-slate-400'}`} />
+              {link.label}
+            </button>
+          ))}
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-5 p-5 bg-rose-600/10 border border-rose-500/20 text-rose-500 rounded-2xl text-sm font-black italic tracking-tight transition-all mt-4"
+          >
+            <LogOut className="w-5 h-5" /> Sign Out Protocol
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const BottomNav = () => (
     <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-slate-100 px-2 py-3 pb-safe flex justify-around items-center z-[100] shadow-[0_-10px_30px_rgba(0,0,0,0.08)]">
       {[
@@ -110,12 +199,21 @@ const App: React.FC = () => {
         { id: role === UserRole.ADMIN ? 'admin-syllabus' : role === UserRole.PARENT ? 'parent-syllabus' : 'learn', label: 'Learn', icon: BookOpen },
         { id: role === UserRole.ADMIN ? 'admin-system' : 'aitutor', label: role === UserRole.ADMIN ? 'Core' : 'Coach', icon: role === UserRole.ADMIN ? Settings : Bot },
         { id: role === UserRole.ADMIN ? 'admin-tests' : 'tests', label: 'Exams', icon: FileText },
-        { id: 'profile', label: 'Menu', icon: Menu },
+        { id: 'mobile-menu', label: 'Menu', icon: Menu },
       ].map((item) => (
         <button
           key={item.id}
-          onClick={() => setActiveTab(item.id)}
-          className={`flex flex-col items-center gap-1 transition-all px-4 py-1 rounded-xl active:scale-90 ${activeTab === item.id ? 'text-indigo-600' : 'text-slate-400'}`}
+          onClick={() => {
+            if (item.id === 'mobile-menu') {
+              setIsMobileMenuOpen(true);
+            } else {
+              setActiveTab(item.id);
+            }
+          }}
+          className={`flex flex-col items-center gap-1 transition-all px-4 py-1 rounded-xl active:scale-90 ${
+            (item.id !== 'mobile-menu' && activeTab === item.id) || (item.id === 'mobile-menu' && isMobileMenuOpen) 
+            ? 'text-indigo-600' : 'text-slate-400'
+          }`}
         >
           <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'stroke-[2.5px]' : 'stroke-[2px]'}`} />
           <span className="text-[10px] font-black uppercase tracking-tighter">{item.label}</span>
@@ -159,6 +257,7 @@ const App: React.FC = () => {
             </Suspense>
           </main>
           <BottomNav />
+          <MobileMenuOverlay />
         </div>
       </div>
     );
